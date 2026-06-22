@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visitor Pattern — LLD Guide</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8fafc; min-height: 100vh; color: #1e293b; -webkit-font-smoothing: antialiased; }
+        .container { max-width: 880px; margin: 0 auto; padding: 40px 24px 80px; }
+        .back-link { display: inline-flex; align-items: center; gap: 6px; color: #0d9488; text-decoration: none; font-size: 0.9em; font-weight: 500; margin-bottom: 28px; padding: 6px 12px; border-radius: 8px; transition: background 0.15s ease; }
+        .back-link:hover { background: #f0fdfa; }
+
+        .pattern-badge { display: inline-block; padding: 5px 14px; border-radius: 100px; font-size: 0.72em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; background: #ccfbf1; color: #0d9488; margin-bottom: 16px; }
+        h1 { font-size: 2.4em; font-weight: 800; color: #0f172a; margin-bottom: 12px; letter-spacing: -0.03em; line-height: 1.2; }
+        .subtitle { font-size: 1.1em; color: #64748b; line-height: 1.7; margin-bottom: 8px; }
+        h2 { font-size: 1.35em; font-weight: 700; color: #0f172a; margin: 40px 0 16px; letter-spacing: -0.02em; }
+        h3 { font-size: 1.1em; font-weight: 600; color: #1e293b; margin: 24px 0 10px; }
+        p, li { line-height: 1.8; color: #475569; margin-bottom: 10px; font-size: 0.95em; }
+        ul, ol { padding-left: 20px; margin-bottom: 15px; }
+        strong { color: #1e293b; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 0.85em; color: #0d9488; }
+
+        .analogy { background: linear-gradient(135deg, #f0fdfa, #fffbeb); border: 1px solid #ccfbf1; border-radius: 16px; padding: 24px 28px; margin: 24px 0; }
+        .analogy .tag { font-size: 0.78em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #0d9488; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+        .analogy p:last-child { margin-bottom: 0; }
+
+        .code-container { margin: 24px 0; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .code-tabs { display: flex; background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0 8px; }
+        .code-tab { padding: 10px 18px; cursor: pointer; border: none; background: transparent; color: #64748b; font-size: 0.85em; font-weight: 500; font-family: 'Inter', sans-serif; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.15s ease; }
+        .code-tab:hover { color: #0d9488; }
+        .code-tab.active { color: #0d9488; border-bottom-color: #0d9488; background: white; }
+        .code-content { display: none; background: white; padding: 24px; overflow-x: auto; }
+        .code-content.active { display: block; }
+        .code-content pre { color: #1e293b; font-family: 'JetBrains Mono', monospace; font-size: 0.82em; line-height: 1.75; white-space: pre; }
+        .keyword { color: #0d9488; } .type { color: #2563eb; } .string { color: #16a34a; }
+        .comment { color: #94a3b8; font-style: italic; } .number { color: #d97706; }
+        .preproc { color: #7c3aed; } .fn { color: #db2777; }
+
+        .note { background: #f0fdfa; border-left: 4px solid #0d9488; padding: 16px 20px; margin: 20px 0; border-radius: 0 12px 12px 0; }
+        .note ul, .note p { margin-bottom: 0; } .note li:last-child { margin-bottom: 0; }
+        .warn { background: #fef2f2; border-left: 4px solid #dc2626; padding: 16px 20px; margin: 20px 0; border-radius: 0 12px 12px 0; }
+        .warn ul, .warn p { margin-bottom: 0; } .warn li:last-child { margin-bottom: 0; }
+
+        .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0; }
+        .compare > div { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .pros h3 { color: #16a34a; margin-top: 0; } .cons h3 { color: #dc2626; margin-top: 0; }
+        .compare ul { margin-bottom: 0; }
+
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; }
+        th, td { padding: 12px 16px; border: 1px solid #e2e8f0; text-align: left; font-size: 0.9em; }
+        th { background: #f8fafc; color: #0f172a; font-weight: 600; }
+        tr:hover { background: #f8fafc; }
+
+        /* Interactive playground */
+        .playground { background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 24px; margin: 24px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .pg-title { font-weight: 700; color: #0f172a; font-size: 0.95em; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+        .pg-sub { color: #64748b; font-size: 0.82em; margin-bottom: 18px; }
+        .pg-stage { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: center; min-height: 120px; padding: 16px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0; }
+        .obj-box { width: 110px; padding: 14px 10px; border-radius: 12px; text-align: center; border: 2px solid #cbd5e1; background: white; transition: all 0.3s ease; }
+        .obj-box .lbl { font-size: 0.72em; color: #64748b; font-weight: 600; }
+        .obj-box .id { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 0.92em; color: #0f172a; margin-top: 4px; word-break: break-all; }
+        .obj-box.same { border-color: #0d9488; background: #f0fdfa; box-shadow: 0 0 0 3px rgba(13,148,136,0.12); }
+        .obj-box.fresh { border-color: #d97706; background: #fffbeb; box-shadow: 0 0 0 3px rgba(217,119,6,0.12); }
+        .pg-status { margin-top: 14px; padding: 12px 14px; background: #f8fafc; border-radius: 8px; font-size: 0.85em; color: #475569; min-height: 44px; display: flex; align-items: center; border: 1px solid #e2e8f0; line-height: 1.5; }
+        .pg-controls { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; align-items: center; }
+        .btn { padding: 8px 16px; border: none; border-radius: 8px; font-size: 0.85em; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.15s ease; }
+        .btn-primary { background: #0d9488; color: white; }
+        .btn-primary:hover { background: #0f766e; transform: translateY(-1px); }
+        .btn-ghost { background: #f1f5f9; color: #475569; }
+        .btn-ghost:hover { background: #e2e8f0; }
+
+        .footer { text-align: center; padding: 32px 20px; color: #94a3b8; font-size: 0.85em; border-top: 1px solid #e2e8f0; background: #f8fafc; }
+        .footer span { color: #0d9488; }
+
+        @media (max-width: 600px) { .compare { grid-template-columns: 1fr; } h1 { font-size: 1.8em; } .container { padding: 20px 16px 60px; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="../index.html" class="back-link">&larr; Back to LLD Topics</a>
+        <div class="pattern-badge">Behavioral Pattern</div>
+        <h1>Visitor</h1>
+        <p class="subtitle">Represent an <strong>operation to be performed on the elements</strong> of an object structure. Visitor lets you add new operations without changing the classes of the elements on which they operate.</p>
+
+        <div class="analogy">
+            <div class="tag">🏢 Real-World Analogy</div>
+            <p>Think of a <strong>tax auditor</strong> who visits different kinds of businesses — a restaurant, a factory, a software startup. The auditor knows how to compute taxes <em>differently</em> for each type of business, but the businesses themselves never change their day-to-day operations just because an auditor showed up. They simply <strong>let the auditor in</strong> ("accept" the visit), and the auditor does the type-specific work.</p>
+            <p>Next year a new kind of inspector arrives — say, a <strong>fire-safety inspector</strong>. The businesses don't change at all; you just send a different visitor through the same doors. That is exactly the Visitor pattern: the <em>businesses</em> are your element classes, and each <em>inspector</em> is a new operation you can add without touching the businesses.</p>
+        </div>
+
+        <h2>The Problem It Solves</h2>
+        <p>Imagine you have a <strong>stable set of element classes</strong> — for example geometric shapes (<code>Circle</code>, <code>Rectangle</code>, <code>Triangle</code>) or nodes in a file system. The set of types rarely changes, but you keep needing to run <strong>new operations</strong> across all of them:</p>
+        <ul>
+            <li>Compute the <strong>area</strong> of every shape.</li>
+            <li><strong>Export</strong> each shape to JSON, then later to XML, then to SVG.</li>
+            <li>Render, validate, price, serialize, optimize…</li>
+        </ul>
+        <p>The naive approach is to add a new method to <em>every</em> element class each time a new operation appears. That means editing <code>Circle</code>, <code>Rectangle</code>, and <code>Triangle</code> for <em>area</em>, then editing all three again for <em>export</em>, and again for the next one. Each unrelated concern (geometry, export, rendering) gets smeared across every class, violating the <strong>Single Responsibility Principle</strong> and the <strong>Open/Closed Principle</strong>.</p>
+        <p>Visitor flips this around: it <strong>gathers one operation into a single class</strong> (the visitor). To add a new operation you write one new visitor class — and you never touch the element classes again.</p>
+
+        <h2>The Roles</h2>
+        <ul>
+            <li><strong>Visitor interface</strong> — declares one <code>visit(...)</code> method per concrete element type (<code>visitCircle</code>, <code>visitRectangle</code>, …).</li>
+            <li><strong>ConcreteVisitor</strong> — implements those methods; one class per operation (e.g. <code>AreaVisitor</code>, <code>ExportVisitor</code>).</li>
+            <li><strong>Element interface</strong> — declares a single <code>accept(visitor)</code> method.</li>
+            <li><strong>ConcreteElement</strong> — implements <code>accept</code> by calling back the matching <code>visit</code> method on the visitor.</li>
+            <li><strong>Object structure</strong> — the collection (list, tree) of elements that can be iterated and have a visitor applied to each.</li>
+        </ul>
+
+        <h2>The Key Idea: Double Dispatch</h2>
+        <p>This is the heart of Visitor, and the part interviewers probe. In most object-oriented languages a method call is dispatched on <strong>one</strong> type — the runtime type of the object before the dot. But here we need to pick the right behavior based on <strong>two</strong> types at once: the concrete <em>element</em> (Circle vs. Rectangle) <em>and</em> the concrete <em>visitor</em> (Area vs. Export).</p>
+        <p>Visitor achieves this with two chained calls:</p>
+        <ol>
+            <li><strong>First dispatch</strong> — you call <code>element.accept(visitor)</code>. This resolves on the element's type, so the JVM/interpreter runs <em>Circle's</em> <code>accept</code>.</li>
+            <li><strong>Second dispatch</strong> — inside <code>Circle.accept</code>, the code calls <code>visitor.visitCircle(this)</code>. Now <code>this</code> is statically known to be a <code>Circle</code>, and the call resolves on the visitor's type, so the <em>right</em> overload on the <em>right</em> visitor runs.</li>
+        </ol>
+        <p>Why is the bounce necessary? Because if you only had <code>visitor.visit(someElement)</code>, the language would only know <code>someElement</code>'s declared type (often the base <code>Shape</code>), not its concrete subtype — so it couldn't pick <code>visitCircle</code> vs <code>visitRectangle</code>. The <code>accept</code> hop is what recovers the concrete element type, turning two single-dispatch calls into one <strong>double dispatch</strong>.</p>
+
+        <h2>Implementation</h2>
+        <p>Here we model two shapes — <code>Circle</code> and <code>Rectangle</code> — and two operations expressed as visitors: an <strong>AreaVisitor</strong> that computes area, and an <strong>ExportVisitor</strong> that produces a string. Notice that to add a third operation you only add a new visitor class; the shape classes stay frozen.</p>
+
+        <div class="code-container">
+            <div class="code-tabs">
+                <button class="code-tab active" onclick="showCode(this, 'javaCode')">Java</button>
+                <button class="code-tab" onclick="showCode(this, 'pyCode')">Python</button>
+            </div>
+            <div id="javaCode" class="code-content active">
+<pre><span class="comment">// --- Visitor interface: one method per concrete element ---</span>
+<span class="keyword">interface</span> <span class="type">ShapeVisitor</span> {
+    <span class="keyword">double</span> <span class="fn">visitCircle</span>(<span class="type">Circle</span> c);
+    <span class="keyword">double</span> <span class="fn">visitRectangle</span>(<span class="type">Rectangle</span> r);
+}
+
+<span class="comment">// --- Element interface: the single accept() hook ---</span>
+<span class="keyword">interface</span> <span class="type">Shape</span> {
+    <span class="keyword">double</span> <span class="fn">accept</span>(<span class="type">ShapeVisitor</span> v);
+}
+
+<span class="comment">// --- Concrete elements: accept() bounces back to the visitor ---</span>
+<span class="keyword">class</span> <span class="type">Circle</span> <span class="keyword">implements</span> <span class="type">Shape</span> {
+    <span class="keyword">final double</span> radius;
+    <span class="fn">Circle</span>(<span class="keyword">double</span> radius) { <span class="keyword">this</span>.radius = radius; }
+
+    <span class="keyword">public double</span> <span class="fn">accept</span>(<span class="type">ShapeVisitor</span> v) {
+        <span class="keyword">return</span> v.<span class="fn">visitCircle</span>(<span class="keyword">this</span>);   <span class="comment">// 2nd dispatch: type of `this` is known</span>
+    }
+}
+
+<span class="keyword">class</span> <span class="type">Rectangle</span> <span class="keyword">implements</span> <span class="type">Shape</span> {
+    <span class="keyword">final double</span> w, h;
+    <span class="fn">Rectangle</span>(<span class="keyword">double</span> w, <span class="keyword">double</span> h) { <span class="keyword">this</span>.w = w; <span class="keyword">this</span>.h = h; }
+
+    <span class="keyword">public double</span> <span class="fn">accept</span>(<span class="type">ShapeVisitor</span> v) {
+        <span class="keyword">return</span> v.<span class="fn">visitRectangle</span>(<span class="keyword">this</span>);
+    }
+}
+
+<span class="comment">// --- ConcreteVisitor #1: compute area ---</span>
+<span class="keyword">class</span> <span class="type">AreaVisitor</span> <span class="keyword">implements</span> <span class="type">ShapeVisitor</span> {
+    <span class="keyword">public double</span> <span class="fn">visitCircle</span>(<span class="type">Circle</span> c) {
+        <span class="keyword">return</span> <span class="type">Math</span>.PI * c.radius * c.radius;
+    }
+    <span class="keyword">public double</span> <span class="fn">visitRectangle</span>(<span class="type">Rectangle</span> r) {
+        <span class="keyword">return</span> r.w * r.h;
+    }
+}
+
+<span class="comment">// --- ConcreteVisitor #2: export to text (a NEW operation,</span>
+<span class="comment">//     added WITHOUT editing Circle or Rectangle) ---</span>
+<span class="keyword">class</span> <span class="type">ExportVisitor</span> <span class="keyword">implements</span> <span class="type">ShapeVisitor</span> {
+    <span class="type">StringBuilder</span> out = <span class="keyword">new</span> <span class="type">StringBuilder</span>();
+    <span class="keyword">public double</span> <span class="fn">visitCircle</span>(<span class="type">Circle</span> c) {
+        out.<span class="fn">append</span>(<span class="string">"&lt;circle r=\""</span> + c.radius + <span class="string">"\"/&gt;\n"</span>);
+        <span class="keyword">return</span> <span class="number">0</span>;
+    }
+    <span class="keyword">public double</span> <span class="fn">visitRectangle</span>(<span class="type">Rectangle</span> r) {
+        out.<span class="fn">append</span>(<span class="string">"&lt;rect w=\""</span> + r.w + <span class="string">"\" h=\""</span> + r.h + <span class="string">"\"/&gt;\n"</span>);
+        <span class="keyword">return</span> <span class="number">0</span>;
+    }
+}
+
+<span class="comment">// --- Usage: one structure, many operations ---</span>
+<span class="type">List</span>&lt;<span class="type">Shape</span>&gt; shapes = <span class="type">List</span>.<span class="fn">of</span>(<span class="keyword">new</span> <span class="type">Circle</span>(<span class="number">2</span>), <span class="keyword">new</span> <span class="type">Rectangle</span>(<span class="number">3</span>, <span class="number">4</span>));
+
+<span class="type">AreaVisitor</span> area = <span class="keyword">new</span> <span class="type">AreaVisitor</span>();
+<span class="keyword">double</span> total = <span class="number">0</span>;
+<span class="keyword">for</span> (<span class="type">Shape</span> s : shapes) total += s.<span class="fn">accept</span>(area);  <span class="comment">// 1st dispatch</span>
+<span class="type">System</span>.out.<span class="fn">println</span>(<span class="string">"Total area: "</span> + total);
+
+<span class="type">ExportVisitor</span> exp = <span class="keyword">new</span> <span class="type">ExportVisitor</span>();
+<span class="keyword">for</span> (<span class="type">Shape</span> s : shapes) s.<span class="fn">accept</span>(exp);
+<span class="type">System</span>.out.<span class="fn">print</span>(exp.out);
+</pre>
+            </div>
+            <div id="pyCode" class="code-content">
+<pre><span class="keyword">from</span> abc <span class="keyword">import</span> ABC, abstractmethod
+<span class="keyword">import</span> math
+
+<span class="comment"># --- Element interface: the single accept() hook ---</span>
+<span class="keyword">class</span> <span class="type">Shape</span>(ABC):
+    @abstractmethod
+    <span class="keyword">def</span> <span class="fn">accept</span>(self, visitor):
+        ...
+
+<span class="comment"># --- Concrete elements: accept() bounces to the right visit method ---</span>
+<span class="keyword">class</span> <span class="type">Circle</span>(<span class="type">Shape</span>):
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, radius):
+        self.radius = radius
+    <span class="keyword">def</span> <span class="fn">accept</span>(self, visitor):
+        <span class="keyword">return</span> visitor.<span class="fn">visit_circle</span>(self)   <span class="comment"># 2nd dispatch</span>
+
+<span class="keyword">class</span> <span class="type">Rectangle</span>(<span class="type">Shape</span>):
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, w, h):
+        self.w, self.h = w, h
+    <span class="keyword">def</span> <span class="fn">accept</span>(self, visitor):
+        <span class="keyword">return</span> visitor.<span class="fn">visit_rectangle</span>(self)
+
+<span class="comment"># --- Visitor interface ---</span>
+<span class="keyword">class</span> <span class="type">ShapeVisitor</span>(ABC):
+    @abstractmethod
+    <span class="keyword">def</span> <span class="fn">visit_circle</span>(self, c): ...
+    @abstractmethod
+    <span class="keyword">def</span> <span class="fn">visit_rectangle</span>(self, r): ...
+
+<span class="comment"># --- ConcreteVisitor #1: compute area ---</span>
+<span class="keyword">class</span> <span class="type">AreaVisitor</span>(<span class="type">ShapeVisitor</span>):
+    <span class="keyword">def</span> <span class="fn">visit_circle</span>(self, c):
+        <span class="keyword">return</span> math.pi * c.radius ** <span class="number">2</span>
+    <span class="keyword">def</span> <span class="fn">visit_rectangle</span>(self, r):
+        <span class="keyword">return</span> r.w * r.h
+
+<span class="comment"># --- ConcreteVisitor #2: export to text (NEW op, shapes untouched) ---</span>
+<span class="keyword">class</span> <span class="type">ExportVisitor</span>(<span class="type">ShapeVisitor</span>):
+    <span class="keyword">def</span> <span class="fn">visit_circle</span>(self, c):
+        <span class="keyword">return</span> <span class="string">f'&lt;circle r="{c.radius}"/&gt;'</span>
+    <span class="keyword">def</span> <span class="fn">visit_rectangle</span>(self, r):
+        <span class="keyword">return</span> <span class="string">f'&lt;rect w="{r.w}" h="{r.h}"/&gt;'</span>
+
+<span class="comment"># --- Usage ---</span>
+shapes = [<span class="type">Circle</span>(<span class="number">2</span>), <span class="type">Rectangle</span>(<span class="number">3</span>, <span class="number">4</span>)]
+
+area = <span class="type">AreaVisitor</span>()
+<span class="fn">print</span>(<span class="string">"Total area:"</span>, <span class="fn">sum</span>(s.<span class="fn">accept</span>(area) <span class="keyword">for</span> s <span class="keyword">in</span> shapes))
+
+exp = <span class="type">ExportVisitor</span>()
+<span class="keyword">for</span> s <span class="keyword">in</span> shapes:
+    <span class="fn">print</span>(s.<span class="fn">accept</span>(exp))
+
+
+<span class="comment"># --- Lighter Pythonic alternative: functools.singledispatch ---</span>
+<span class="comment"># Python can dispatch on the argument type directly, so you often</span>
+<span class="comment"># skip accept()/double dispatch entirely:</span>
+<span class="keyword">from</span> functools <span class="keyword">import</span> singledispatch
+
+@singledispatch
+<span class="keyword">def</span> <span class="fn">area</span>(shape):
+    <span class="keyword">raise</span> <span class="type">NotImplementedError</span>(shape)
+
+@area.register
+<span class="keyword">def</span> _(shape: <span class="type">Circle</span>):
+    <span class="keyword">return</span> math.pi * shape.radius ** <span class="number">2</span>
+
+@area.register
+<span class="keyword">def</span> _(shape: <span class="type">Rectangle</span>):
+    <span class="keyword">return</span> shape.w * shape.h
+
+<span class="fn">print</span>(<span class="fn">area</span>(<span class="type">Circle</span>(<span class="number">2</span>)))   <span class="comment"># dispatches on the runtime type</span>
+</pre>
+            </div>
+        </div>
+
+        <div class="note">
+            <strong>Tip:</strong> The phrase that wins interview points is <em>"double dispatch via the <code>accept</code> callback."</em> Be ready to explain that <code>accept</code> exists purely to recover the element's concrete type so the correct <code>visit</code> overload can be chosen. In Python, mention that <code>functools.singledispatch</code> (or <code>singledispatchmethod</code>) gives you single-dispatch on the argument type for free — a lighter alternative that avoids writing <code>accept</code> on every class.
+        </div>
+
+        <h2>When to Use It</h2>
+        <ul>
+            <li>You have a <strong>stable object structure</strong> (the element types rarely change) but you keep adding <strong>new operations</strong> over it.</li>
+            <li>You want to keep <strong>unrelated behaviors out of the element classes</strong> — e.g. pricing, export, and rendering each live in their own visitor.</li>
+            <li>You need to accumulate state while traversing a structure (a tree of AST nodes, a file-system hierarchy, a document model) and produce a single result.</li>
+        </ul>
+
+        <h2>The Big Trade-off</h2>
+        <p>Visitor makes one direction easy and the opposite direction hard — the reverse of most object-oriented designs:</p>
+        <ul>
+            <li><strong>Adding a new operation is easy</strong> — write one new visitor class, touch nothing else.</li>
+            <li><strong>Adding a new element type is hard</strong> — you must add a <code>visit</code> method to the visitor interface <em>and every existing concrete visitor</em>. A new <code>Triangle</code> forces edits to <code>AreaVisitor</code>, <code>ExportVisitor</code>, and any others.</li>
+        </ul>
+        <p>So reach for Visitor when your <em>types</em> are stable and your <em>operations</em> grow. If it is the other way around — operations are fixed but you add types constantly — plain polymorphism (a method on each class) is the better fit.</p>
+
+        <h2>Trade-offs</h2>
+        <div class="compare">
+            <div class="pros">
+                <h3>✓ Pros</h3>
+                <ul>
+                    <li>Add new operations without changing element classes (Open/Closed).</li>
+                    <li>Related behavior is gathered into one visitor, not scattered.</li>
+                    <li>A visitor can accumulate state across a whole traversal.</li>
+                </ul>
+            </div>
+            <div class="cons">
+                <h3>✗ Cons</h3>
+                <ul>
+                    <li>Adding a new element type forces changes to every visitor.</li>
+                    <li>The <code>accept</code> boilerplate adds indirection that confuses newcomers.</li>
+                    <li>Visitors may need access to element internals, breaking encapsulation.</li>
+                    <li>Overkill for small or unstable hierarchies.</li>
+                </ul>
+            </div>
+        </div>
+
+        <h2>Related Patterns</h2>
+        <p>Visitor is frequently applied to a <a href="../structural/composite.html" style="color:#0d9488">Composite</a> tree to run an operation over the whole hierarchy. An <a href="iterator.html" style="color:#0d9488">Iterator</a> often supplies the elements that a visitor then processes. And like <a href="../behavioral/strategy.html" style="color:#0d9488">Strategy</a>, a Visitor encapsulates an algorithm in its own object — the difference is that Strategy swaps one algorithm for one context, while Visitor applies one algorithm across many element types.</p>
+    </div>
+
+    <div class="footer">
+        <p>Low-Level Design · <span>Visitor Pattern</span> · Java &amp; Python · Interactive Learning</p>
+    </div>
+
+    <script>
+        function showCode(btn, id) {
+            const container = btn.closest('.code-container');
+            container.querySelectorAll('.code-tab').forEach(t => t.classList.remove('active'));
+            container.querySelectorAll('.code-content').forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById(id).classList.add('active');
+        }
+
+    </script>
+</body>
+</html>

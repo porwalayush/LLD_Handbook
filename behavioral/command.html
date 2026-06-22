@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Command Pattern — LLD Guide</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8fafc; min-height: 100vh; color: #1e293b; -webkit-font-smoothing: antialiased; }
+        .container { max-width: 880px; margin: 0 auto; padding: 40px 24px 80px; }
+        .back-link { display: inline-flex; align-items: center; gap: 6px; color: #0d9488; text-decoration: none; font-size: 0.9em; font-weight: 500; margin-bottom: 28px; padding: 6px 12px; border-radius: 8px; transition: background 0.15s ease; }
+        .back-link:hover { background: #f0fdfa; }
+
+        .pattern-badge { display: inline-block; padding: 5px 14px; border-radius: 100px; font-size: 0.72em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; background: #ccfbf1; color: #0d9488; margin-bottom: 16px; }
+        h1 { font-size: 2.4em; font-weight: 800; color: #0f172a; margin-bottom: 12px; letter-spacing: -0.03em; line-height: 1.2; }
+        .subtitle { font-size: 1.1em; color: #64748b; line-height: 1.7; margin-bottom: 8px; }
+        h2 { font-size: 1.35em; font-weight: 700; color: #0f172a; margin: 40px 0 16px; letter-spacing: -0.02em; }
+        h3 { font-size: 1.1em; font-weight: 600; color: #1e293b; margin: 24px 0 10px; }
+        p, li { line-height: 1.8; color: #475569; margin-bottom: 10px; font-size: 0.95em; }
+        ul, ol { padding-left: 20px; margin-bottom: 15px; }
+        strong { color: #1e293b; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 0.85em; color: #0d9488; }
+
+        .analogy { background: linear-gradient(135deg, #f0fdfa, #fffbeb); border: 1px solid #ccfbf1; border-radius: 16px; padding: 24px 28px; margin: 24px 0; }
+        .analogy .tag { font-size: 0.78em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #0d9488; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+        .analogy p:last-child { margin-bottom: 0; }
+
+        .code-container { margin: 24px 0; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .code-tabs { display: flex; background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0 8px; }
+        .code-tab { padding: 10px 18px; cursor: pointer; border: none; background: transparent; color: #64748b; font-size: 0.85em; font-weight: 500; font-family: 'Inter', sans-serif; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.15s ease; }
+        .code-tab:hover { color: #0d9488; }
+        .code-tab.active { color: #0d9488; border-bottom-color: #0d9488; background: white; }
+        .code-content { display: none; background: white; padding: 24px; overflow-x: auto; }
+        .code-content.active { display: block; }
+        .code-content pre { color: #1e293b; font-family: 'JetBrains Mono', monospace; font-size: 0.82em; line-height: 1.75; white-space: pre; }
+        .keyword { color: #0d9488; } .type { color: #2563eb; } .string { color: #16a34a; }
+        .comment { color: #94a3b8; font-style: italic; } .number { color: #d97706; }
+        .preproc { color: #7c3aed; } .fn { color: #db2777; }
+
+        .note { background: #f0fdfa; border-left: 4px solid #0d9488; padding: 16px 20px; margin: 20px 0; border-radius: 0 12px 12px 0; }
+        .note ul, .note p { margin-bottom: 0; } .note li:last-child { margin-bottom: 0; }
+        .warn { background: #fef2f2; border-left: 4px solid #dc2626; padding: 16px 20px; margin: 20px 0; border-radius: 0 12px 12px 0; }
+        .warn ul, .warn p { margin-bottom: 0; } .warn li:last-child { margin-bottom: 0; }
+
+        .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0; }
+        .compare > div { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .pros h3 { color: #16a34a; margin-top: 0; } .cons h3 { color: #dc2626; margin-top: 0; }
+        .compare ul { margin-bottom: 0; }
+
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; }
+        th, td { padding: 12px 16px; border: 1px solid #e2e8f0; text-align: left; font-size: 0.9em; }
+        th { background: #f8fafc; color: #0f172a; font-weight: 600; }
+        tr:hover { background: #f8fafc; }
+
+        /* Interactive playground */
+        .playground { background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 24px; margin: 24px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .pg-title { font-weight: 700; color: #0f172a; font-size: 0.95em; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+        .pg-sub { color: #64748b; font-size: 0.82em; margin-bottom: 18px; }
+        .pg-stage { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: center; min-height: 120px; padding: 16px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0; }
+        .obj-box { width: 110px; padding: 14px 10px; border-radius: 12px; text-align: center; border: 2px solid #cbd5e1; background: white; transition: all 0.3s ease; }
+        .obj-box .lbl { font-size: 0.72em; color: #64748b; font-weight: 600; }
+        .obj-box .id { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 0.92em; color: #0f172a; margin-top: 4px; word-break: break-all; }
+        .obj-box.same { border-color: #0d9488; background: #f0fdfa; box-shadow: 0 0 0 3px rgba(13,148,136,0.12); }
+        .obj-box.fresh { border-color: #d97706; background: #fffbeb; box-shadow: 0 0 0 3px rgba(217,119,6,0.12); }
+        .pg-status { margin-top: 14px; padding: 12px 14px; background: #f8fafc; border-radius: 8px; font-size: 0.85em; color: #475569; min-height: 44px; display: flex; align-items: center; border: 1px solid #e2e8f0; line-height: 1.5; }
+        .pg-controls { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; align-items: center; }
+        .btn { padding: 8px 16px; border: none; border-radius: 8px; font-size: 0.85em; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.15s ease; }
+        .btn-primary { background: #0d9488; color: white; }
+        .btn-primary:hover { background: #0f766e; transform: translateY(-1px); }
+        .btn-ghost { background: #f1f5f9; color: #475569; }
+        .btn-ghost:hover { background: #e2e8f0; }
+
+        .footer { text-align: center; padding: 32px 20px; color: #94a3b8; font-size: 0.85em; border-top: 1px solid #e2e8f0; background: #f8fafc; }
+        .footer span { color: #0d9488; }
+
+        @media (max-width: 600px) { .compare { grid-template-columns: 1fr; } h1 { font-size: 1.8em; } .container { padding: 20px 16px 60px; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="../index.html" class="back-link">&larr; Back to LLD Topics</a>
+        <div class="pattern-badge">Behavioral Pattern</div>
+        <h1>Command</h1>
+        <p class="subtitle">Encapsulate a request as an <strong>object</strong>, letting you parameterize, queue, log, and <strong>undo</strong> operations.</p>
+
+        <div class="analogy">
+            <div class="tag">🍽️ Real-World Analogy</div>
+            <p>Think of a <strong>restaurant order ticket</strong>. When you order, the waiter doesn't run into the kitchen and start cooking. They write your request on a <em>ticket</em> — an object that fully describes what to make — and hand it to the kitchen. The waiter (who takes the request) is completely decoupled from the chef (who fulfills it). The ticket can be queued on a rail, logged, re-fired, or even cancelled.</p>
+            <p>A <strong>TV remote</strong> is the same idea: each button is bound to a command. The "volume up" button doesn't know <em>how</em> the TV raises volume — it just holds a command object that, when pressed, tells the TV (the receiver) to act.</p>
+        </div>
+
+        <h2>The Problem It Solves</h2>
+        <p>Sometimes you need to issue a request without knowing — or caring — exactly which object will handle it or how. You want to <strong>decouple the object that invokes an operation (the invoker) from the object that knows how to perform it (the receiver)</strong>.</p>
+        <p>Doing this opens up powerful capabilities that are awkward with plain method calls:</p>
+        <ul>
+            <li><strong>Undo / redo</strong> — if a request is an object, it can remember how to reverse itself.</li>
+            <li><strong>Queuing &amp; scheduling</strong> — store requests in a list and run them later, in another thread, or after a delay.</li>
+            <li><strong>Logging</strong> — persist commands to replay after a crash.</li>
+            <li><strong>Macros</strong> — bundle several commands into one composite command.</li>
+        </ul>
+
+        <h2>The Roles</h2>
+        <ul>
+            <li><strong>Command</strong> — an interface declaring <code>execute()</code> (and usually <code>undo()</code>).</li>
+            <li><strong>ConcreteCommand</strong> — binds a <em>receiver</em> to an <em>action</em>; its <code>execute()</code> calls the receiver.</li>
+            <li><strong>Receiver</strong> — the object that knows how to do the real work (the TV, the document, the light).</li>
+            <li><strong>Invoker</strong> — holds a command and triggers it (the remote button, the menu item). It never talks to the receiver directly.</li>
+            <li><strong>Client</strong> — creates concrete commands and wires them to receivers.</li>
+        </ul>
+
+        <h2>Implementation</h2>
+        <p>Below, a text editor exposes commands like "type text" and "delete". Each command knows how to <code>execute()</code> and <code>undo()</code> itself. The editor (invoker) keeps an <strong>undo stack</strong> of executed commands so it can roll them back one by one.</p>
+
+        <div class="code-container">
+            <div class="code-tabs">
+                <button class="code-tab active" onclick="showCode(this, 'javaCode')">Java</button>
+                <button class="code-tab" onclick="showCode(this, 'pyCode')">Python</button>
+            </div>
+            <div id="javaCode" class="code-content active">
+<pre><span class="keyword">import</span> java.util.*;
+
+<span class="comment">// --- Command interface ---</span>
+<span class="keyword">interface</span> <span class="type">Command</span> {
+    <span class="keyword">void</span> <span class="fn">execute</span>();
+    <span class="keyword">void</span> <span class="fn">undo</span>();
+}
+
+<span class="comment">// --- Receiver: knows how to do the real work ---</span>
+<span class="keyword">class</span> <span class="type">Document</span> {
+    <span class="keyword">private final</span> <span class="type">StringBuilder</span> text = <span class="keyword">new</span> <span class="type">StringBuilder</span>();
+    <span class="keyword">public void</span> <span class="fn">append</span>(<span class="type">String</span> s) { text.<span class="fn">append</span>(s); }
+    <span class="keyword">public void</span> <span class="fn">deleteLast</span>(<span class="keyword">int</span> n) { text.<span class="fn">delete</span>(text.<span class="fn">length</span>() - n, text.<span class="fn">length</span>()); }
+    <span class="keyword">public</span> <span class="type">String</span> <span class="fn">getText</span>() { <span class="keyword">return</span> text.<span class="fn">toString</span>(); }
+}
+
+<span class="comment">// --- ConcreteCommand: binds receiver + action + undo data ---</span>
+<span class="keyword">class</span> <span class="type">TypeCommand</span> <span class="keyword">implements</span> <span class="type">Command</span> {
+    <span class="keyword">private final</span> <span class="type">Document</span> doc;
+    <span class="keyword">private final</span> <span class="type">String</span> textToAdd;
+
+    <span class="fn">TypeCommand</span>(<span class="type">Document</span> doc, <span class="type">String</span> textToAdd) {
+        <span class="keyword">this</span>.doc = doc;
+        <span class="keyword">this</span>.textToAdd = textToAdd;
+    }
+    <span class="keyword">public void</span> <span class="fn">execute</span>() { doc.<span class="fn">append</span>(textToAdd); }
+    <span class="keyword">public void</span> <span class="fn">undo</span>()    { doc.<span class="fn">deleteLast</span>(textToAdd.<span class="fn">length</span>()); }
+}
+
+<span class="comment">// --- Invoker: triggers commands and keeps an undo stack ---</span>
+<span class="keyword">class</span> <span class="type">Editor</span> {
+    <span class="keyword">private final</span> <span class="type">Deque</span>&lt;<span class="type">Command</span>&gt; history = <span class="keyword">new</span> <span class="type">ArrayDeque</span>&lt;&gt;();
+
+    <span class="keyword">public void</span> <span class="fn">run</span>(<span class="type">Command</span> cmd) {
+        cmd.<span class="fn">execute</span>();
+        history.<span class="fn">push</span>(cmd);          <span class="comment">// remember it so we can undo</span>
+    }
+    <span class="keyword">public void</span> <span class="fn">undo</span>() {
+        <span class="keyword">if</span> (!history.<span class="fn">isEmpty</span>()) history.<span class="fn">pop</span>().<span class="fn">undo</span>();
+    }
+}
+
+<span class="comment">// --- Client: wires it all together ---</span>
+<span class="type">Document</span> doc = <span class="keyword">new</span> <span class="type">Document</span>();
+<span class="type">Editor</span> editor = <span class="keyword">new</span> <span class="type">Editor</span>();
+
+editor.<span class="fn">run</span>(<span class="keyword">new</span> <span class="type">TypeCommand</span>(doc, <span class="string">"Hello"</span>));
+editor.<span class="fn">run</span>(<span class="keyword">new</span> <span class="type">TypeCommand</span>(doc, <span class="string">", World"</span>));
+<span class="comment">// doc -> "Hello, World"</span>
+editor.<span class="fn">undo</span>();                  <span class="comment">// undoes last command</span>
+<span class="comment">// doc -> "Hello"</span>
+</pre>
+            </div>
+            <div id="pyCode" class="code-content">
+<pre><span class="keyword">from</span> abc <span class="keyword">import</span> ABC, abstractmethod
+
+<span class="comment"># --- Command interface ---</span>
+<span class="keyword">class</span> <span class="type">Command</span>(ABC):
+    <span class="decorator">@abstractmethod</span>
+    <span class="keyword">def</span> <span class="fn">execute</span>(self): ...
+    <span class="decorator">@abstractmethod</span>
+    <span class="keyword">def</span> <span class="fn">undo</span>(self): ...
+
+
+<span class="comment"># --- Receiver: knows how to do the real work ---</span>
+<span class="keyword">class</span> <span class="type">Document</span>:
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self):
+        self.text = <span class="string">""</span>
+
+    <span class="keyword">def</span> <span class="fn">append</span>(self, s):
+        self.text += s
+
+    <span class="keyword">def</span> <span class="fn">delete_last</span>(self, n):
+        self.text = self.text[:-n]
+
+
+<span class="comment"># --- ConcreteCommand: binds receiver + action + undo data ---</span>
+<span class="keyword">class</span> <span class="type">TypeCommand</span>(<span class="type">Command</span>):
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, doc, text_to_add):
+        self.doc = doc
+        self.text_to_add = text_to_add
+
+    <span class="keyword">def</span> <span class="fn">execute</span>(self):
+        self.doc.<span class="fn">append</span>(self.text_to_add)
+
+    <span class="keyword">def</span> <span class="fn">undo</span>(self):
+        self.doc.<span class="fn">delete_last</span>(<span class="fn">len</span>(self.text_to_add))
+
+
+<span class="comment"># --- Invoker: triggers commands and keeps an undo stack ---</span>
+<span class="keyword">class</span> <span class="type">Editor</span>:
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self):
+        self.history = []          <span class="comment"># used as a stack</span>
+
+    <span class="keyword">def</span> <span class="fn">run</span>(self, cmd):
+        cmd.<span class="fn">execute</span>()
+        self.history.<span class="fn">append</span>(cmd)   <span class="comment"># remember it so we can undo</span>
+
+    <span class="keyword">def</span> <span class="fn">undo</span>(self):
+        <span class="keyword">if</span> self.history:
+            self.history.<span class="fn">pop</span>().<span class="fn">undo</span>()
+
+
+<span class="comment"># --- Client: wires it all together ---</span>
+doc = <span class="type">Document</span>()
+editor = <span class="type">Editor</span>()
+
+editor.<span class="fn">run</span>(<span class="type">TypeCommand</span>(doc, <span class="string">"Hello"</span>))
+editor.<span class="fn">run</span>(<span class="type">TypeCommand</span>(doc, <span class="string">", World"</span>))
+<span class="fn">print</span>(doc.text)        <span class="comment"># "Hello, World"</span>
+editor.<span class="fn">undo</span>()            <span class="comment"># undoes last command</span>
+<span class="fn">print</span>(doc.text)        <span class="comment"># "Hello"</span>
+</pre>
+            </div>
+        </div>
+
+        <div class="note">
+            <strong>The magic is the undo stack.</strong> Because each request is a self-contained object that remembers both how to do <em>and</em> undo its work, the invoker can keep a history and reverse operations in order. Add a second "redo" stack and you get full redo support — exactly how editors, IDEs, and design tools implement Ctrl+Z / Ctrl+Y.
+        </div>
+
+        <h2>When to Use It</h2>
+        <ul>
+            <li>You need <strong>undo / redo</strong>, or want operations you can replay or roll back.</li>
+            <li>You want to <strong>queue, schedule, or run requests later</strong> (task queues, job runners, thread pools).</li>
+            <li>You want to <strong>log requests</strong> so they can be re-executed after a failure (transactional behavior).</li>
+            <li>You want to parameterize objects (buttons, menu items, shortcuts) with the action they perform.</li>
+            <li>You need <strong>macros</strong> — compose several commands into one.</li>
+        </ul>
+
+        <h2>Trade-offs</h2>
+        <div class="compare">
+            <div class="pros">
+                <h3>✓ Pros</h3>
+                <ul>
+                    <li>Decouples the invoker from the receiver (Single Responsibility).</li>
+                    <li>Makes undo / redo, logging, and queuing straightforward.</li>
+                    <li>Easy to add new commands without touching existing code (Open/Closed).</li>
+                    <li>Commands can be composed into macros.</li>
+                </ul>
+            </div>
+            <div class="cons">
+                <h3>✗ Cons</h3>
+                <ul>
+                    <li>Adds a lot of small classes — one per action.</li>
+                    <li>Can feel like over-engineering for trivial, one-off calls.</li>
+                    <li>Storing undo state for complex operations can be tricky and memory-heavy.</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="note">
+            <strong>Interview tip:</strong> Command shines whenever you hear "<em>undo/redo</em>", "<em>task queue</em>", or "<em>transactional / replayable operations</em>". Mention that the key insight is turning a method call into a <strong>first-class object</strong> — once a request is data, you can store it, log it, schedule it, and reverse it.
+        </div>
+
+        <h2>Related Patterns</h2>
+        <p>Command often stores state to support undo, where <a href="../behavioral/memento.html" style="color:#0d9488">Memento</a> can hold the snapshot to restore. <a href="observer.html" style="color:#0d9488">Observer</a> also decouples senders from receivers but broadcasts events rather than encapsulating a single request. A command can hold a <a href="strategy.html" style="color:#0d9488">Strategy</a> object to choose <em>how</em> its action is performed.</p>
+    </div>
+
+    <div class="footer">
+        <p>Low-Level Design · <span>Command Pattern</span> · Java &amp; Python · Interactive Learning</p>
+    </div>
+
+    <script>
+        function showCode(btn, id) {
+            const container = btn.closest('.code-container');
+            container.querySelectorAll('.code-tab').forEach(t => t.classList.remove('active'));
+            container.querySelectorAll('.code-content').forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById(id).classList.add('active');
+        }
+    </script>
+</body>
+</html>

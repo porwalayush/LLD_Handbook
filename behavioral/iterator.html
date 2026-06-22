@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iterator Pattern — LLD Guide</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8fafc; min-height: 100vh; color: #1e293b; -webkit-font-smoothing: antialiased; }
+        .container { max-width: 880px; margin: 0 auto; padding: 40px 24px 80px; }
+        .back-link { display: inline-flex; align-items: center; gap: 6px; color: #0d9488; text-decoration: none; font-size: 0.9em; font-weight: 500; margin-bottom: 28px; padding: 6px 12px; border-radius: 8px; transition: background 0.15s ease; }
+        .back-link:hover { background: #f0fdfa; }
+
+        .pattern-badge { display: inline-block; padding: 5px 14px; border-radius: 100px; font-size: 0.72em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; background: #ccfbf1; color: #0d9488; margin-bottom: 16px; }
+        h1 { font-size: 2.4em; font-weight: 800; color: #0f172a; margin-bottom: 12px; letter-spacing: -0.03em; line-height: 1.2; }
+        .subtitle { font-size: 1.1em; color: #64748b; line-height: 1.7; margin-bottom: 8px; }
+        h2 { font-size: 1.35em; font-weight: 700; color: #0f172a; margin: 40px 0 16px; letter-spacing: -0.02em; }
+        h3 { font-size: 1.1em; font-weight: 600; color: #1e293b; margin: 24px 0 10px; }
+        p, li { line-height: 1.8; color: #475569; margin-bottom: 10px; font-size: 0.95em; }
+        ul, ol { padding-left: 20px; margin-bottom: 15px; }
+        strong { color: #1e293b; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 0.85em; color: #0d9488; }
+
+        .analogy { background: linear-gradient(135deg, #f0fdfa, #fffbeb); border: 1px solid #ccfbf1; border-radius: 16px; padding: 24px 28px; margin: 24px 0; }
+        .analogy .tag { font-size: 0.78em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #0d9488; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+        .analogy p:last-child { margin-bottom: 0; }
+
+        .code-container { margin: 24px 0; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .code-tabs { display: flex; background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0 8px; }
+        .code-tab { padding: 10px 18px; cursor: pointer; border: none; background: transparent; color: #64748b; font-size: 0.85em; font-weight: 500; font-family: 'Inter', sans-serif; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.15s ease; }
+        .code-tab:hover { color: #0d9488; }
+        .code-tab.active { color: #0d9488; border-bottom-color: #0d9488; background: white; }
+        .code-content { display: none; background: white; padding: 24px; overflow-x: auto; }
+        .code-content.active { display: block; }
+        .code-content pre { color: #1e293b; font-family: 'JetBrains Mono', monospace; font-size: 0.82em; line-height: 1.75; white-space: pre; }
+        .keyword { color: #0d9488; } .type { color: #2563eb; } .string { color: #16a34a; }
+        .comment { color: #94a3b8; font-style: italic; } .number { color: #d97706; }
+        .preproc { color: #7c3aed; } .fn { color: #db2777; }
+
+        .note { background: #f0fdfa; border-left: 4px solid #0d9488; padding: 16px 20px; margin: 20px 0; border-radius: 0 12px 12px 0; }
+        .note ul, .note p { margin-bottom: 0; } .note li:last-child { margin-bottom: 0; }
+        .warn { background: #fef2f2; border-left: 4px solid #dc2626; padding: 16px 20px; margin: 20px 0; border-radius: 0 12px 12px 0; }
+        .warn ul, .warn p { margin-bottom: 0; } .warn li:last-child { margin-bottom: 0; }
+
+        .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0; }
+        .compare > div { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .pros h3 { color: #16a34a; margin-top: 0; } .cons h3 { color: #dc2626; margin-top: 0; }
+        .compare ul { margin-bottom: 0; }
+
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; }
+        th, td { padding: 12px 16px; border: 1px solid #e2e8f0; text-align: left; font-size: 0.9em; }
+        th { background: #f8fafc; color: #0f172a; font-weight: 600; }
+        tr:hover { background: #f8fafc; }
+
+        /* Interactive playground */
+        .playground { background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 24px; margin: 24px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .pg-title { font-weight: 700; color: #0f172a; font-size: 0.95em; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+        .pg-sub { color: #64748b; font-size: 0.82em; margin-bottom: 18px; }
+        .pg-stage { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: center; min-height: 120px; padding: 16px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0; }
+        .obj-box { width: 110px; padding: 14px 10px; border-radius: 12px; text-align: center; border: 2px solid #cbd5e1; background: white; transition: all 0.3s ease; }
+        .obj-box .lbl { font-size: 0.72em; color: #64748b; font-weight: 600; }
+        .obj-box .id { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 0.92em; color: #0f172a; margin-top: 4px; word-break: break-all; }
+        .obj-box.same { border-color: #0d9488; background: #f0fdfa; box-shadow: 0 0 0 3px rgba(13,148,136,0.12); }
+        .obj-box.fresh { border-color: #d97706; background: #fffbeb; box-shadow: 0 0 0 3px rgba(217,119,6,0.12); }
+        .pg-status { margin-top: 14px; padding: 12px 14px; background: #f8fafc; border-radius: 8px; font-size: 0.85em; color: #475569; min-height: 44px; display: flex; align-items: center; border: 1px solid #e2e8f0; line-height: 1.5; }
+        .pg-controls { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; align-items: center; }
+        .btn { padding: 8px 16px; border: none; border-radius: 8px; font-size: 0.85em; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.15s ease; }
+        .btn-primary { background: #0d9488; color: white; }
+        .btn-primary:hover { background: #0f766e; transform: translateY(-1px); }
+        .btn-ghost { background: #f1f5f9; color: #475569; }
+        .btn-ghost:hover { background: #e2e8f0; }
+
+        .footer { text-align: center; padding: 32px 20px; color: #94a3b8; font-size: 0.85em; border-top: 1px solid #e2e8f0; background: #f8fafc; }
+        .footer span { color: #0d9488; }
+
+        @media (max-width: 600px) { .compare { grid-template-columns: 1fr; } h1 { font-size: 1.8em; } .container { padding: 20px 16px 60px; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="../index.html" class="back-link">&larr; Back to LLD Topics</a>
+        <div class="pattern-badge">Behavioral Pattern</div>
+        <h1>Iterator</h1>
+        <p class="subtitle">Provide <strong>sequential access</strong> to the elements of a collection without exposing its underlying representation.</p>
+
+        <div class="analogy">
+            <div class="tag">📺 Real-World Analogy</div>
+            <p>Think of the <strong>channel up / channel down</strong> buttons on a TV remote. You step through channels one at a time without ever knowing <em>how</em> the TV stores them — an array, a sorted list, a tuner frequency table, who cares? The remote gives you a uniform "next" and "previous" no matter what's behind the scenes.</p>
+            <p>A music <strong>playlist's next / previous</strong> works the same way. You traverse songs in order without touching the data structure holding them. That clean "give me the next item" handle <em>is</em> the Iterator.</p>
+        </div>
+
+        <h2>The Problem It Solves</h2>
+        <p>Collections come in many shapes — arrays, linked lists, trees, hash tables. Each stores elements differently. If client code had to know those internals to walk the elements, it would be tightly coupled and break whenever the structure changed.</p>
+        <p>The Iterator pattern pulls traversal logic out into a separate object. This lets you:</p>
+        <ul>
+            <li><strong>Traverse different collections uniformly</strong> with the same <code>hasNext()</code> / <code>next()</code> interface.</li>
+            <li><strong>Hide the internal representation</strong> — clients don't see arrays or nodes.</li>
+            <li>Support <strong>multiple simultaneous traversals</strong> — each iterator keeps its own position.</li>
+        </ul>
+
+        <h2>The Roles</h2>
+        <ul>
+            <li><strong>Iterator</strong> — interface declaring <code>hasNext()</code> and <code>next()</code>.</li>
+            <li><strong>ConcreteIterator</strong> — tracks the current position while walking a specific collection.</li>
+            <li><strong>Aggregate / Collection</strong> — interface declaring <code>createIterator()</code>.</li>
+            <li><strong>ConcreteCollection</strong> — returns a concrete iterator over its own data.</li>
+        </ul>
+
+        <h2>Implementation</h2>
+        <p>Below we hand-roll a custom <code>Playlist</code> collection with its own iterator — to <em>see</em> the moving parts — and then show the <strong>language-native</strong> way, which is what you'd actually use in real code.</p>
+
+        <div class="code-container">
+            <div class="code-tabs">
+                <button class="code-tab active" onclick="showCode(this, 'javaCode')">Java</button>
+                <button class="code-tab" onclick="showCode(this, 'pyCode')">Python</button>
+            </div>
+            <div id="javaCode" class="code-content active">
+<pre><span class="keyword">import</span> java.util.*;
+
+<span class="comment">// === The pattern, hand-rolled ===</span>
+<span class="comment">// In Java you implement the built-in Iterable / Iterator interfaces,</span>
+<span class="comment">// which unlocks the enhanced for-each loop for free.</span>
+<span class="keyword">class</span> <span class="type">Playlist</span> <span class="keyword">implements</span> <span class="type">Iterable</span>&lt;<span class="type">String</span>&gt; {
+    <span class="keyword">private final</span> <span class="type">String</span>[] songs;
+    <span class="fn">Playlist</span>(<span class="type">String</span>... songs) { <span class="keyword">this</span>.songs = songs; }
+
+    <span class="comment">// createIterator(): hand back a fresh iterator with its own cursor</span>
+    <span class="keyword">public</span> <span class="type">Iterator</span>&lt;<span class="type">String</span>&gt; <span class="fn">iterator</span>() {
+        <span class="keyword">return new</span> <span class="type">Iterator</span>&lt;&gt;() {
+            <span class="keyword">private int</span> pos = <span class="number">0</span>;                <span class="comment">// each iterator tracks its own position</span>
+            <span class="keyword">public boolean</span> <span class="fn">hasNext</span>() { <span class="keyword">return</span> pos &lt; songs.length; }
+            <span class="keyword">public</span> <span class="type">String</span> <span class="fn">next</span>()     { <span class="keyword">return</span> songs[pos++]; }
+        };
+    }
+}
+
+<span class="comment">// --- Usage: the iterator powers the for-each loop ---</span>
+<span class="type">Playlist</span> playlist = <span class="keyword">new</span> <span class="type">Playlist</span>(<span class="string">"Song A"</span>, <span class="string">"Song B"</span>, <span class="string">"Song C"</span>);
+<span class="keyword">for</span> (<span class="type">String</span> song : playlist) {       <span class="comment">// calls iterator() under the hood</span>
+    <span class="type">System</span>.out.<span class="fn">println</span>(song);
+}
+
+<span class="comment">// === The language-native way (what you actually write) ===</span>
+<span class="comment">// ArrayList already IS an Iterable -- you almost never hand-roll this.</span>
+<span class="type">List</span>&lt;<span class="type">String</span>&gt; channels = <span class="type">List</span>.<span class="fn">of</span>(<span class="string">"News"</span>, <span class="string">"Sports"</span>, <span class="string">"Movies"</span>);
+<span class="keyword">for</span> (<span class="type">String</span> c : channels) {           <span class="comment">// built-in iterator</span>
+    <span class="type">System</span>.out.<span class="fn">println</span>(c);
+}
+<span class="comment">// Or get the iterator explicitly:</span>
+<span class="type">Iterator</span>&lt;<span class="type">String</span>&gt; it = channels.<span class="fn">iterator</span>();
+<span class="keyword">while</span> (it.<span class="fn">hasNext</span>()) <span class="type">System</span>.out.<span class="fn">println</span>(it.<span class="fn">next</span>());
+</pre>
+            </div>
+            <div id="pyCode" class="code-content">
+<pre><span class="comment"># === The pattern, hand-rolled ===</span>
+<span class="comment"># In Python you implement __iter__ and __next__ (the iterator protocol).</span>
+<span class="keyword">class</span> <span class="type">Playlist</span>:
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, *songs):
+        self.songs = songs
+
+    <span class="comment"># __iter__ == createIterator(): return an object with its own cursor</span>
+    <span class="keyword">def</span> <span class="fn">__iter__</span>(self):
+        <span class="keyword">return</span> <span class="type">PlaylistIterator</span>(self.songs)
+
+
+<span class="keyword">class</span> <span class="type">PlaylistIterator</span>:
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, songs):
+        self._songs = songs
+        self._pos = <span class="number">0</span>                  <span class="comment"># each iterator tracks its own position</span>
+
+    <span class="keyword">def</span> <span class="fn">__iter__</span>(self):
+        <span class="keyword">return</span> self
+
+    <span class="keyword">def</span> <span class="fn">__next__</span>(self):
+        <span class="keyword">if</span> self._pos &gt;= <span class="fn">len</span>(self._songs):
+            <span class="keyword">raise</span> <span class="type">StopIteration</span>      <span class="comment"># signals "no more items"</span>
+        item = self._songs[self._pos]
+        self._pos += <span class="number">1</span>
+        <span class="keyword">return</span> item
+
+
+<span class="comment"># --- Usage: the protocol powers the for loop ---</span>
+playlist = <span class="type">Playlist</span>(<span class="string">"Song A"</span>, <span class="string">"Song B"</span>, <span class="string">"Song C"</span>)
+<span class="keyword">for</span> song <span class="keyword">in</span> playlist:               <span class="comment"># calls __iter__ then __next__</span>
+    <span class="fn">print</span>(song)
+
+<span class="comment"># === The language-native way (what you actually write) ===</span>
+<span class="comment"># A generator with yield IS an iterator -- the simplest way by far.</span>
+<span class="keyword">def</span> <span class="fn">channels</span>():
+    <span class="keyword">yield</span> <span class="string">"News"</span>
+    <span class="keyword">yield</span> <span class="string">"Sports"</span>
+    <span class="keyword">yield</span> <span class="string">"Movies"</span>
+
+<span class="keyword">for</span> c <span class="keyword">in</span> <span class="fn">channels</span>():               <span class="comment"># generators are lazy iterators</span>
+    <span class="fn">print</span>(c)
+
+<span class="comment"># And every list/tuple/dict is already iterable:</span>
+<span class="keyword">for</span> c <span class="keyword">in</span> [<span class="string">"News"</span>, <span class="string">"Sports"</span>, <span class="string">"Movies"</span>]:
+    <span class="fn">print</span>(c)
+</pre>
+            </div>
+        </div>
+
+        <div class="note">
+            <strong>You rarely hand-roll this — the pattern is baked into the language.</strong> Java has <code>Iterable</code> / <code>Iterator</code> driving the enhanced <code>for-each</code> loop, and every <code>ArrayList</code>, <code>HashSet</code>, etc. already implements it. Python has the <code>__iter__</code> / <code>__next__</code> protocol driving the <code>for</code> loop, plus <code>yield</code> generators as the dead-simple shortcut. The pattern is the <em>concept</em>; the languages give you the plumbing.
+        </div>
+
+        <h2>When to Use It</h2>
+        <ul>
+            <li>You want to traverse a collection without exposing how it stores elements.</li>
+            <li>You need <strong>multiple independent traversals</strong> over the same collection at once.</li>
+            <li>You want one uniform traversal interface across different collection types.</li>
+            <li>You're building a <strong>custom data structure</strong> (a tree, a graph, a paged result set) and want it to play nicely with the language's loops.</li>
+        </ul>
+
+        <h2>Trade-offs</h2>
+        <div class="compare">
+            <div class="pros">
+                <h3>✓ Pros</h3>
+                <ul>
+                    <li>Decouples traversal from the collection's internals (Single Responsibility).</li>
+                    <li>Same interface works across many collection types.</li>
+                    <li>Supports several simultaneous, independent traversals.</li>
+                    <li>Enables lazy iteration — fetch elements only as needed (generators).</li>
+                </ul>
+            </div>
+            <div class="cons">
+                <h3>✗ Cons</h3>
+                <ul>
+                    <li>Overkill for a simple array you can index directly.</li>
+                    <li>A hand-rolled iterator adds an extra class for little gain.</li>
+                    <li>Modifying a collection mid-iteration can break the iterator (concurrent-modification bugs).</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="note">
+            <strong>Interview tip:</strong> Know the <strong>built-in iterator protocols cold</strong> — Java's <code>Iterable</code>/<code>Iterator</code> + for-each, and Python's <code>__iter__</code>/<code>__next__</code> + <code>yield</code> generators. Interviewers love to see you implement a custom collection that hooks into the native loop, and to hear you say "I'd reach for a generator rather than write an iterator class by hand."
+        </div>
+
+        <h2>Related Patterns</h2>
+        <p><a href="../structural/composite.html" style="color:#0d9488">Composite</a> structures (trees) are commonly walked with an Iterator that hides the recursive traversal. <a href="strategy.html" style="color:#0d9488">Strategy</a> is conceptually close — an iterator is, in a sense, a strategy for traversal. <a href="visitor.html" style="color:#0d9488">Visitor</a> pairs with Iterator when you want to apply an operation to every element you visit.</p>
+    </div>
+
+    <div class="footer">
+        <p>Low-Level Design · <span>Iterator Pattern</span> · Java &amp; Python · Interactive Learning</p>
+    </div>
+
+    <script>
+        function showCode(btn, id) {
+            const container = btn.closest('.code-container');
+            container.querySelectorAll('.code-tab').forEach(t => t.classList.remove('active'));
+            container.querySelectorAll('.code-content').forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById(id).classList.add('active');
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prototype Pattern — LLD Guide</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8fafc; min-height: 100vh; color: #1e293b; -webkit-font-smoothing: antialiased; }
+        .container { max-width: 880px; margin: 0 auto; padding: 40px 24px 80px; }
+        .back-link { display: inline-flex; align-items: center; gap: 6px; color: #0d9488; text-decoration: none; font-size: 0.9em; font-weight: 500; margin-bottom: 28px; padding: 6px 12px; border-radius: 8px; transition: background 0.15s ease; }
+        .back-link:hover { background: #f0fdfa; }
+
+        .pattern-badge { display: inline-block; padding: 5px 14px; border-radius: 100px; font-size: 0.72em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; background: #ccfbf1; color: #0d9488; margin-bottom: 16px; }
+        h1 { font-size: 2.4em; font-weight: 800; color: #0f172a; margin-bottom: 12px; letter-spacing: -0.03em; line-height: 1.2; }
+        .subtitle { font-size: 1.1em; color: #64748b; line-height: 1.7; margin-bottom: 8px; }
+        h2 { font-size: 1.35em; font-weight: 700; color: #0f172a; margin: 40px 0 16px; letter-spacing: -0.02em; }
+        h3 { font-size: 1.1em; font-weight: 600; color: #1e293b; margin: 24px 0 10px; }
+        p, li { line-height: 1.8; color: #475569; margin-bottom: 10px; font-size: 0.95em; }
+        ul, ol { padding-left: 20px; margin-bottom: 15px; }
+        strong { color: #1e293b; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 0.85em; color: #0d9488; }
+
+        .analogy { background: linear-gradient(135deg, #f0fdfa, #fffbeb); border: 1px solid #ccfbf1; border-radius: 16px; padding: 24px 28px; margin: 24px 0; }
+        .analogy .tag { font-size: 0.78em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #0d9488; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+        .analogy p:last-child { margin-bottom: 0; }
+
+        .code-container { margin: 24px 0; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .code-tabs { display: flex; background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0 8px; }
+        .code-tab { padding: 10px 18px; cursor: pointer; border: none; background: transparent; color: #64748b; font-size: 0.85em; font-weight: 500; font-family: 'Inter', sans-serif; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.15s ease; }
+        .code-tab:hover { color: #0d9488; }
+        .code-tab.active { color: #0d9488; border-bottom-color: #0d9488; background: white; }
+        .code-content { display: none; background: white; padding: 24px; overflow-x: auto; }
+        .code-content.active { display: block; }
+        .code-content pre { color: #1e293b; font-family: 'JetBrains Mono', monospace; font-size: 0.82em; line-height: 1.75; white-space: pre; }
+        .keyword { color: #0d9488; } .type { color: #2563eb; } .string { color: #16a34a; }
+        .comment { color: #94a3b8; font-style: italic; } .number { color: #d97706; }
+        .preproc { color: #7c3aed; } .fn { color: #db2777; }
+
+        .note { background: #f0fdfa; border-left: 4px solid #0d9488; padding: 16px 20px; margin: 20px 0; border-radius: 0 12px 12px 0; }
+        .note ul, .note p { margin-bottom: 0; } .note li:last-child { margin-bottom: 0; }
+        .warn { background: #fef2f2; border-left: 4px solid #dc2626; padding: 16px 20px; margin: 20px 0; border-radius: 0 12px 12px 0; }
+        .warn ul, .warn p { margin-bottom: 0; } .warn li:last-child { margin-bottom: 0; }
+
+        .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0; }
+        .compare > div { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .pros h3 { color: #16a34a; margin-top: 0; } .cons h3 { color: #dc2626; margin-top: 0; }
+        .compare ul { margin-bottom: 0; }
+
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; }
+        th, td { padding: 12px 16px; border: 1px solid #e2e8f0; text-align: left; font-size: 0.9em; }
+        th { background: #f8fafc; color: #0f172a; font-weight: 600; }
+        tr:hover { background: #f8fafc; }
+
+        /* Interactive playground */
+        .playground { background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 24px; margin: 24px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .pg-title { font-weight: 700; color: #0f172a; font-size: 0.95em; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+        .pg-sub { color: #64748b; font-size: 0.82em; margin-bottom: 18px; }
+        .pg-stage { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: center; min-height: 120px; padding: 16px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0; }
+        .obj-box { width: 150px; padding: 14px 10px; border-radius: 12px; text-align: center; border: 2px solid #cbd5e1; background: white; transition: all 0.3s ease; }
+        .obj-box .lbl { font-size: 0.72em; color: #64748b; font-weight: 600; }
+        .obj-box .id { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 0.92em; color: #0f172a; margin-top: 4px; word-break: break-all; }
+        .obj-box .fields { font-family: 'JetBrains Mono', monospace; font-size: 0.74em; color: #475569; margin-top: 8px; line-height: 1.6; }
+        .obj-box .fields .ptr { color: #94a3b8; font-size: 0.92em; }
+        .obj-box.same { border-color: #0d9488; background: #f0fdfa; box-shadow: 0 0 0 3px rgba(13,148,136,0.12); }
+        .obj-box.fresh { border-color: #d97706; background: #fffbeb; box-shadow: 0 0 0 3px rgba(217,119,6,0.12); }
+        .obj-box.corrupt { border-color: #dc2626; background: #fef2f2; box-shadow: 0 0 0 3px rgba(220,38,38,0.12); }
+        .pg-status { margin-top: 14px; padding: 12px 14px; background: #f8fafc; border-radius: 8px; font-size: 0.85em; color: #475569; min-height: 44px; display: flex; align-items: center; border: 1px solid #e2e8f0; line-height: 1.5; }
+        .pg-controls { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; align-items: center; }
+        .btn { padding: 8px 16px; border: none; border-radius: 8px; font-size: 0.85em; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.15s ease; }
+        .btn-primary { background: #0d9488; color: white; }
+        .btn-primary:hover { background: #0f766e; transform: translateY(-1px); }
+        .btn-ghost { background: #f1f5f9; color: #475569; }
+        .btn-ghost:hover { background: #e2e8f0; }
+        .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+        .footer { text-align: center; padding: 32px 20px; color: #94a3b8; font-size: 0.85em; border-top: 1px solid #e2e8f0; background: #f8fafc; }
+        .footer span { color: #0d9488; }
+
+        @media (max-width: 600px) { .compare { grid-template-columns: 1fr; } h1 { font-size: 1.8em; } .container { padding: 20px 16px 60px; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="../index.html" class="back-link">&larr; Back to LLD Topics</a>
+        <div class="pattern-badge">Creational Pattern</div>
+        <h1>Prototype</h1>
+        <p class="subtitle">Create new objects by <strong>cloning an existing instance</strong> (the prototype) instead of constructing them from scratch.</p>
+
+        <div class="analogy">
+            <div class="tag">🖨️ Real-World Analogy</div>
+            <p>Think of a <strong>rubber stamp</strong> (or a photocopier). You spend effort once to carve a detailed stamp — the logo, the address, the fine print. After that, you don't re-carve the design every time you need it. You just <em>press the stamp</em> and get an identical copy in an instant, then tweak the date or signature on each one.</p>
+            <p>Prototype works the same way: build one fully-configured object once, then <em>clone</em> it whenever you need another — far cheaper than rebuilding the whole thing each time.</p>
+        </div>
+
+        <h2>The Problem It Solves</h2>
+        <p>Sometimes creating an object from scratch is <strong>expensive or awkward</strong>:</p>
+        <ul>
+            <li>The object's initial state comes from a <strong>slow source</strong> — a database query, a network call, or reading a large file.</li>
+            <li>Building it requires <strong>heavy computation</strong> (parsing, decompressing, laying out a scene).</li>
+            <li>You only know the <strong>concrete type at runtime</strong> and don't want a giant <code>switch</code> over every class just to call the right constructor.</li>
+            <li>You need <strong>many near-identical objects</strong> — like spawning 200 of the same configured game enemy — and re-running setup 200 times is wasteful.</li>
+        </ul>
+        <p>Prototype sidesteps all of this: do the expensive setup <em>once</em> to produce a prototype, then ask the object to copy itself with <code>clone()</code>. The clone arrives pre-populated; you only adjust the few fields that differ.</p>
+
+        <h2>How It Works</h2>
+        <ol>
+            <li><strong>Prototype interface</strong> — declares a <code>clone()</code> method that returns a copy of the object.</li>
+            <li><strong>Concrete prototypes</strong> — each class implements <code>clone()</code>, knowing how to copy its own fields correctly.</li>
+            <li><strong>Client</strong> — holds a reference to a prototype and produces new objects by calling <code>clone()</code> on it, never the constructor.</li>
+            <li><strong>Prototype registry (optional)</strong> — a small lookup (e.g. a <code>Map&lt;String, Prototype&gt;</code>) of ready-made prototypes. Ask the registry for <code>"orc"</code> or <code>"dragon"</code> and it returns a fresh clone of the matching template.</li>
+        </ol>
+
+        <h2>The Heart of It: Shallow vs Deep Copy</h2>
+        <p>This is the part interviewers care about — and the part that bites people in production. When you clone an object, what happens to the fields <em>inside</em> it?</p>
+        <ul>
+            <li>A <strong>shallow copy</strong> duplicates the top-level object, but <em>nested objects are shared</em> — both the original and the clone point at the <strong>same</strong> inner list/map/object in memory.</li>
+            <li>A <strong>deep copy</strong> recursively duplicates the nested objects too, so the clone owns its own independent copies.</li>
+        </ul>
+        <p>For <strong>immutable</strong> fields (an <code>int</code>, a <code>String</code>) the distinction doesn't matter. But the moment a field is a <strong>mutable</strong> object — a list of tags, say — a shallow copy creates a hidden trap:</p>
+        <div class="warn">
+            <strong>The shallow-copy bug.</strong> You clone a <code>Document</code> whose <code>tags</code> is <code>["draft"]</code>. With a shallow copy, <code>clone.tags</code> and <code>original.tags</code> are the <em>same</em> list object. You call <code>clone.tags.add("urgent")</code> — and now <code>original.tags</code> is <code>["draft", "urgent"]</code> too. You corrupted the original by mutating the copy. A deep copy gives the clone its own <code>tags</code> list, so the two never interfere.
+        </div>
+
+        <h2>Implementation</h2>
+        <p>In Java you implement <code>Cloneable</code> and override <code>clone()</code> — the inherited <code>Object.clone()</code> does a shallow copy, so you must manually deep-copy any mutable field. In Python the standard library hands you both for free: <code>copy.copy()</code> is shallow, <code>copy.deepcopy()</code> is deep.</p>
+
+        <div class="code-container">
+            <div class="code-tabs">
+                <button class="code-tab active" onclick="showCode(this, 'javaCode')">Java</button>
+                <button class="code-tab" onclick="showCode(this, 'pyCode')">Python</button>
+            </div>
+            <div id="javaCode" class="code-content active">
+<pre><span class="keyword">import</span> java.util.*;
+
+<span class="comment">// A concrete prototype. Cloneable is the marker interface that</span>
+<span class="comment">// lets Object.clone() succeed instead of throwing.</span>
+<span class="keyword">public class</span> <span class="type">Document</span> <span class="keyword">implements</span> <span class="type">Cloneable</span> {
+    <span class="keyword">private</span> <span class="type">String</span> title;
+    <span class="keyword">private</span> <span class="type">List</span>&lt;<span class="type">String</span>&gt; tags;   <span class="comment">// MUTABLE field -> needs care</span>
+
+    <span class="keyword">public</span> <span class="fn">Document</span>(<span class="type">String</span> title, <span class="type">List</span>&lt;<span class="type">String</span>&gt; tags) {
+        <span class="keyword">this</span>.title = title;
+        <span class="keyword">this</span>.tags = tags;
+    }
+
+    <span class="comment">// --- DEEP copy: clone the list too, so clones are independent ---</span>
+    <span class="keyword">@Override</span>
+    <span class="keyword">public</span> <span class="type">Document</span> <span class="fn">clone</span>() {
+        <span class="keyword">try</span> {
+            <span class="type">Document</span> copy = (<span class="type">Document</span>) <span class="keyword">super</span>.<span class="fn">clone</span>();  <span class="comment">// shallow: shares tags!</span>
+            copy.tags = <span class="keyword">new</span> <span class="type">ArrayList</span>&lt;&gt;(<span class="keyword">this</span>.tags);   <span class="comment">// fix it: own copy</span>
+            <span class="keyword">return</span> copy;
+        } <span class="keyword">catch</span> (<span class="type">CloneNotSupportedException</span> e) {
+            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="type">AssertionError</span>(e);          <span class="comment">// unreachable</span>
+        }
+    }
+
+    <span class="keyword">public</span> <span class="type">List</span>&lt;<span class="type">String</span>&gt; <span class="fn">getTags</span>() { <span class="keyword">return</span> tags; }
+}
+
+<span class="comment">// --- Optional: a registry of ready-made prototypes ---</span>
+<span class="keyword">public class</span> <span class="type">DocRegistry</span> {
+    <span class="keyword">private final</span> <span class="type">Map</span>&lt;<span class="type">String</span>, <span class="type">Document</span>&gt; protos = <span class="keyword">new</span> <span class="type">HashMap</span>&lt;&gt;();
+    <span class="keyword">public void</span> <span class="fn">register</span>(<span class="type">String</span> key, <span class="type">Document</span> p) { protos.<span class="fn">put</span>(key, p); }
+    <span class="keyword">public</span> <span class="type">Document</span> <span class="fn">create</span>(<span class="type">String</span> key) { <span class="keyword">return</span> protos.<span class="fn">get</span>(key).<span class="fn">clone</span>(); }
+}
+
+<span class="comment">// Usage</span>
+<span class="type">Document</span> original = <span class="keyword">new</span> <span class="type">Document</span>(<span class="string">"Report"</span>,
+        <span class="keyword">new</span> <span class="type">ArrayList</span>&lt;&gt;(<span class="type">List</span>.<span class="fn">of</span>(<span class="string">"draft"</span>)));
+<span class="type">Document</span> copy = original.<span class="fn">clone</span>();
+copy.<span class="fn">getTags</span>().<span class="fn">add</span>(<span class="string">"urgent"</span>);
+<span class="comment">// original.getTags() == [draft]   (UNAFFECTED, thanks to deep copy)</span>
+<span class="comment">// copy.getTags()     == [draft, urgent]</span>
+</pre>
+            </div>
+            <div id="pyCode" class="code-content">
+<pre><span class="keyword">import</span> copy
+
+<span class="keyword">class</span> <span class="type">Document</span>:
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, title, tags):
+        self.title = title
+        self.tags = tags          <span class="comment"># MUTABLE list</span>
+
+
+original = <span class="type">Document</span>(<span class="string">"Report"</span>, [<span class="string">"draft"</span>])
+
+<span class="comment"># --- Shallow copy: copies the Document, but SHARES the tags list ---</span>
+shallow = copy.<span class="fn">copy</span>(original)
+shallow.tags.<span class="fn">append</span>(<span class="string">"urgent"</span>)
+<span class="fn">print</span>(original.tags)   <span class="comment"># ['draft', 'urgent']  <- BUG: original corrupted!</span>
+<span class="fn">print</span>(shallow.tags <span class="keyword">is</span> original.tags)   <span class="comment"># True - same list object</span>
+
+<span class="comment"># --- Deep copy: recursively copies nested objects too ---</span>
+original = <span class="type">Document</span>(<span class="string">"Report"</span>, [<span class="string">"draft"</span>])
+deep = copy.<span class="fn">deepcopy</span>(original)
+deep.tags.<span class="fn">append</span>(<span class="string">"urgent"</span>)
+<span class="fn">print</span>(original.tags)   <span class="comment"># ['draft']            <- SAFE: untouched</span>
+<span class="fn">print</span>(deep.tags <span class="keyword">is</span> original.tags)      <span class="comment"># False - independent lists</span>
+
+
+<span class="comment"># --- Customizing the clone + an optional prototype registry ---</span>
+<span class="keyword">class</span> <span class="type">Enemy</span>:
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, kind, loadout):
+        self.kind = kind
+        self.loadout = loadout    <span class="comment"># mutable list</span>
+
+    <span class="keyword">def</span> <span class="fn">clone</span>(self):
+        <span class="keyword">return</span> copy.<span class="fn">deepcopy</span>(self)   <span class="comment"># safe, independent copy</span>
+
+registry = {<span class="string">"orc"</span>: <span class="type">Enemy</span>(<span class="string">"orc"</span>, [<span class="string">"axe"</span>])}
+goblin = registry[<span class="string">"orc"</span>].<span class="fn">clone</span>()   <span class="comment"># cheap spawn from template</span>
+</pre>
+            </div>
+        </div>
+
+        <div class="note">
+            <strong>Java gotcha:</strong> the built-in <code>Cloneable</code> / <code>Object.clone()</code> mechanism is widely considered awkward (it's a marker interface, returns <code>Object</code>, and clones <em>shallowly</em> by default). Many teams skip it entirely and write a <strong>copy constructor</strong> <code>new Document(other)</code> or a static <code>copyOf(...)</code> factory instead — same Prototype intent, cleaner code.
+        </div>
+
+        <h2>When to Use It</h2>
+        <ul>
+            <li>Object creation is <strong>expensive</strong> (DB load, heavy parsing, network setup) and you need many similar instances.</li>
+            <li>You want to <strong>decouple the client from concrete classes</strong> — clone whatever prototype you're handed without knowing its exact type.</li>
+            <li>You need to <strong>snapshot</strong> an object's current configured state and stamp out variations of it.</li>
+            <li>The set of possible objects is configured at <strong>runtime</strong> (e.g. loaded from data) rather than hard-coded into a factory.</li>
+        </ul>
+
+        <h2>Trade-offs</h2>
+        <div class="compare">
+            <div class="pros">
+                <h3>✓ Pros</h3>
+                <ul>
+                    <li>Skips costly initialization — clone instead of rebuild.</li>
+                    <li>Adds/removes prototypes at runtime; no class explosion in a factory.</li>
+                    <li>Client works against the prototype interface, not concrete types.</li>
+                    <li>Great for producing variations of a complex, configured object.</li>
+                </ul>
+            </div>
+            <div class="cons">
+                <h3>✗ Cons</h3>
+                <ul>
+                    <li><strong>Deep-copying complex object graphs is tricky</strong> — especially with <strong>circular references</strong>, where a naive deep copy recurses forever.</li>
+                    <li>Easy to forget a mutable field and ship a shallow-copy bug.</li>
+                    <li>Every concrete class must implement <code>clone()</code> correctly.</li>
+                    <li>Cloning objects with non-copyable resources (open sockets, file handles) needs special handling.</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="note">
+            <strong>Interview tip:</strong> The instant you mention Prototype, expect "shallow or deep?" Have the bug ready: <em>"A shallow copy shares the nested mutable fields, so mutating the clone corrupts the original — I'd deep-copy the mutable members."</em> Bonus points for noting that deep-copying <strong>circular graphs</strong> needs an identity map of already-copied objects (which is exactly what Python's <code>deepcopy</code> does under the hood via its <code>memo</code> dict).
+        </div>
+
+        <h2>Related Patterns</h2>
+        <p>Prototype is an alternative to the factory patterns: where <a href="factory-method.html" style="color:#0d9488">Factory Method</a> and <a href="abstract-factory.html" style="color:#0d9488">Abstract Factory</a> create objects by calling constructors, Prototype creates them by copying. A factory or registry is often <em>implemented</em> with prototypes, and that registry itself is frequently a <a href="singleton.html" style="color:#0d9488">Singleton</a>.</p>
+    </div>
+
+    <div class="footer">
+        <p>Low-Level Design · <span>Prototype Pattern</span> · Java &amp; Python · Interactive Learning</p>
+    </div>
+
+    <script>
+        function showCode(btn, id) {
+            const container = btn.closest('.code-container');
+            container.querySelectorAll('.code-tab').forEach(t => t.classList.remove('active'));
+            container.querySelectorAll('.code-content').forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById(id).classList.add('active');
+        }
+    </script>
+</body>
+</html>

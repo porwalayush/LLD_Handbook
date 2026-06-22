@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Facade Pattern — LLD Guide</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8fafc; min-height: 100vh; color: #1e293b; -webkit-font-smoothing: antialiased; }
+        .container { max-width: 880px; margin: 0 auto; padding: 40px 24px 80px; }
+        .back-link { display: inline-flex; align-items: center; gap: 6px; color: #0d9488; text-decoration: none; font-size: 0.9em; font-weight: 500; margin-bottom: 28px; padding: 6px 12px; border-radius: 8px; transition: background 0.15s ease; }
+        .back-link:hover { background: #f0fdfa; }
+
+        .pattern-badge { display: inline-block; padding: 5px 14px; border-radius: 100px; font-size: 0.72em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; background: #ccfbf1; color: #0d9488; margin-bottom: 16px; }
+        h1 { font-size: 2.4em; font-weight: 800; color: #0f172a; margin-bottom: 12px; letter-spacing: -0.03em; line-height: 1.2; }
+        .subtitle { font-size: 1.1em; color: #64748b; line-height: 1.7; margin-bottom: 8px; }
+        h2 { font-size: 1.35em; font-weight: 700; color: #0f172a; margin: 40px 0 16px; letter-spacing: -0.02em; }
+        h3 { font-size: 1.1em; font-weight: 600; color: #1e293b; margin: 24px 0 10px; }
+        p, li { line-height: 1.8; color: #475569; margin-bottom: 10px; font-size: 0.95em; }
+        ul, ol { padding-left: 20px; margin-bottom: 15px; }
+        strong { color: #1e293b; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 0.85em; color: #0d9488; }
+
+        .analogy { background: linear-gradient(135deg, #f0fdfa, #fffbeb); border: 1px solid #ccfbf1; border-radius: 16px; padding: 24px 28px; margin: 24px 0; }
+        .analogy .tag { font-size: 0.78em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #0d9488; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+        .analogy p:last-child { margin-bottom: 0; }
+
+        .code-container { margin: 24px 0; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .code-tabs { display: flex; background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0 8px; }
+        .code-tab { padding: 10px 18px; cursor: pointer; border: none; background: transparent; color: #64748b; font-size: 0.85em; font-weight: 500; font-family: 'Inter', sans-serif; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.15s ease; }
+        .code-tab:hover { color: #0d9488; }
+        .code-tab.active { color: #0d9488; border-bottom-color: #0d9488; background: white; }
+        .code-content { display: none; background: white; padding: 24px; overflow-x: auto; }
+        .code-content.active { display: block; }
+        .code-content pre { color: #1e293b; font-family: 'JetBrains Mono', monospace; font-size: 0.82em; line-height: 1.75; white-space: pre; }
+        .keyword { color: #0d9488; } .type { color: #2563eb; } .string { color: #16a34a; }
+        .comment { color: #94a3b8; font-style: italic; } .number { color: #d97706; }
+        .preproc { color: #7c3aed; } .fn { color: #db2777; }
+
+        .note { background: #f0fdfa; border-left: 4px solid #0d9488; padding: 16px 20px; margin: 20px 0; border-radius: 0 12px 12px 0; }
+        .note ul, .note p { margin-bottom: 0; } .note li:last-child { margin-bottom: 0; }
+        .warn { background: #fef2f2; border-left: 4px solid #dc2626; padding: 16px 20px; margin: 20px 0; border-radius: 0 12px 12px 0; }
+        .warn ul, .warn p { margin-bottom: 0; } .warn li:last-child { margin-bottom: 0; }
+
+        .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0; }
+        .compare > div { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .pros h3 { color: #16a34a; margin-top: 0; } .cons h3 { color: #dc2626; margin-top: 0; }
+        .compare ul { margin-bottom: 0; }
+
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; }
+        th, td { padding: 12px 16px; border: 1px solid #e2e8f0; text-align: left; font-size: 0.9em; }
+        th { background: #f8fafc; color: #0f172a; font-weight: 600; }
+        tr:hover { background: #f8fafc; }
+
+        /* Interactive playground */
+        .playground { background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 24px; margin: 24px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .pg-title { font-weight: 700; color: #0f172a; font-size: 0.95em; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+        .pg-sub { color: #64748b; font-size: 0.82em; margin-bottom: 18px; }
+        .pg-stage { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: center; min-height: 120px; padding: 16px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0; }
+        .obj-box { width: 110px; padding: 14px 10px; border-radius: 12px; text-align: center; border: 2px solid #cbd5e1; background: white; transition: all 0.3s ease; }
+        .obj-box .lbl { font-size: 0.72em; color: #64748b; font-weight: 600; }
+        .obj-box .id { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 0.92em; color: #0f172a; margin-top: 4px; word-break: break-all; }
+        .obj-box.same { border-color: #0d9488; background: #f0fdfa; box-shadow: 0 0 0 3px rgba(13,148,136,0.12); }
+        .obj-box.fresh { border-color: #d97706; background: #fffbeb; box-shadow: 0 0 0 3px rgba(217,119,6,0.12); }
+        .pg-status { margin-top: 14px; padding: 12px 14px; background: #f8fafc; border-radius: 8px; font-size: 0.85em; color: #475569; min-height: 44px; display: flex; align-items: center; border: 1px solid #e2e8f0; line-height: 1.5; }
+        .pg-controls { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; align-items: center; }
+        .btn { padding: 8px 16px; border: none; border-radius: 8px; font-size: 0.85em; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.15s ease; }
+        .btn-primary { background: #0d9488; color: white; }
+        .btn-primary:hover { background: #0f766e; transform: translateY(-1px); }
+        .btn-ghost { background: #f1f5f9; color: #475569; }
+        .btn-ghost:hover { background: #e2e8f0; }
+
+        .footer { text-align: center; padding: 32px 20px; color: #94a3b8; font-size: 0.85em; border-top: 1px solid #e2e8f0; background: #f8fafc; }
+        .footer span { color: #0d9488; }
+
+        @media (max-width: 600px) { .compare { grid-template-columns: 1fr; } h1 { font-size: 1.8em; } .container { padding: 20px 16px 60px; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="../index.html" class="back-link">&larr; Back to LLD Topics</a>
+        <div class="pattern-badge">Structural Pattern</div>
+        <h1>Facade</h1>
+        <p class="subtitle">Provide a <strong>unified, simplified interface</strong> to a set of interfaces in a complex subsystem. Facade defines a higher-level interface that makes the subsystem easier to use.</p>
+
+        <div class="analogy">
+            <div class="tag">🎬 Real-World Analogy</div>
+            <p>Think of the single <strong>"Watch a Movie"</strong> button on a home-theater remote. Behind that one tap, a dozen things must happen in the right order: the lights dim, the projector screen lowers, the projector powers on and switches to HDMI, the amplifier turns on and selects surround sound at the right volume, and the DVD/streaming player starts playing.</p>
+            <p>You don't want to memorize and operate each device by hand every time. The remote acts as a <strong>facade</strong>: one simple call hides all that coordination. The individual devices still exist and can be controlled directly if you ever need to — the facade just gives you an easy front door.</p>
+        </div>
+
+        <h2>The Problem It Solves</h2>
+        <p>As a subsystem grows, it accumulates many classes with intricate, interdependent relationships. A client that wants to "just do the thing" ends up drowning in details:</p>
+        <ul>
+            <li>It must know <strong>which classes</strong> to instantiate, in what order to call them, and how to wire them together.</li>
+            <li>It becomes <strong>tightly coupled</strong> to the subsystem's internals — every refactor inside the subsystem ripples out to every client.</li>
+            <li>The same multi-step ritual gets <strong>copy-pasted</strong> across the codebase, each copy a chance to get the sequence wrong.</li>
+        </ul>
+        <p>The Facade pattern introduces one class that knows the whole dance. Clients talk only to the facade and express <em>intent</em> ("watch a movie", "place an order") instead of orchestrating steps. The complex subsystem is still there — and still usable directly for advanced cases — but the common path is now a single, clean call.</p>
+
+        <h2>How It Works</h2>
+        <ol>
+            <li><strong>Identify the subsystem.</strong> A group of cooperating classes (Amplifier, Projector, Lights, DvdPlayer) that together do real work but are awkward to drive from outside.</li>
+            <li><strong>Create a Facade class</strong> that holds references to the subsystem objects and exposes a small number of convenient, high-level methods.</li>
+            <li><strong>Each facade method coordinates</strong> the subsystem: it calls the right objects in the right order, encapsulating the workflow.</li>
+            <li><strong>Clients depend only on the facade.</strong> They no longer import or reference the subsystem classes for the common case — yet those classes remain public, so power users can still bypass the facade when needed.</li>
+        </ol>
+
+        <h2>Implementation</h2>
+        <p>Below, a <code>HomeTheaterFacade.watchMovie()</code> hides the choreography of four subsystem devices. Notice the client code shrinks to a single line, while the subsystem classes stay completely unaware that a facade exists.</p>
+
+        <div class="code-container">
+            <div class="code-tabs">
+                <button class="code-tab active" onclick="showCode(this, 'javaCode')">Java</button>
+                <button class="code-tab" onclick="showCode(this, 'pyCode')">Python</button>
+            </div>
+            <div id="javaCode" class="code-content active">
+<pre><span class="comment">// --- Subsystem classes (complex, independent, unaware of the facade) ---</span>
+<span class="keyword">class</span> <span class="type">Amplifier</span> {
+    <span class="keyword">void</span> <span class="fn">on</span>() { <span class="type">System</span>.out.<span class="fn">println</span>(<span class="string">"Amplifier on"</span>); }
+    <span class="keyword">void</span> <span class="fn">setSurroundSound</span>() { <span class="type">System</span>.out.<span class="fn">println</span>(<span class="string">"Surround sound enabled"</span>); }
+    <span class="keyword">void</span> <span class="fn">setVolume</span>(<span class="keyword">int</span> level) { <span class="type">System</span>.out.<span class="fn">println</span>(<span class="string">"Volume = "</span> + level); }
+    <span class="keyword">void</span> <span class="fn">off</span>() { <span class="type">System</span>.out.<span class="fn">println</span>(<span class="string">"Amplifier off"</span>); }
+}
+<span class="keyword">class</span> <span class="type">Projector</span> {
+    <span class="keyword">void</span> <span class="fn">on</span>() { <span class="type">System</span>.out.<span class="fn">println</span>(<span class="string">"Projector on"</span>); }
+    <span class="keyword">void</span> <span class="fn">wideScreenMode</span>() { <span class="type">System</span>.out.<span class="fn">println</span>(<span class="string">"Projector in widescreen"</span>); }
+    <span class="keyword">void</span> <span class="fn">off</span>() { <span class="type">System</span>.out.<span class="fn">println</span>(<span class="string">"Projector off"</span>); }
+}
+<span class="keyword">class</span> <span class="type">Lights</span> {
+    <span class="keyword">void</span> <span class="fn">dim</span>(<span class="keyword">int</span> pct) { <span class="type">System</span>.out.<span class="fn">println</span>(<span class="string">"Lights dimmed to "</span> + pct + <span class="string">"%"</span>); }
+    <span class="keyword">void</span> <span class="fn">on</span>() { <span class="type">System</span>.out.<span class="fn">println</span>(<span class="string">"Lights on"</span>); }
+}
+<span class="keyword">class</span> <span class="type">DvdPlayer</span> {
+    <span class="keyword">void</span> <span class="fn">on</span>() { <span class="type">System</span>.out.<span class="fn">println</span>(<span class="string">"DVD player on"</span>); }
+    <span class="keyword">void</span> <span class="fn">play</span>(<span class="type">String</span> movie) { <span class="type">System</span>.out.<span class="fn">println</span>(<span class="string">"Playing \""</span> + movie + <span class="string">"\""</span>); }
+    <span class="keyword">void</span> <span class="fn">stop</span>() { <span class="type">System</span>.out.<span class="fn">println</span>(<span class="string">"DVD stopped"</span>); }
+    <span class="keyword">void</span> <span class="fn">off</span>() { <span class="type">System</span>.out.<span class="fn">println</span>(<span class="string">"DVD player off"</span>); }
+}
+
+<span class="comment">// --- The Facade: one simple front door over the subsystem ---</span>
+<span class="keyword">public class</span> <span class="type">HomeTheaterFacade</span> {
+    <span class="keyword">private final</span> <span class="type">Amplifier</span> amp;
+    <span class="keyword">private final</span> <span class="type">Projector</span> projector;
+    <span class="keyword">private final</span> <span class="type">Lights</span> lights;
+    <span class="keyword">private final</span> <span class="type">DvdPlayer</span> dvd;
+
+    <span class="keyword">public</span> <span class="fn">HomeTheaterFacade</span>(<span class="type">Amplifier</span> amp, <span class="type">Projector</span> projector,
+                             <span class="type">Lights</span> lights, <span class="type">DvdPlayer</span> dvd) {
+        <span class="keyword">this</span>.amp = amp; <span class="keyword">this</span>.projector = projector;
+        <span class="keyword">this</span>.lights = lights; <span class="keyword">this</span>.dvd = dvd;
+    }
+
+    <span class="keyword">public void</span> <span class="fn">watchMovie</span>(<span class="type">String</span> movie) {
+        <span class="type">System</span>.out.<span class="fn">println</span>(<span class="string">"Get ready to watch a movie..."</span>);
+        lights.<span class="fn">dim</span>(<span class="number">10</span>);
+        projector.<span class="fn">on</span>();
+        projector.<span class="fn">wideScreenMode</span>();
+        amp.<span class="fn">on</span>();
+        amp.<span class="fn">setSurroundSound</span>();
+        amp.<span class="fn">setVolume</span>(<span class="number">8</span>);
+        dvd.<span class="fn">on</span>();
+        dvd.<span class="fn">play</span>(movie);
+    }
+
+    <span class="keyword">public void</span> <span class="fn">endMovie</span>() {
+        <span class="type">System</span>.out.<span class="fn">println</span>(<span class="string">"Shutting the theater down..."</span>);
+        dvd.<span class="fn">stop</span>(); dvd.<span class="fn">off</span>();
+        amp.<span class="fn">off</span>(); projector.<span class="fn">off</span>();
+        lights.<span class="fn">on</span>();
+    }
+}
+
+<span class="comment">// --- Client: expresses intent in one line ---</span>
+<span class="type">HomeTheaterFacade</span> theater = <span class="keyword">new</span> <span class="type">HomeTheaterFacade</span>(
+        <span class="keyword">new</span> <span class="type">Amplifier</span>(), <span class="keyword">new</span> <span class="type">Projector</span>(),
+        <span class="keyword">new</span> <span class="type">Lights</span>(), <span class="keyword">new</span> <span class="type">DvdPlayer</span>());
+theater.<span class="fn">watchMovie</span>(<span class="string">"The Matrix"</span>);
+theater.<span class="fn">endMovie</span>();
+</pre>
+            </div>
+            <div id="pyCode" class="code-content">
+<pre><span class="comment"># --- Subsystem classes (complex, independent, unaware of the facade) ---</span>
+<span class="keyword">class</span> <span class="type">Amplifier</span>:
+    <span class="keyword">def</span> <span class="fn">on</span>(self):                 <span class="fn">print</span>(<span class="string">"Amplifier on"</span>)
+    <span class="keyword">def</span> <span class="fn">set_surround_sound</span>(self):  <span class="fn">print</span>(<span class="string">"Surround sound enabled"</span>)
+    <span class="keyword">def</span> <span class="fn">set_volume</span>(self, level):    <span class="fn">print</span>(<span class="string">f"Volume = {level}"</span>)
+    <span class="keyword">def</span> <span class="fn">off</span>(self):                <span class="fn">print</span>(<span class="string">"Amplifier off"</span>)
+
+<span class="keyword">class</span> <span class="type">Projector</span>:
+    <span class="keyword">def</span> <span class="fn">on</span>(self):                 <span class="fn">print</span>(<span class="string">"Projector on"</span>)
+    <span class="keyword">def</span> <span class="fn">wide_screen_mode</span>(self):    <span class="fn">print</span>(<span class="string">"Projector in widescreen"</span>)
+    <span class="keyword">def</span> <span class="fn">off</span>(self):                <span class="fn">print</span>(<span class="string">"Projector off"</span>)
+
+<span class="keyword">class</span> <span class="type">Lights</span>:
+    <span class="keyword">def</span> <span class="fn">dim</span>(self, pct):           <span class="fn">print</span>(<span class="string">f"Lights dimmed to {pct}%"</span>)
+    <span class="keyword">def</span> <span class="fn">on</span>(self):                 <span class="fn">print</span>(<span class="string">"Lights on"</span>)
+
+<span class="keyword">class</span> <span class="type">DvdPlayer</span>:
+    <span class="keyword">def</span> <span class="fn">on</span>(self):                 <span class="fn">print</span>(<span class="string">"DVD player on"</span>)
+    <span class="keyword">def</span> <span class="fn">play</span>(self, movie):        <span class="fn">print</span>(<span class="string">f'Playing "{movie}"'</span>)
+    <span class="keyword">def</span> <span class="fn">stop</span>(self):               <span class="fn">print</span>(<span class="string">"DVD stopped"</span>)
+    <span class="keyword">def</span> <span class="fn">off</span>(self):                <span class="fn">print</span>(<span class="string">"DVD player off"</span>)
+
+
+<span class="comment"># --- The Facade: one simple front door over the subsystem ---</span>
+<span class="keyword">class</span> <span class="type">HomeTheaterFacade</span>:
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, amp, projector, lights, dvd):
+        self.amp = amp
+        self.projector = projector
+        self.lights = lights
+        self.dvd = dvd
+
+    <span class="keyword">def</span> <span class="fn">watch_movie</span>(self, movie):
+        <span class="fn">print</span>(<span class="string">"Get ready to watch a movie..."</span>)
+        self.lights.<span class="fn">dim</span>(<span class="number">10</span>)
+        self.projector.<span class="fn">on</span>()
+        self.projector.<span class="fn">wide_screen_mode</span>()
+        self.amp.<span class="fn">on</span>()
+        self.amp.<span class="fn">set_surround_sound</span>()
+        self.amp.<span class="fn">set_volume</span>(<span class="number">8</span>)
+        self.dvd.<span class="fn">on</span>()
+        self.dvd.<span class="fn">play</span>(movie)
+
+    <span class="keyword">def</span> <span class="fn">end_movie</span>(self):
+        <span class="fn">print</span>(<span class="string">"Shutting the theater down..."</span>)
+        self.dvd.<span class="fn">stop</span>(); self.dvd.<span class="fn">off</span>()
+        self.amp.<span class="fn">off</span>(); self.projector.<span class="fn">off</span>()
+        self.lights.<span class="fn">on</span>()
+
+
+<span class="comment"># --- Client: expresses intent in one line ---</span>
+theater = <span class="type">HomeTheaterFacade</span>(<span class="type">Amplifier</span>(), <span class="type">Projector</span>(),
+                            <span class="type">Lights</span>(), <span class="type">DvdPlayer</span>())
+theater.<span class="fn">watch_movie</span>(<span class="string">"The Matrix"</span>)
+theater.<span class="fn">end_movie</span>()
+</pre>
+            </div>
+        </div>
+
+        <div class="note">
+            <strong>A facade is not a "no new classes" rule.</strong> The same idea scales up to services: an <code>OrderService.placeOrder()</code> facade can coordinate <code>Inventory</code> (reserve stock), <code>Payment</code> (charge the card), and <code>Shipping</code> (schedule delivery) so callers never touch those three subsystems directly. The facade owns the workflow; the subsystems stay focused and reusable.
+        </div>
+
+        <h2>When to Use It</h2>
+        <ul>
+            <li>You want a <strong>simple default view</strong> of a complex subsystem that most clients can use without learning its internals.</li>
+            <li>You need to <strong>decouple clients from a subsystem</strong>, reducing dependencies so the subsystem can evolve freely behind the facade.</li>
+            <li>You want to <strong>layer</strong> your system — each layer's facade becomes the single entry point for the layer above it.</li>
+            <li>You're <strong>wrapping a messy or legacy library</strong> and want to expose only the clean operations your app actually needs.</li>
+        </ul>
+
+        <h2>Trade-offs</h2>
+        <div class="compare">
+            <div class="pros">
+                <h3>✓ Pros</h3>
+                <ul>
+                    <li>Shields clients from subsystem complexity.</li>
+                    <li>Loosens coupling between clients and the subsystem.</li>
+                    <li>Centralizes a multi-step workflow in one place.</li>
+                    <li>Subsystem stays fully usable directly for advanced cases.</li>
+                </ul>
+            </div>
+            <div class="cons">
+                <h3>✗ Cons</h3>
+                <ul>
+                    <li>The facade can become a <strong>"god object"</strong> coupled to everything if it grows unchecked.</li>
+                    <li>Adds an extra layer that can hide useful flexibility.</li>
+                    <li>Doesn't prevent clients from reaching the subsystem directly — it only offers an easier path.</li>
+                    <li>One more class to maintain as the subsystem changes.</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="note">
+            <strong>Interview tip:</strong> The classic trap is <strong>Facade vs Adapter</strong>. Both wrap something, but the <em>intent differs</em>: a <strong>Facade simplifies</strong> — it gives a cleaner, smaller interface over a complex subsystem you already control. An <strong>Adapter converts</strong> — it makes an existing class fit an interface the client expects, with no goal of simplification. Rule of thumb: Facade wraps <em>many</em> classes to hide complexity; Adapter wraps <em>one</em> class to change its interface.
+        </div>
+
+        <h2>Related Patterns</h2>
+        <p><a href="adapter.html" style="color:#0d9488">Adapter</a> also wraps an object but changes its interface rather than simplifying a subsystem. A Facade is often implemented as a <a href="../creational/singleton.html" style="color:#0d9488">Singleton</a> since one facade instance usually suffices. <a href="proxy.html" style="color:#0d9488">Proxy</a> shares the wrapping structure too, but its purpose is to control access to a single object, not to simplify many.</p>
+    </div>
+
+    <div class="footer">
+        <p>Low-Level Design · <span>Facade Pattern</span> · Java &amp; Python · Interactive Learning</p>
+    </div>
+
+    <script>
+        function showCode(btn, id) {
+            const container = btn.closest('.code-container');
+            container.querySelectorAll('.code-tab').forEach(t => t.classList.remove('active'));
+            container.querySelectorAll('.code-content').forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById(id).classList.add('active');
+        }
+
+    </script>
+</body>
+</html>

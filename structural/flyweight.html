@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flyweight Pattern — LLD Guide</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8fafc; min-height: 100vh; color: #1e293b; -webkit-font-smoothing: antialiased; }
+        .container { max-width: 880px; margin: 0 auto; padding: 40px 24px 80px; }
+        .back-link { display: inline-flex; align-items: center; gap: 6px; color: #0d9488; text-decoration: none; font-size: 0.9em; font-weight: 500; margin-bottom: 28px; padding: 6px 12px; border-radius: 8px; transition: background 0.15s ease; }
+        .back-link:hover { background: #f0fdfa; }
+
+        .pattern-badge { display: inline-block; padding: 5px 14px; border-radius: 100px; font-size: 0.72em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; background: #ccfbf1; color: #0d9488; margin-bottom: 16px; }
+        h1 { font-size: 2.4em; font-weight: 800; color: #0f172a; margin-bottom: 12px; letter-spacing: -0.03em; line-height: 1.2; }
+        .subtitle { font-size: 1.1em; color: #64748b; line-height: 1.7; margin-bottom: 8px; }
+        h2 { font-size: 1.35em; font-weight: 700; color: #0f172a; margin: 40px 0 16px; letter-spacing: -0.02em; }
+        h3 { font-size: 1.1em; font-weight: 600; color: #1e293b; margin: 24px 0 10px; }
+        p, li { line-height: 1.8; color: #475569; margin-bottom: 10px; font-size: 0.95em; }
+        ul, ol { padding-left: 20px; margin-bottom: 15px; }
+        strong { color: #1e293b; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 0.85em; color: #0d9488; }
+
+        .analogy { background: linear-gradient(135deg, #f0fdfa, #fffbeb); border: 1px solid #ccfbf1; border-radius: 16px; padding: 24px 28px; margin: 24px 0; }
+        .analogy .tag { font-size: 0.78em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #0d9488; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+        .analogy p:last-child { margin-bottom: 0; }
+
+        .code-container { margin: 24px 0; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .code-tabs { display: flex; background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0 8px; }
+        .code-tab { padding: 10px 18px; cursor: pointer; border: none; background: transparent; color: #64748b; font-size: 0.85em; font-weight: 500; font-family: 'Inter', sans-serif; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.15s ease; }
+        .code-tab:hover { color: #0d9488; }
+        .code-tab.active { color: #0d9488; border-bottom-color: #0d9488; background: white; }
+        .code-content { display: none; background: white; padding: 24px; overflow-x: auto; }
+        .code-content.active { display: block; }
+        .code-content pre { color: #1e293b; font-family: 'JetBrains Mono', monospace; font-size: 0.82em; line-height: 1.75; white-space: pre; }
+        .keyword { color: #0d9488; } .type { color: #2563eb; } .string { color: #16a34a; }
+        .comment { color: #94a3b8; font-style: italic; } .number { color: #d97706; }
+        .preproc { color: #7c3aed; } .fn { color: #db2777; }
+
+        .note { background: #f0fdfa; border-left: 4px solid #0d9488; padding: 16px 20px; margin: 20px 0; border-radius: 0 12px 12px 0; }
+        .note ul, .note p { margin-bottom: 0; } .note li:last-child { margin-bottom: 0; }
+        .warn { background: #fef2f2; border-left: 4px solid #dc2626; padding: 16px 20px; margin: 20px 0; border-radius: 0 12px 12px 0; }
+        .warn ul, .warn p { margin-bottom: 0; } .warn li:last-child { margin-bottom: 0; }
+
+        .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0; }
+        .compare > div { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .pros h3 { color: #16a34a; margin-top: 0; } .cons h3 { color: #dc2626; margin-top: 0; }
+        .compare ul { margin-bottom: 0; }
+
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; }
+        th, td { padding: 12px 16px; border: 1px solid #e2e8f0; text-align: left; font-size: 0.9em; }
+        th { background: #f8fafc; color: #0f172a; font-weight: 600; }
+        tr:hover { background: #f8fafc; }
+
+        /* Interactive playground */
+        .playground { background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 24px; margin: 24px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .pg-title { font-weight: 700; color: #0f172a; font-size: 0.95em; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+        .pg-sub { color: #64748b; font-size: 0.82em; margin-bottom: 18px; }
+        .pg-stage { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: center; min-height: 120px; padding: 16px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0; }
+        .obj-box { width: 110px; padding: 14px 10px; border-radius: 12px; text-align: center; border: 2px solid #cbd5e1; background: white; transition: all 0.3s ease; }
+        .obj-box .lbl { font-size: 0.72em; color: #64748b; font-weight: 600; }
+        .obj-box .id { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 0.92em; color: #0f172a; margin-top: 4px; word-break: break-all; }
+        .obj-box.same { border-color: #0d9488; background: #f0fdfa; box-shadow: 0 0 0 3px rgba(13,148,136,0.12); }
+        .obj-box.fresh { border-color: #d97706; background: #fffbeb; box-shadow: 0 0 0 3px rgba(217,119,6,0.12); }
+        .pg-status { margin-top: 14px; padding: 12px 14px; background: #f8fafc; border-radius: 8px; font-size: 0.85em; color: #475569; min-height: 44px; display: flex; align-items: center; border: 1px solid #e2e8f0; line-height: 1.5; }
+        .pg-controls { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; align-items: center; }
+        .btn { padding: 8px 16px; border: none; border-radius: 8px; font-size: 0.85em; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.15s ease; }
+        .btn-primary { background: #0d9488; color: white; }
+        .btn-primary:hover { background: #0f766e; transform: translateY(-1px); }
+        .btn-ghost { background: #f1f5f9; color: #475569; }
+        .btn-ghost:hover { background: #e2e8f0; }
+
+        .footer { text-align: center; padding: 32px 20px; color: #94a3b8; font-size: 0.85em; border-top: 1px solid #e2e8f0; background: #f8fafc; }
+        .footer span { color: #0d9488; }
+
+        @media (max-width: 600px) { .compare { grid-template-columns: 1fr; } h1 { font-size: 1.8em; } .container { padding: 20px 16px 60px; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="../index.html" class="back-link">&larr; Back to LLD Topics</a>
+        <div class="pattern-badge">Structural Pattern</div>
+        <h1>Flyweight</h1>
+        <p class="subtitle">Use <strong>sharing</strong> to support large numbers of fine-grained objects efficiently, keeping memory low by separating what can be shared from what cannot.</p>
+
+        <div class="analogy">
+            <div class="tag">🌲 Real-World Analogy</div>
+            <p>Imagine a game that renders a <strong>forest of 1,000,000 trees</strong>. Every tree has a 3D mesh, a texture bitmap, and a color — data that's heavy in memory but <em>identical</em> for every tree of the same kind. What actually differs from tree to tree is just its <strong>position</strong> (x, y) and maybe a slight color tint.</p>
+            <p>Storing the full mesh and texture a million times would blow up your RAM. Instead, you store each unique <strong>tree type</strong> exactly once and let all million trees <em>point to</em> the shared type, carrying only their own coordinates. A million objects, but only a handful of heavy ones. That's the Flyweight pattern — the same trick used for glyphs in a text editor and particles in a physics engine.</p>
+        </div>
+
+        <h2>The Problem It Solves</h2>
+        <p>Some programs need a huge number of similar objects: every character in a document, every bullet in a game, every cell in a spreadsheet. If each object stores a full copy of its data, memory usage explodes:</p>
+        <ul>
+            <li>1,000,000 trees × (mesh + texture + color) per tree = gigabytes wasted on duplicate data.</li>
+            <li>Most of that data is <strong>invariant</strong> — it's the same for every object of a given kind.</li>
+            <li>The few bytes that genuinely vary (position, state) are tiny by comparison.</li>
+        </ul>
+        <p>Flyweight says: stop duplicating the invariant part. Store it once in a shared object, and have every instance reference it. You trade a little indirection for an enormous reduction in memory.</p>
+
+        <h2>How It Works: Intrinsic vs Extrinsic State</h2>
+        <p>The heart of the pattern is splitting an object's data into two buckets. Getting this split right is the whole game:</p>
+        <ul>
+            <li><strong>Intrinsic state</strong> — the part that is <em>shared and context-independent</em>. It's the same for many objects, so it lives <em>inside</em> the flyweight and is stored only once (e.g., a tree's name, color palette, mesh, and texture). Because it's shared across many users, it <strong>must be immutable</strong>.</li>
+            <li><strong>Extrinsic state</strong> — the part that is <em>unique per use</em> and varies by context. It is <em>not</em> stored in the flyweight; instead the client holds it and <strong>passes it in</strong> when calling the flyweight's methods (e.g., a tree's x/y position on the map).</li>
+        </ul>
+        <p>A <strong>FlyweightFactory</strong> manages the shared pool. When a client asks for a flyweight with given intrinsic state, the factory checks a cache: if a matching flyweight already exists, it returns that <em>same</em> instance; otherwise it creates one, caches it, and returns it. This guarantees objects with identical intrinsic state are never duplicated.</p>
+
+        <h2>Implementation</h2>
+        <p>Here, <code>TreeType</code> is the flyweight — it holds the intrinsic state (name, color, texture) and is created once per unique combination via the factory. Each <code>Tree</code> holds only the extrinsic state (x, y) plus a reference to its shared <code>TreeType</code>. Watch how the factory hands back the <em>same</em> <code>TreeType</code> for repeated requests.</p>
+
+        <div class="code-container">
+            <div class="code-tabs">
+                <button class="code-tab active" onclick="showCode(this, 'javaCode')">Java</button>
+                <button class="code-tab" onclick="showCode(this, 'pyCode')">Python</button>
+            </div>
+            <div id="javaCode" class="code-content active">
+<pre><span class="keyword">import</span> java.util.*;
+
+<span class="comment">// --- Flyweight: holds INTRINSIC (shared, immutable) state ---</span>
+<span class="keyword">public final class</span> <span class="type">TreeType</span> {
+    <span class="keyword">private final</span> <span class="type">String</span> name;     <span class="comment">// intrinsic</span>
+    <span class="keyword">private final</span> <span class="type">String</span> color;    <span class="comment">// intrinsic</span>
+    <span class="keyword">private final</span> <span class="type">String</span> texture;  <span class="comment">// intrinsic (heavy)</span>
+
+    <span class="keyword">public</span> <span class="fn">TreeType</span>(<span class="type">String</span> name, <span class="type">String</span> color, <span class="type">String</span> texture) {
+        <span class="keyword">this</span>.name = name; <span class="keyword">this</span>.color = color; <span class="keyword">this</span>.texture = texture;
+    }
+
+    <span class="comment">// EXTRINSIC state (x, y) is passed in by the caller, not stored here</span>
+    <span class="keyword">public void</span> <span class="fn">draw</span>(<span class="keyword">int</span> x, <span class="keyword">int</span> y) {
+        <span class="type">System</span>.out.<span class="fn">println</span>(<span class="string">"Draw "</span> + name + <span class="string">" ("</span> + color +
+                           <span class="string">") at ["</span> + x + <span class="string">","</span> + y + <span class="string">"]"</span>);
+    }
+}
+
+<span class="comment">// --- Flyweight Factory: caches and reuses shared flyweights ---</span>
+<span class="keyword">public class</span> <span class="type">TreeFactory</span> {
+    <span class="keyword">private static final</span> <span class="type">Map</span>&lt;<span class="type">String</span>, <span class="type">TreeType</span>&gt; pool = <span class="keyword">new</span> <span class="type">HashMap</span>&lt;&gt;();
+
+    <span class="keyword">public static</span> <span class="type">TreeType</span> <span class="fn">getTreeType</span>(<span class="type">String</span> name, <span class="type">String</span> color, <span class="type">String</span> texture) {
+        <span class="type">String</span> key = name + <span class="string">"-"</span> + color + <span class="string">"-"</span> + texture;
+        <span class="comment">// return the SAME instance if we've seen this combo before</span>
+        <span class="keyword">return</span> pool.<span class="fn">computeIfAbsent</span>(key,
+                k -&gt; <span class="keyword">new</span> <span class="type">TreeType</span>(name, color, texture));
+    }
+
+    <span class="keyword">public static int</span> <span class="fn">distinctTypes</span>() { <span class="keyword">return</span> pool.<span class="fn">size</span>(); }
+}
+
+<span class="comment">// --- Context object: holds only EXTRINSIC state + a shared reference ---</span>
+<span class="keyword">public class</span> <span class="type">Tree</span> {
+    <span class="keyword">private final int</span> x, y;            <span class="comment">// extrinsic (unique per tree)</span>
+    <span class="keyword">private final</span> <span class="type">TreeType</span> type;       <span class="comment">// shared flyweight reference</span>
+
+    <span class="keyword">public</span> <span class="fn">Tree</span>(<span class="keyword">int</span> x, <span class="keyword">int</span> y, <span class="type">TreeType</span> type) {
+        <span class="keyword">this</span>.x = x; <span class="keyword">this</span>.y = y; <span class="keyword">this</span>.type = type;
+    }
+    <span class="keyword">public void</span> <span class="fn">draw</span>() { type.<span class="fn">draw</span>(x, y); }
+}
+
+<span class="comment">// --- Client: plant a million trees, but only a few TreeType objects ---</span>
+<span class="type">List</span>&lt;<span class="type">Tree</span>&gt; forest = <span class="keyword">new</span> <span class="type">ArrayList</span>&lt;&gt;();
+<span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">1_000_000</span>; i++) {
+    <span class="comment">// every "Oak" request returns the SAME shared TreeType</span>
+    <span class="type">TreeType</span> oak = <span class="type">TreeFactory</span>.<span class="fn">getTreeType</span>(<span class="string">"Oak"</span>, <span class="string">"green"</span>, <span class="string">"oak.png"</span>);
+    forest.<span class="fn">add</span>(<span class="keyword">new</span> <span class="type">Tree</span>(rand(), rand(), oak));
+}
+<span class="type">System</span>.out.<span class="fn">println</span>(<span class="type">TreeFactory</span>.<span class="fn">distinctTypes</span>()); <span class="comment">// 1, not 1,000,000</span>
+</pre>
+            </div>
+            <div id="pyCode" class="code-content">
+<pre><span class="keyword">from</span> dataclasses <span class="keyword">import</span> dataclass
+
+<span class="comment"># --- Flyweight: holds INTRINSIC (shared, immutable) state ---</span>
+<span class="comment"># frozen=True makes it immutable, which is required for safe sharing</span>
+<span class="preproc">@dataclass</span>(frozen=<span class="keyword">True</span>)
+<span class="keyword">class</span> <span class="type">TreeType</span>:
+    name: <span class="type">str</span>       <span class="comment"># intrinsic</span>
+    color: <span class="type">str</span>      <span class="comment"># intrinsic</span>
+    texture: <span class="type">str</span>    <span class="comment"># intrinsic (heavy)</span>
+
+    <span class="comment"># EXTRINSIC state (x, y) is passed in, not stored on the flyweight</span>
+    <span class="keyword">def</span> <span class="fn">draw</span>(self, x, y):
+        <span class="fn">print</span>(<span class="string">f"Draw {self.name} ({self.color}) at [{x},{y}]"</span>)
+
+
+<span class="comment"># --- Flyweight Factory: caches and reuses shared flyweights ---</span>
+<span class="keyword">class</span> <span class="type">TreeFactory</span>:
+    _pool: <span class="type">dict</span> = {}
+
+    <span class="preproc">@classmethod</span>
+    <span class="keyword">def</span> <span class="fn">get_tree_type</span>(cls, name, color, texture):
+        key = (name, color, texture)
+        <span class="keyword">if</span> key <span class="keyword">not in</span> cls._pool:
+            cls._pool[key] = <span class="type">TreeType</span>(name, color, texture)
+        <span class="keyword">return</span> cls._pool[key]   <span class="comment"># same instance for repeat requests</span>
+
+    <span class="preproc">@classmethod</span>
+    <span class="keyword">def</span> <span class="fn">distinct_types</span>(cls):
+        <span class="keyword">return</span> <span class="fn">len</span>(cls._pool)
+
+
+<span class="comment"># --- Context object: only EXTRINSIC state + a shared reference ---</span>
+<span class="keyword">class</span> <span class="type">Tree</span>:
+    __slots__ = (<span class="string">"x"</span>, <span class="string">"y"</span>, <span class="string">"type"</span>)   <span class="comment"># keep per-instance cost tiny</span>
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, x, y, tree_type):
+        self.x, self.y = x, y       <span class="comment"># extrinsic (unique per tree)</span>
+        self.type = tree_type       <span class="comment"># shared flyweight reference</span>
+    <span class="keyword">def</span> <span class="fn">draw</span>(self):
+        self.type.<span class="fn">draw</span>(self.x, self.y)
+
+
+<span class="comment"># --- Client: a million trees, but only a few TreeType objects ---</span>
+<span class="keyword">import</span> random
+forest = []
+<span class="keyword">for</span> _ <span class="keyword">in</span> <span class="fn">range</span>(<span class="number">1_000_000</span>):
+    oak = <span class="type">TreeFactory</span>.<span class="fn">get_tree_type</span>(<span class="string">"Oak"</span>, <span class="string">"green"</span>, <span class="string">"oak.png"</span>)
+    forest.<span class="fn">append</span>(<span class="type">Tree</span>(random.<span class="fn">randint</span>(<span class="number">0</span>, <span class="number">999</span>),
+                       random.<span class="fn">randint</span>(<span class="number">0</span>, <span class="number">999</span>), oak))
+
+<span class="fn">print</span>(<span class="type">TreeFactory</span>.<span class="fn">distinct_types</span>())   <span class="comment"># 1, not 1,000,000</span>
+</pre>
+            </div>
+        </div>
+
+        <div class="warn">
+            <strong>Flyweights must be immutable.</strong> Because a single flyweight instance is shared by potentially millions of contexts, mutating its intrinsic state would silently change <em>every</em> object pointing at it. Keep the shared state read-only (Java <code>final</code> fields, Python <code>frozen=True</code>), and never let extrinsic state leak into the flyweight.
+        </div>
+
+        <h2>When to Use It</h2>
+        <ul>
+            <li>Your app creates a <strong>huge number</strong> of objects and memory is the bottleneck.</li>
+            <li>Most of each object's state can be made <strong>extrinsic</strong> (moved out and passed in).</li>
+            <li>After removing extrinsic state, <strong>many objects collapse into a few shared groups</strong>.</li>
+            <li>The app <strong>doesn't depend on object identity</strong> — it's fine for many references to point at the same shared instance.</li>
+        </ul>
+
+        <h2>Trade-offs</h2>
+        <div class="compare">
+            <div class="pros">
+                <h3>✓ Pros</h3>
+                <ul>
+                    <li>Dramatic memory savings when objects share state.</li>
+                    <li>Fewer object instantiations, less GC pressure.</li>
+                    <li>Centralizes shared state in one cached place.</li>
+                </ul>
+            </div>
+            <div class="cons">
+                <h3>✗ Cons</h3>
+                <ul>
+                    <li>Adds real <strong>complexity</strong> — you must split intrinsic vs extrinsic state cleanly.</li>
+                    <li>Trades RAM for <strong>CPU</strong>: extrinsic state must be recomputed or passed on every call.</li>
+                    <li>Flyweights <strong>must be immutable</strong>, which constrains the design.</li>
+                    <li>Pointless unless object counts are genuinely large.</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="note">
+            <strong>Interview tip:</strong> Cite real flyweights from the standard library. Java's <code>Integer.valueOf()</code> caches boxed integers from <strong>-128 to 127</strong> (the <em>Integer cache</em>), so <code>Integer.valueOf(100) == Integer.valueOf(100)</code> is <code>true</code> while <code>200 == 200</code> via boxing is <code>false</code> — a flyweight in action. The Java <strong>String pool</strong> (interned string literals) is the same idea. In Python, small ints (-5 to 256) and short interned strings are cached for exactly this reason. Naming these shows you recognize the pattern in the wild.
+        </div>
+
+        <h2>Related Patterns</h2>
+        <p>The Flyweight factory is often a <a href="../creational/singleton.html" style="color:#0d9488">Singleton</a>, and creating flyweights can be wrapped behind a <a href="../creational/factory-method.html" style="color:#0d9488">Factory Method</a>. Flyweight pairs naturally with <a href="composite.html" style="color:#0d9488">Composite</a> — shared leaf nodes in a large tree are frequently implemented as flyweights to keep the structure memory-efficient.</p>
+    </div>
+
+    <div class="footer">
+        <p>Low-Level Design · <span>Flyweight Pattern</span> · Java &amp; Python · Interactive Learning</p>
+    </div>
+
+    <script>
+        function showCode(btn, id) {
+            const container = btn.closest('.code-container');
+            container.querySelectorAll('.code-tab').forEach(t => t.classList.remove('active'));
+            container.querySelectorAll('.code-content').forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById(id).classList.add('active');
+        }
+
+    </script>
+</body>
+</html>

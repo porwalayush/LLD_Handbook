@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Decorator Pattern — LLD Guide</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8fafc; min-height: 100vh; color: #1e293b; -webkit-font-smoothing: antialiased; }
+        .container { max-width: 880px; margin: 0 auto; padding: 40px 24px 80px; }
+        .back-link { display: inline-flex; align-items: center; gap: 6px; color: #0d9488; text-decoration: none; font-size: 0.9em; font-weight: 500; margin-bottom: 28px; padding: 6px 12px; border-radius: 8px; transition: background 0.15s ease; }
+        .back-link:hover { background: #f0fdfa; }
+
+        .pattern-badge { display: inline-block; padding: 5px 14px; border-radius: 100px; font-size: 0.72em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; background: #ccfbf1; color: #0d9488; margin-bottom: 16px; }
+        h1 { font-size: 2.4em; font-weight: 800; color: #0f172a; margin-bottom: 12px; letter-spacing: -0.03em; line-height: 1.2; }
+        .subtitle { font-size: 1.1em; color: #64748b; line-height: 1.7; margin-bottom: 8px; }
+        h2 { font-size: 1.35em; font-weight: 700; color: #0f172a; margin: 40px 0 16px; letter-spacing: -0.02em; }
+        h3 { font-size: 1.1em; font-weight: 600; color: #1e293b; margin: 24px 0 10px; }
+        p, li { line-height: 1.8; color: #475569; margin-bottom: 10px; font-size: 0.95em; }
+        ul, ol { padding-left: 20px; margin-bottom: 15px; }
+        strong { color: #1e293b; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 0.85em; color: #0d9488; }
+
+        .analogy { background: linear-gradient(135deg, #f0fdfa, #fffbeb); border: 1px solid #ccfbf1; border-radius: 16px; padding: 24px 28px; margin: 24px 0; }
+        .analogy .tag { font-size: 0.78em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #0d9488; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+        .analogy p:last-child { margin-bottom: 0; }
+
+        .code-container { margin: 24px 0; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .code-tabs { display: flex; background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0 8px; }
+        .code-tab { padding: 10px 18px; cursor: pointer; border: none; background: transparent; color: #64748b; font-size: 0.85em; font-weight: 500; font-family: 'Inter', sans-serif; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.15s ease; }
+        .code-tab:hover { color: #0d9488; }
+        .code-tab.active { color: #0d9488; border-bottom-color: #0d9488; background: white; }
+        .code-content { display: none; background: white; padding: 24px; overflow-x: auto; }
+        .code-content.active { display: block; }
+        .code-content pre { color: #1e293b; font-family: 'JetBrains Mono', monospace; font-size: 0.82em; line-height: 1.75; white-space: pre; }
+        .keyword { color: #0d9488; } .type { color: #2563eb; } .string { color: #16a34a; }
+        .comment { color: #94a3b8; font-style: italic; } .number { color: #d97706; }
+        .preproc { color: #7c3aed; } .fn { color: #db2777; }
+
+        .note { background: #f0fdfa; border-left: 4px solid #0d9488; padding: 16px 20px; margin: 20px 0; border-radius: 0 12px 12px 0; }
+        .note ul, .note p { margin-bottom: 0; } .note li:last-child { margin-bottom: 0; }
+        .warn { background: #fef2f2; border-left: 4px solid #dc2626; padding: 16px 20px; margin: 20px 0; border-radius: 0 12px 12px 0; }
+        .warn ul, .warn p { margin-bottom: 0; } .warn li:last-child { margin-bottom: 0; }
+
+        .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0; }
+        .compare > div { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .pros h3 { color: #16a34a; margin-top: 0; } .cons h3 { color: #dc2626; margin-top: 0; }
+        .compare ul { margin-bottom: 0; }
+
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; }
+        th, td { padding: 12px 16px; border: 1px solid #e2e8f0; text-align: left; font-size: 0.9em; }
+        th { background: #f8fafc; color: #0f172a; font-weight: 600; }
+        tr:hover { background: #f8fafc; }
+
+        /* Interactive playground */
+        .playground { background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 24px; margin: 24px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .pg-title { font-weight: 700; color: #0f172a; font-size: 0.95em; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+        .pg-sub { color: #64748b; font-size: 0.82em; margin-bottom: 18px; }
+        .pg-stage { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: center; min-height: 120px; padding: 16px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0; }
+        .obj-box { width: 110px; padding: 14px 10px; border-radius: 12px; text-align: center; border: 2px solid #cbd5e1; background: white; transition: all 0.3s ease; }
+        .obj-box .lbl { font-size: 0.72em; color: #64748b; font-weight: 600; }
+        .obj-box .id { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 0.92em; color: #0f172a; margin-top: 4px; word-break: break-all; }
+        .obj-box.same { border-color: #0d9488; background: #f0fdfa; box-shadow: 0 0 0 3px rgba(13,148,136,0.12); }
+        .obj-box.fresh { border-color: #d97706; background: #fffbeb; box-shadow: 0 0 0 3px rgba(217,119,6,0.12); }
+        .pg-status { margin-top: 14px; padding: 12px 14px; background: #f8fafc; border-radius: 8px; font-size: 0.85em; color: #475569; min-height: 44px; display: flex; align-items: center; border: 1px solid #e2e8f0; line-height: 1.5; }
+        .pg-controls { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; align-items: center; }
+        .btn { padding: 8px 16px; border: none; border-radius: 8px; font-size: 0.85em; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.15s ease; }
+        .btn-primary { background: #0d9488; color: white; }
+        .btn-primary:hover { background: #0f766e; transform: translateY(-1px); }
+        .btn-ghost { background: #f1f5f9; color: #475569; }
+        .btn-ghost:hover { background: #e2e8f0; }
+
+        .footer { text-align: center; padding: 32px 20px; color: #94a3b8; font-size: 0.85em; border-top: 1px solid #e2e8f0; background: #f8fafc; }
+        .footer span { color: #0d9488; }
+
+        @media (max-width: 600px) { .compare { grid-template-columns: 1fr; } h1 { font-size: 1.8em; } .container { padding: 20px 16px 60px; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="../index.html" class="back-link">&larr; Back to LLD Topics</a>
+        <div class="pattern-badge">Structural Pattern</div>
+        <h1>Decorator</h1>
+        <p class="subtitle">Attach additional responsibilities to an object <strong>dynamically</strong>. Decorators provide a flexible alternative to subclassing for extending functionality.</p>
+
+        <div class="analogy">
+            <div class="tag">☕ Real-World Analogy</div>
+            <p>Walk into a <strong>coffee shop</strong>. You start with a base drink — a plain espresso, $2.00. Then you start adding things: a shot of <em>milk</em> (+$0.50), some <em>sugar</em> (+$0.20), a swirl of <em>whipped cream</em> (+$0.70). Each add-on <strong>wraps</strong> the drink you had so far, contributing to both its <em>price</em> and its <em>description</em> ("espresso, milk, sugar, whip").</p>
+            <p>Crucially, the cup is still "a beverage" the whole time — you can still ask its cost and its description no matter how many add-ons you've stacked. That's exactly a Decorator: each wrapper adds behavior while keeping the same interface, and you can combine them in any order at runtime.</p>
+        </div>
+
+        <h2>The Problem It Solves</h2>
+        <p>Imagine modelling those drinks with <strong>inheritance</strong>. You'd need <code>Espresso</code>, <code>EspressoWithMilk</code>, <code>EspressoWithMilkAndSugar</code>, <code>EspressoWithMilkAndSugarAndWhip</code>, <code>EspressoWithWhip</code>... and then repeat the entire combinatorial explosion for every base drink. This is the classic <strong>subclass explosion</strong>: <em>N</em> optional features mean up to 2<sup>N</sup> subclasses, and the set is fixed at compile time.</p>
+        <p>Decorator solves this by letting you <strong>stack behaviors at runtime</strong>. Each optional feature becomes one small wrapper class. Need milk + sugar? Wrap the drink in a <code>MilkDecorator</code>, then a <code>SugarDecorator</code>. Need a different combo? Wrap differently. Three features give you three classes, not eight, and the combinations are chosen dynamically.</p>
+
+        <div class="note">
+            <strong>Real-world library example:</strong> Java's I/O streams are textbook Decorators. <code>new BufferedReader(new InputStreamReader(new FileReader("f.txt")))</code> wraps a raw <code>FileReader</code> with character decoding, then with buffering. Each wrapper is a Decorator adding one responsibility while still being a <code>Reader</code>. The same idea appears in <code>BufferedOutputStream</code>, <code>GZIPInputStream</code>, etc.
+        </div>
+
+        <h2>How It Works</h2>
+        <p>Decorator has four roles:</p>
+        <ol>
+            <li><strong>Component</strong> — the interface shared by the real object and all wrappers (e.g. <code>Beverage</code> with <code>cost()</code> and <code>description()</code>).</li>
+            <li><strong>ConcreteComponent</strong> — the base object being decorated (e.g. <code>Espresso</code>).</li>
+            <li><strong>Decorator</strong> — an abstract base that <em>implements</em> Component and <em>holds a reference to</em> a wrapped Component, delegating to it by default.</li>
+            <li><strong>ConcreteDecorators</strong> — subclasses (<code>MilkDecorator</code>, <code>SugarDecorator</code>) that add behavior <em>before or after</em> delegating to the wrapped object.</li>
+        </ol>
+        <p>The key trick: a Decorator <strong>is-a</strong> Component <em>and</em> <strong>has-a</strong> Component. Because it implements the same interface, it can stand in for the object it wraps — and because it wraps another Component, decorators can be nested arbitrarily deep.</p>
+
+        <h2>Implementation</h2>
+        <p>Below, <code>Beverage</code> is the Component, <code>Espresso</code> the ConcreteComponent, <code>CondimentDecorator</code> the base Decorator, and <code>Milk</code>/<code>Sugar</code> the concrete decorators. Each <code>cost()</code> adds to the wrapped cost; each <code>description()</code> appends to the wrapped description.</p>
+
+        <div class="code-container">
+            <div class="code-tabs">
+                <button class="code-tab active" onclick="showCode(this, 'javaCode')">Java</button>
+                <button class="code-tab" onclick="showCode(this, 'pyCode')">Python</button>
+            </div>
+            <div id="javaCode" class="code-content active">
+<pre><span class="comment">// --- Component: the shared interface ---</span>
+<span class="keyword">interface</span> <span class="type">Beverage</span> {
+    <span class="type">double</span> <span class="fn">cost</span>();
+    <span class="type">String</span> <span class="fn">description</span>();
+}
+
+<span class="comment">// --- ConcreteComponent: the base object ---</span>
+<span class="keyword">class</span> <span class="type">Espresso</span> <span class="keyword">implements</span> <span class="type">Beverage</span> {
+    <span class="keyword">public</span> <span class="type">double</span> <span class="fn">cost</span>() { <span class="keyword">return</span> <span class="number">2.00</span>; }
+    <span class="keyword">public</span> <span class="type">String</span> <span class="fn">description</span>() { <span class="keyword">return</span> <span class="string">"Espresso"</span>; }
+}
+
+<span class="comment">// --- Base Decorator: is-a Beverage, has-a Beverage ---</span>
+<span class="keyword">abstract class</span> <span class="type">CondimentDecorator</span> <span class="keyword">implements</span> <span class="type">Beverage</span> {
+    <span class="keyword">protected final</span> <span class="type">Beverage</span> wrapped;        <span class="comment">// the object we decorate</span>
+    <span class="fn">CondimentDecorator</span>(<span class="type">Beverage</span> wrapped) {
+        <span class="keyword">this</span>.wrapped = wrapped;
+    }
+}
+
+<span class="comment">// --- ConcreteDecorators: add to cost + description ---</span>
+<span class="keyword">class</span> <span class="type">Milk</span> <span class="keyword">extends</span> <span class="type">CondimentDecorator</span> {
+    <span class="fn">Milk</span>(<span class="type">Beverage</span> b) { <span class="fn">super</span>(b); }
+    <span class="keyword">public</span> <span class="type">double</span> <span class="fn">cost</span>() {
+        <span class="keyword">return</span> wrapped.<span class="fn">cost</span>() + <span class="number">0.50</span>;        <span class="comment">// add after delegating</span>
+    }
+    <span class="keyword">public</span> <span class="type">String</span> <span class="fn">description</span>() {
+        <span class="keyword">return</span> wrapped.<span class="fn">description</span>() + <span class="string">", Milk"</span>;
+    }
+}
+
+<span class="keyword">class</span> <span class="type">Sugar</span> <span class="keyword">extends</span> <span class="type">CondimentDecorator</span> {
+    <span class="fn">Sugar</span>(<span class="type">Beverage</span> b) { <span class="fn">super</span>(b); }
+    <span class="keyword">public</span> <span class="type">double</span> <span class="fn">cost</span>() { <span class="keyword">return</span> wrapped.<span class="fn">cost</span>() + <span class="number">0.20</span>; }
+    <span class="keyword">public</span> <span class="type">String</span> <span class="fn">description</span>() {
+        <span class="keyword">return</span> wrapped.<span class="fn">description</span>() + <span class="string">", Sugar"</span>;
+    }
+}
+
+<span class="comment">// --- Usage: stack decorators at runtime ---</span>
+<span class="type">Beverage</span> drink = <span class="keyword">new</span> <span class="type">Espresso</span>();
+drink = <span class="keyword">new</span> <span class="type">Milk</span>(drink);              <span class="comment">// wrap with milk</span>
+drink = <span class="keyword">new</span> <span class="type">Sugar</span>(drink);             <span class="comment">// then sugar</span>
+
+<span class="type">System</span>.out.<span class="fn">println</span>(drink.<span class="fn">description</span>()); <span class="comment">// Espresso, Milk, Sugar</span>
+<span class="type">System</span>.out.<span class="fn">println</span>(drink.<span class="fn">cost</span>());        <span class="comment">// 2.70</span>
+</pre>
+            </div>
+            <div id="pyCode" class="code-content">
+<pre><span class="keyword">from</span> abc <span class="keyword">import</span> ABC, abstractmethod
+
+<span class="comment"># --- Component: the shared interface ---</span>
+<span class="keyword">class</span> <span class="type">Beverage</span>(ABC):
+    <span class="preproc">@abstractmethod</span>
+    <span class="keyword">def</span> <span class="fn">cost</span>(self) -&gt; <span class="type">float</span>: ...
+    <span class="preproc">@abstractmethod</span>
+    <span class="keyword">def</span> <span class="fn">description</span>(self) -&gt; <span class="type">str</span>: ...
+
+
+<span class="comment"># --- ConcreteComponent: the base object ---</span>
+<span class="keyword">class</span> <span class="type">Espresso</span>(<span class="type">Beverage</span>):
+    <span class="keyword">def</span> <span class="fn">cost</span>(self): <span class="keyword">return</span> <span class="number">2.00</span>
+    <span class="keyword">def</span> <span class="fn">description</span>(self): <span class="keyword">return</span> <span class="string">"Espresso"</span>
+
+
+<span class="comment"># --- Base Decorator: is-a Beverage, has-a Beverage ---</span>
+<span class="keyword">class</span> <span class="type">CondimentDecorator</span>(<span class="type">Beverage</span>):
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, wrapped: <span class="type">Beverage</span>):
+        self.wrapped = wrapped          <span class="comment"># the object we decorate</span>
+
+
+<span class="comment"># --- ConcreteDecorators: add to cost + description ---</span>
+<span class="keyword">class</span> <span class="type">Milk</span>(<span class="type">CondimentDecorator</span>):
+    <span class="keyword">def</span> <span class="fn">cost</span>(self):
+        <span class="keyword">return</span> self.wrapped.<span class="fn">cost</span>() + <span class="number">0.50</span>   <span class="comment"># add after delegating</span>
+    <span class="keyword">def</span> <span class="fn">description</span>(self):
+        <span class="keyword">return</span> self.wrapped.<span class="fn">description</span>() + <span class="string">", Milk"</span>
+
+
+<span class="keyword">class</span> <span class="type">Sugar</span>(<span class="type">CondimentDecorator</span>):
+    <span class="keyword">def</span> <span class="fn">cost</span>(self):
+        <span class="keyword">return</span> self.wrapped.<span class="fn">cost</span>() + <span class="number">0.20</span>
+    <span class="keyword">def</span> <span class="fn">description</span>(self):
+        <span class="keyword">return</span> self.wrapped.<span class="fn">description</span>() + <span class="string">", Sugar"</span>
+
+
+<span class="comment"># --- Usage: stack decorators at runtime ---</span>
+drink: <span class="type">Beverage</span> = <span class="type">Espresso</span>()
+drink = <span class="type">Milk</span>(drink)                 <span class="comment"># wrap with milk</span>
+drink = <span class="type">Sugar</span>(drink)                <span class="comment"># then sugar</span>
+
+<span class="fn">print</span>(drink.<span class="fn">description</span>())          <span class="comment"># Espresso, Milk, Sugar</span>
+<span class="fn">print</span>(drink.<span class="fn">cost</span>())                 <span class="comment"># 2.70</span>
+</pre>
+            </div>
+        </div>
+
+        <div class="warn">
+            <strong>Don't confuse this with Python's <code>@decorator</code> syntax.</strong> The class-based pattern above is the GoF Decorator — wrapping an <em>object</em> to add behavior. Python's <code>@my_decorator</code> function decorators are a <em>related but different</em> language feature: they wrap a <em>function or class</em> at definition time. Both share the "wrap to extend" idea, but the GoF pattern composes objects at runtime, while <code>@</code>-decorators rewrite a callable once when it's defined.
+        </div>
+
+        <h2>When to Use It</h2>
+        <ul>
+            <li>You need to add responsibilities to <strong>individual objects dynamically</strong>, without affecting other objects of the same class.</li>
+            <li>Extension by subclassing is impractical because of a <strong>combinatorial explosion</strong> of optional features.</li>
+            <li>You want to add and remove behaviors at <strong>runtime</strong>, or stack them in different orders.</li>
+        </ul>
+
+        <h2>Trade-offs</h2>
+        <div class="compare">
+            <div class="pros">
+                <h3>✓ Pros</h3>
+                <ul>
+                    <li>Add behavior at runtime without touching existing code (Open/Closed).</li>
+                    <li>Avoids subclass explosion — one small class per feature.</li>
+                    <li>Mix and match decorators in any combination and order.</li>
+                </ul>
+            </div>
+            <div class="cons">
+                <h3>✗ Cons</h3>
+                <ul>
+                    <li>Produces <strong>many small classes</strong> that can be hard to learn.</li>
+                    <li>Deeply nested wrapping is <strong>hard to debug</strong> — stack traces and identity checks get confusing.</li>
+                    <li>Order of decorators can matter, introducing subtle bugs.</li>
+                    <li>A decorated object is not identical (<code>==</code>) to the object it wraps.</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="note">
+            <strong>Interview tip:</strong> Contrast Decorator with <strong>inheritance</strong> — inheritance is static and chosen at compile time, while a Decorator composes behavior dynamically at runtime. Also contrast it with <a href="proxy.html" style="color:#0d9488">Proxy</a>: both wrap an object behind the same interface, but a Decorator <em>adds new responsibilities</em>, whereas a Proxy <em>controls access</em> (lazy loading, caching, permissions) without changing the core behavior. Citing Java I/O streams as a real-world example earns easy credit.
+        </div>
+
+        <h2>Related Patterns</h2>
+        <p><a href="adapter.html" style="color:#0d9488">Adapter</a> changes an object's interface, while Decorator keeps the interface the same and adds behavior. <a href="composite.html" style="color:#0d9488">Composite</a> and Decorator both rely on recursive composition — a Decorator can be seen as a Composite with a single child whose job is to add behavior rather than aggregate. <a href="proxy.html" style="color:#0d9488">Proxy</a> shares Decorator's wrapping structure but exists to control access rather than enrich behavior.</p>
+    </div>
+
+    <div class="footer">
+        <p>Low-Level Design · <span>Decorator Pattern</span> · Java &amp; Python · Interactive Learning</p>
+    </div>
+
+    <script>
+        function showCode(btn, id) {
+            const container = btn.closest('.code-container');
+            container.querySelectorAll('.code-tab').forEach(t => t.classList.remove('active'));
+            container.querySelectorAll('.code-content').forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById(id).classList.add('active');
+        }
+    </script>
+</body>
+</html>

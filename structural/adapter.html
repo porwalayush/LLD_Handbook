@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adapter Pattern — LLD Guide</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8fafc; min-height: 100vh; color: #1e293b; -webkit-font-smoothing: antialiased; }
+        .container { max-width: 880px; margin: 0 auto; padding: 40px 24px 80px; }
+        .back-link { display: inline-flex; align-items: center; gap: 6px; color: #0d9488; text-decoration: none; font-size: 0.9em; font-weight: 500; margin-bottom: 28px; padding: 6px 12px; border-radius: 8px; transition: background 0.15s ease; }
+        .back-link:hover { background: #f0fdfa; }
+
+        .pattern-badge { display: inline-block; padding: 5px 14px; border-radius: 100px; font-size: 0.72em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; background: #ccfbf1; color: #0d9488; margin-bottom: 16px; }
+        h1 { font-size: 2.4em; font-weight: 800; color: #0f172a; margin-bottom: 12px; letter-spacing: -0.03em; line-height: 1.2; }
+        .subtitle { font-size: 1.1em; color: #64748b; line-height: 1.7; margin-bottom: 8px; }
+        h2 { font-size: 1.35em; font-weight: 700; color: #0f172a; margin: 40px 0 16px; letter-spacing: -0.02em; }
+        h3 { font-size: 1.1em; font-weight: 600; color: #1e293b; margin: 24px 0 10px; }
+        p, li { line-height: 1.8; color: #475569; margin-bottom: 10px; font-size: 0.95em; }
+        ul, ol { padding-left: 20px; margin-bottom: 15px; }
+        strong { color: #1e293b; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 0.85em; color: #0d9488; }
+
+        .analogy { background: linear-gradient(135deg, #f0fdfa, #fffbeb); border: 1px solid #ccfbf1; border-radius: 16px; padding: 24px 28px; margin: 24px 0; }
+        .analogy .tag { font-size: 0.78em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #0d9488; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+        .analogy p:last-child { margin-bottom: 0; }
+
+        .code-container { margin: 24px 0; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .code-tabs { display: flex; background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0 8px; }
+        .code-tab { padding: 10px 18px; cursor: pointer; border: none; background: transparent; color: #64748b; font-size: 0.85em; font-weight: 500; font-family: 'Inter', sans-serif; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.15s ease; }
+        .code-tab:hover { color: #0d9488; }
+        .code-tab.active { color: #0d9488; border-bottom-color: #0d9488; background: white; }
+        .code-content { display: none; background: white; padding: 24px; overflow-x: auto; }
+        .code-content.active { display: block; }
+        .code-content pre { color: #1e293b; font-family: 'JetBrains Mono', monospace; font-size: 0.82em; line-height: 1.75; white-space: pre; }
+        .keyword { color: #0d9488; } .type { color: #2563eb; } .string { color: #16a34a; }
+        .comment { color: #94a3b8; font-style: italic; } .number { color: #d97706; }
+        .preproc { color: #7c3aed; } .fn { color: #db2777; }
+
+        .note { background: #f0fdfa; border-left: 4px solid #0d9488; padding: 16px 20px; margin: 20px 0; border-radius: 0 12px 12px 0; }
+        .note ul, .note p { margin-bottom: 0; } .note li:last-child { margin-bottom: 0; }
+        .warn { background: #fef2f2; border-left: 4px solid #dc2626; padding: 16px 20px; margin: 20px 0; border-radius: 0 12px 12px 0; }
+        .warn ul, .warn p { margin-bottom: 0; } .warn li:last-child { margin-bottom: 0; }
+
+        .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0; }
+        .compare > div { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .pros h3 { color: #16a34a; margin-top: 0; } .cons h3 { color: #dc2626; margin-top: 0; }
+        .compare ul { margin-bottom: 0; }
+
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; }
+        th, td { padding: 12px 16px; border: 1px solid #e2e8f0; text-align: left; font-size: 0.9em; }
+        th { background: #f8fafc; color: #0f172a; font-weight: 600; }
+        tr:hover { background: #f8fafc; }
+
+        /* Interactive playground */
+        .playground { background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 24px; margin: 24px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .pg-title { font-weight: 700; color: #0f172a; font-size: 0.95em; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+        .pg-sub { color: #64748b; font-size: 0.82em; margin-bottom: 18px; }
+        .pg-stage { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: center; min-height: 120px; padding: 16px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0; }
+        .obj-box { width: 110px; padding: 14px 10px; border-radius: 12px; text-align: center; border: 2px solid #cbd5e1; background: white; transition: all 0.3s ease; }
+        .obj-box .lbl { font-size: 0.72em; color: #64748b; font-weight: 600; }
+        .obj-box .id { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 0.92em; color: #0f172a; margin-top: 4px; word-break: break-all; }
+        .obj-box.same { border-color: #0d9488; background: #f0fdfa; box-shadow: 0 0 0 3px rgba(13,148,136,0.12); }
+        .obj-box.fresh { border-color: #d97706; background: #fffbeb; box-shadow: 0 0 0 3px rgba(217,119,6,0.12); }
+        .pg-status { margin-top: 14px; padding: 12px 14px; background: #f8fafc; border-radius: 8px; font-size: 0.85em; color: #475569; min-height: 44px; display: flex; align-items: center; border: 1px solid #e2e8f0; line-height: 1.5; }
+        .pg-controls { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; align-items: center; }
+        .btn { padding: 8px 16px; border: none; border-radius: 8px; font-size: 0.85em; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.15s ease; }
+        .btn-primary { background: #0d9488; color: white; }
+        .btn-primary:hover { background: #0f766e; transform: translateY(-1px); }
+        .btn-ghost { background: #f1f5f9; color: #475569; }
+        .btn-ghost:hover { background: #e2e8f0; }
+
+        .footer { text-align: center; padding: 32px 20px; color: #94a3b8; font-size: 0.85em; border-top: 1px solid #e2e8f0; background: #f8fafc; }
+        .footer span { color: #0d9488; }
+
+        @media (max-width: 600px) { .compare { grid-template-columns: 1fr; } h1 { font-size: 1.8em; } .container { padding: 20px 16px 60px; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="../index.html" class="back-link">&larr; Back to LLD Topics</a>
+        <div class="pattern-badge">Structural Pattern</div>
+        <h1>Adapter</h1>
+        <p class="subtitle">Convert the interface of a class into <strong>another interface</strong> clients expect. Adapter lets classes work together that otherwise couldn't because of incompatible interfaces.</p>
+
+        <div class="analogy">
+            <div class="tag">🔌 Real-World Analogy</div>
+            <p>Think of a <strong>travel power-plug adapter</strong>. Your laptop charger has a flat US plug, but the wall socket in Europe expects round EU pins. You can't change the charger, and you certainly can't rewire the building — so you slip a small <em>adapter</em> between them. The adapter exposes EU pins to the wall and accepts the US plug on the other side, quietly translating one shape into the other.</p>
+            <p>An Adapter in code does exactly that: it sits between two incompatible parties, presenting the interface one side expects while delegating the real work to the other — like a <strong>memory-card reader</strong> that lets a USB port "speak SD card".</p>
+        </div>
+
+        <h2>The Problem It Solves</h2>
+        <p>You have a class that does exactly what you need, but its interface doesn't match what your code expects. Crucially, you <em>can't</em> just edit that class:</p>
+        <ul>
+            <li>It's a <strong>third-party library</strong> you only have as a compiled JAR or pip package.</li>
+            <li>It's <strong>legacy code</strong> that other systems depend on — changing it would break them.</li>
+            <li>It exposes an awkward API (an old XML payment gateway) while the rest of your app speaks a clean modern interface.</li>
+        </ul>
+        <p>You don't want to litter your codebase with conversion logic at every call site, and you don't want to rewrite the existing class. Adapter introduces a small <strong>wrapper</strong> that implements the interface your code wants and translates each call into the form the existing class understands. Your client code stays clean and ignorant of the mismatch.</p>
+
+        <h2>How It Works</h2>
+        <p>There are four roles:</p>
+        <ol>
+            <li><strong>Target</strong> — the interface your client code expects and calls (e.g. <code>PaymentProcessor</code>).</li>
+            <li><strong>Adaptee</strong> — the existing class with the incompatible interface that you can't change (the legacy/3rd-party gateway).</li>
+            <li><strong>Adapter</strong> — implements <code>Target</code> and holds (or extends) the <code>Adaptee</code>, translating each Target call into one or more Adaptee calls.</li>
+            <li><strong>Client</strong> — works only against <code>Target</code>, blissfully unaware an Adaptee exists behind it.</li>
+        </ol>
+        <p>Two flavors exist:</p>
+        <ul>
+            <li><strong>Object adapter (composition)</strong> — the adapter <em>holds a reference</em> to the adaptee. Flexible, works in any language, can adapt subclasses too. This is the preferred, idiomatic form.</li>
+            <li><strong>Class adapter (inheritance)</strong> — the adapter <em>extends</em> both the target and the adaptee. Needs multiple inheritance, so it's awkward in Java (single-inheritance) but natural in Python.</li>
+        </ul>
+
+        <h2>Implementation</h2>
+        <p>Below we adapt a <strong>legacy XML-based payment gateway</strong> (the Adaptee, which we cannot modify) to a clean modern <code>PaymentProcessor</code> interface (the Target) that the rest of the application uses.</p>
+
+        <div class="code-container">
+            <div class="code-tabs">
+                <button class="code-tab active" onclick="showCode(this, 'javaCode')">Java</button>
+                <button class="code-tab" onclick="showCode(this, 'pyCode')">Python</button>
+            </div>
+            <div id="javaCode" class="code-content active">
+<pre><span class="comment">// --- Target: the clean interface our app expects ---</span>
+<span class="keyword">public interface</span> <span class="type">PaymentProcessor</span> {
+    <span class="type">String</span> <span class="fn">pay</span>(<span class="type">String</span> account, <span class="keyword">double</span> amount);
+}
+
+<span class="comment">// --- Adaptee: legacy 3rd-party gateway we CANNOT change ---</span>
+<span class="keyword">public class</span> <span class="type">LegacyXmlGateway</span> {
+    <span class="comment">// awkward API: takes an XML string, returns an XML string</span>
+    <span class="keyword">public</span> <span class="type">String</span> <span class="fn">submitTransaction</span>(<span class="type">String</span> xmlRequest) {
+        <span class="comment">// ...talks to the old payment network...</span>
+        <span class="keyword">return</span> <span class="string">"&lt;response status='OK' ref='TX-9981'/&gt;"</span>;
+    }
+}
+
+<span class="comment">// --- Adapter (object adapter / composition) ---</span>
+<span class="keyword">public class</span> <span class="type">XmlGatewayAdapter</span> <span class="keyword">implements</span> <span class="type">PaymentProcessor</span> {
+    <span class="keyword">private final</span> <span class="type">LegacyXmlGateway</span> gateway;   <span class="comment">// holds the adaptee</span>
+
+    <span class="keyword">public</span> <span class="fn">XmlGatewayAdapter</span>(<span class="type">LegacyXmlGateway</span> gateway) {
+        <span class="keyword">this</span>.gateway = gateway;
+    }
+
+    <span class="keyword">@Override</span>
+    <span class="keyword">public</span> <span class="type">String</span> <span class="fn">pay</span>(<span class="type">String</span> account, <span class="keyword">double</span> amount) {
+        <span class="comment">// translate the modern call into the legacy XML form</span>
+        <span class="type">String</span> xml = <span class="string">"&lt;txn account='"</span> + account
+                   + <span class="string">"' amount='"</span> + amount + <span class="string">"'/&gt;"</span>;
+        <span class="type">String</span> rawResponse = gateway.<span class="fn">submitTransaction</span>(xml);
+        <span class="comment">// ...parse XML, extract the reference id...</span>
+        <span class="keyword">return</span> <span class="fn">parseRef</span>(rawResponse);
+    }
+
+    <span class="keyword">private</span> <span class="type">String</span> <span class="fn">parseRef</span>(<span class="type">String</span> xml) {
+        <span class="keyword">return</span> xml.<span class="fn">replaceAll</span>(<span class="string">".*ref='([^']+)'.*"</span>, <span class="string">"$1"</span>);
+    }
+}
+
+<span class="comment">// --- Client: depends ONLY on the Target interface ---</span>
+<span class="type">PaymentProcessor</span> processor =
+        <span class="keyword">new</span> <span class="type">XmlGatewayAdapter</span>(<span class="keyword">new</span> <span class="type">LegacyXmlGateway</span>());
+<span class="type">String</span> ref = processor.<span class="fn">pay</span>(<span class="string">"acct-42"</span>, <span class="number">19.99</span>);
+<span class="type">System</span>.out.<span class="fn">println</span>(<span class="string">"Paid, ref="</span> + ref);   <span class="comment">// Paid, ref=TX-9981</span>
+</pre>
+            </div>
+            <div id="pyCode" class="code-content">
+<pre><span class="keyword">from</span> abc <span class="keyword">import</span> ABC, abstractmethod
+<span class="keyword">import</span> re
+
+<span class="comment"># --- Target: the clean interface our app expects ---</span>
+<span class="keyword">class</span> <span class="type">PaymentProcessor</span>(ABC):
+    <span class="keyword">@abstractmethod</span>
+    <span class="keyword">def</span> <span class="fn">pay</span>(self, account: str, amount: float) -&gt; str: ...
+
+
+<span class="comment"># --- Adaptee: legacy 3rd-party gateway we CANNOT change ---</span>
+<span class="keyword">class</span> <span class="type">LegacyXmlGateway</span>:
+    <span class="keyword">def</span> <span class="fn">submit_transaction</span>(self, xml_request: str) -&gt; str:
+        <span class="comment"># ...talks to the old payment network...</span>
+        <span class="keyword">return</span> <span class="string">"&lt;response status='OK' ref='TX-9981'/&gt;"</span>
+
+
+<span class="comment"># --- Adapter (object adapter / composition) ---</span>
+<span class="keyword">class</span> <span class="type">XmlGatewayAdapter</span>(<span class="type">PaymentProcessor</span>):
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, gateway: <span class="type">LegacyXmlGateway</span>):
+        self._gateway = gateway              <span class="comment"># holds the adaptee</span>
+
+    <span class="keyword">def</span> <span class="fn">pay</span>(self, account: str, amount: float) -&gt; str:
+        <span class="comment"># translate the modern call into the legacy XML form</span>
+        xml = <span class="string">f"&lt;txn account='{account}' amount='{amount}'/&gt;"</span>
+        raw = self._gateway.<span class="fn">submit_transaction</span>(xml)
+        <span class="comment"># ...parse XML, extract the reference id...</span>
+        <span class="keyword">return</span> re.<span class="fn">search</span>(<span class="string">r"ref='([^']+)'"</span>, raw).<span class="fn">group</span>(<span class="number">1</span>)
+
+
+<span class="comment"># --- Client: depends ONLY on the Target interface ---</span>
+processor: <span class="type">PaymentProcessor</span> = <span class="type">XmlGatewayAdapter</span>(<span class="type">LegacyXmlGateway</span>())
+ref = processor.<span class="fn">pay</span>(<span class="string">"acct-42"</span>, <span class="number">19.99</span>)
+<span class="fn">print</span>(<span class="string">f"Paid, ref={ref}"</span>)               <span class="comment"># Paid, ref=TX-9981</span>
+</pre>
+            </div>
+        </div>
+
+        <div class="note">
+            <strong>Object vs class adapter:</strong> the example above is an <em>object adapter</em> (it <em>holds</em> the adaptee). A <em>class adapter</em> would instead inherit from the adaptee — natural in Python (<code>class XmlGatewayAdapter(PaymentProcessor, LegacyXmlGateway)</code>) but impossible in Java because a class can extend only one parent. Prefer composition: it's more flexible and avoids tight coupling to the adaptee's implementation.
+        </div>
+
+        <h2>When to Use It</h2>
+        <ul>
+            <li>You want to use an <strong>existing class</strong> but its interface doesn't match what you need, and you can't (or shouldn't) change it.</li>
+            <li>You're integrating a <strong>third-party or legacy library</strong> and want to isolate the rest of your code from its quirks behind a clean interface.</li>
+            <li>You need several existing classes to conform to one <strong>common interface</strong> so client code can treat them uniformly.</li>
+        </ul>
+
+        <h2>Trade-offs</h2>
+        <div class="compare">
+            <div class="pros">
+                <h3>&#10003; Pros</h3>
+                <ul>
+                    <li>Reuses existing/legacy code without modifying it.</li>
+                    <li>Decouples client from the adaptee's concrete interface.</li>
+                    <li>Honors the Single Responsibility Principle — conversion logic lives in one place.</li>
+                    <li>Open/Closed: add new adapters without touching the client.</li>
+                </ul>
+            </div>
+            <div class="cons">
+                <h3>&#10007; Cons</h3>
+                <ul>
+                    <li>Adds an extra layer of indirection and a new class.</li>
+                    <li>Can hide a deeper design mismatch better solved by refactoring.</li>
+                    <li>Too many adapters across a codebase can hurt readability.</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="note">
+            <strong>Interview tip:</strong> Adapter is the "<em>make it fit</em>" pattern — emphasize that it <strong>retrofits</strong> two existing, finished interfaces that weren't designed to work together. Contrast it with <strong>Bridge</strong>, which is planned <em>up front</em> to let an abstraction and its implementation vary independently. Also distinguish it from <strong>Decorator</strong> (same interface, adds behavior) and <strong>Facade</strong> (simplifies a whole subsystem). Mentioning object-adapter-via-composition vs class-adapter-via-inheritance shows depth.
+        </div>
+
+        <h2>Related Patterns</h2>
+        <p><a href="../structural/facade.html" style="color:#0d9488">Facade</a> defines a brand-new, simpler interface to a whole subsystem, whereas Adapter makes an <em>existing</em> interface fit an expected one. <a href="../structural/decorator.html" style="color:#0d9488">Decorator</a> keeps the same interface but adds responsibilities, while Adapter deliberately <em>changes</em> the interface. <a href="../structural/proxy.html" style="color:#0d9488">Proxy</a> also wraps an object but preserves its interface, controlling access rather than translating it.</p>
+    </div>
+
+    <div class="footer">
+        <p>Low-Level Design · <span>Adapter Pattern</span> · Java &amp; Python · Interactive Learning</p>
+    </div>
+
+    <script>
+        function showCode(btn, id) {
+            const container = btn.closest('.code-container');
+            container.querySelectorAll('.code-tab').forEach(t => t.classList.remove('active'));
+            container.querySelectorAll('.code-content').forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById(id).classList.add('active');
+        }
+    </script>
+</body>
+</html>

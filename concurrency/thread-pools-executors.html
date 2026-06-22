@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thread Pools &amp; Executors — LLD Guide</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8fafc; min-height: 100vh; color: #1e293b; -webkit-font-smoothing: antialiased; }
+        .container { max-width: 880px; margin: 0 auto; padding: 40px 24px 80px; }
+        .back-link { display: inline-flex; align-items: center; gap: 6px; color: #0d9488; text-decoration: none; font-size: 0.9em; font-weight: 500; margin-bottom: 28px; padding: 6px 12px; border-radius: 8px; transition: background 0.15s ease; }
+        .back-link:hover { background: #f0fdfa; }
+
+        .pattern-badge { display: inline-block; padding: 5px 14px; border-radius: 100px; font-size: 0.72em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; background: #ccfbf1; color: #0d9488; margin-bottom: 16px; }
+        h1 { font-size: 2.4em; font-weight: 800; color: #0f172a; margin-bottom: 12px; letter-spacing: -0.03em; line-height: 1.2; }
+        .subtitle { font-size: 1.1em; color: #64748b; line-height: 1.7; margin-bottom: 8px; }
+        h2 { font-size: 1.35em; font-weight: 700; color: #0f172a; margin: 40px 0 16px; letter-spacing: -0.02em; }
+        h3 { font-size: 1.1em; font-weight: 600; color: #1e293b; margin: 24px 0 10px; }
+        p, li { line-height: 1.8; color: #475569; margin-bottom: 10px; font-size: 0.95em; }
+        ul, ol { padding-left: 20px; margin-bottom: 15px; }
+        strong { color: #1e293b; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 0.85em; color: #0d9488; }
+
+        .analogy { background: linear-gradient(135deg, #f0fdfa, #fffbeb); border: 1px solid #ccfbf1; border-radius: 16px; padding: 24px 28px; margin: 24px 0; }
+        .analogy .tag { font-size: 0.78em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #0d9488; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+        .analogy p:last-child { margin-bottom: 0; }
+
+        .code-container { margin: 24px 0; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .code-tabs { display: flex; background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0 8px; }
+        .code-tab { padding: 10px 18px; cursor: pointer; border: none; background: transparent; color: #64748b; font-size: 0.85em; font-weight: 500; font-family: 'Inter', sans-serif; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.15s ease; }
+        .code-tab:hover { color: #0d9488; }
+        .code-tab.active { color: #0d9488; border-bottom-color: #0d9488; background: white; }
+        .code-content { display: none; background: white; padding: 24px; overflow-x: auto; }
+        .code-content.active { display: block; }
+        .code-content pre { color: #1e293b; font-family: 'JetBrains Mono', monospace; font-size: 0.82em; line-height: 1.75; white-space: pre; }
+        .keyword { color: #0d9488; } .type { color: #2563eb; } .string { color: #16a34a; }
+        .comment { color: #94a3b8; font-style: italic; } .number { color: #d97706; }
+        .preproc { color: #7c3aed; } .fn { color: #db2777; }
+
+        .note { background: #f0fdfa; border-left: 4px solid #0d9488; padding: 16px 20px; margin: 20px 0; border-radius: 0 12px 12px 0; }
+        .note ul, .note p { margin-bottom: 0; } .note li:last-child { margin-bottom: 0; }
+        .warn { background: #fef2f2; border-left: 4px solid #dc2626; padding: 16px 20px; margin: 20px 0; border-radius: 0 12px 12px 0; }
+        .warn ul, .warn p { margin-bottom: 0; } .warn li:last-child { margin-bottom: 0; }
+
+        .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0; }
+        .compare > div { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .pros h3 { color: #16a34a; margin-top: 0; } .cons h3 { color: #dc2626; margin-top: 0; }
+        .compare ul { margin-bottom: 0; }
+
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; }
+        th, td { padding: 12px 16px; border: 1px solid #e2e8f0; text-align: left; font-size: 0.9em; }
+        th { background: #f8fafc; color: #0f172a; font-weight: 600; }
+        tr:hover { background: #f8fafc; }
+
+        /* Interactive playground */
+        .playground { background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 24px; margin: 24px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .pg-title { font-weight: 700; color: #0f172a; font-size: 0.95em; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+        .pg-sub { color: #64748b; font-size: 0.82em; margin-bottom: 18px; }
+        .pg-stage { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: center; min-height: 120px; padding: 16px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0; }
+        .obj-box { width: 110px; padding: 14px 10px; border-radius: 12px; text-align: center; border: 2px solid #cbd5e1; background: white; transition: all 0.3s ease; }
+        .obj-box .lbl { font-size: 0.72em; color: #64748b; font-weight: 600; }
+        .obj-box .id { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 0.92em; color: #0f172a; margin-top: 4px; word-break: break-all; }
+        .obj-box.same { border-color: #0d9488; background: #f0fdfa; box-shadow: 0 0 0 3px rgba(13,148,136,0.12); }
+        .obj-box.fresh { border-color: #d97706; background: #fffbeb; box-shadow: 0 0 0 3px rgba(217,119,6,0.12); }
+        .pg-status { margin-top: 14px; padding: 12px 14px; background: #f8fafc; border-radius: 8px; font-size: 0.85em; color: #475569; min-height: 44px; display: flex; align-items: center; border: 1px solid #e2e8f0; line-height: 1.5; }
+        .pg-controls { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; align-items: center; }
+        .btn { padding: 8px 16px; border: none; border-radius: 8px; font-size: 0.85em; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.15s ease; }
+        .btn-primary { background: #0d9488; color: white; }
+        .btn-primary:hover { background: #0f766e; transform: translateY(-1px); }
+        .btn-ghost { background: #f1f5f9; color: #475569; }
+        .btn-ghost:hover { background: #e2e8f0; }
+
+        .footer { text-align: center; padding: 32px 20px; color: #94a3b8; font-size: 0.85em; border-top: 1px solid #e2e8f0; background: #f8fafc; }
+        .footer span { color: #0d9488; }
+
+        @media (max-width: 600px) { .compare { grid-template-columns: 1fr; } h1 { font-size: 1.8em; } .container { padding: 20px 16px 60px; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="../index.html" class="back-link">&larr; Back to LLD Topics</a>
+        <div class="pattern-badge">Concurrency</div>
+        <h1>Thread Pools &amp; Executors</h1>
+        <p class="subtitle">Reuse a <strong>fixed set of worker threads</strong> to run many tasks efficiently, instead of spawning a new thread for every job.</p>
+
+        <div class="analogy">
+            <div class="tag">🏦 Real-World Analogy</div>
+            <p>Walk into a bank. There are, say, <strong>four tellers</strong> and a single queue of customers. When a teller finishes with one customer, they call the next person in line. The bank does <em>not</em> hire a brand-new teller for every customer who walks in and fire them at the counter — that would be absurdly slow and expensive. The same handful of tellers are <strong>reused</strong> all day long.</p>
+            <p>A thread pool is exactly that: a fixed crew of worker <strong>threads</strong> (the tellers) pulling <strong>tasks</strong> (the customers) off a shared queue. Tasks wait their turn; threads stay alive and get reused.</p>
+        </div>
+
+        <h2>The Problem It Solves</h2>
+        <p>The naive approach is to call <code>new Thread()</code> for every task. It works for a demo and falls apart in production:</p>
+        <ul>
+            <li><strong>Thread creation is expensive.</strong> Each thread costs a system call and a chunk of stack memory (often ~1&nbsp;MB). Creating one per request burns time before any real work happens.</li>
+            <li><strong>Unbounded threads exhaust the machine.</strong> If 10,000 requests arrive, you get 10,000 threads. The CPU thrashes between them (context-switch storm) and you run out of memory — frequently crashing the process.</li>
+            <li><strong>No back-pressure.</strong> There's no natural limit; a traffic spike directly becomes a resource spike.</li>
+        </ul>
+        <p>A thread pool fixes all three. It <strong>bounds concurrency</strong> to a sane number of workers, <strong>reuses</strong> those workers across many tasks, and holds the overflow in an internal <strong>task queue</strong> — giving you predictable resource use under load.</p>
+
+        <h2>How It Works</h2>
+        <p>In Java the abstraction is <code>ExecutorService</code>; the workhorse implementation is <code>ThreadPoolExecutor</code>. You hand it tasks and it schedules them onto its worker threads. The key tuning parameters of <code>ThreadPoolExecutor</code> are:</p>
+        <ul>
+            <li><strong><code>corePoolSize</code></strong> — the number of threads kept alive even when idle.</li>
+            <li><strong><code>maximumPoolSize</code></strong> — the hard ceiling on threads, created only when the queue is full.</li>
+            <li><strong>work queue</strong> — a <code>BlockingQueue</code> holding tasks waiting for a free worker.</li>
+            <li><strong><code>keepAliveTime</code></strong> — how long threads above the core size linger idle before being reclaimed.</li>
+            <li><strong>rejection policy</strong> — what to do when the queue is full <em>and</em> max threads are busy (e.g. <code>AbortPolicy</code> throws, <code>CallerRunsPolicy</code> runs it on the submitting thread).</li>
+        </ul>
+        <p>You usually create one via the <code>Executors</code> factory — <code>Executors.newFixedThreadPool(n)</code> for a fixed crew. You <strong>submit</strong> work as a <code>Runnable</code> (returns nothing) or a <code>Callable</code> (returns a value and may throw). <code>submit()</code> immediately hands back a <strong><code>Future</code></strong> — a placeholder for the eventual result; call <code>future.get()</code> to block until it's ready. For composing async pipelines without blocking, <code>CompletableFuture</code> lets you chain steps (<code>thenApply</code>, <code>thenCompose</code>) and combine results.</p>
+        <p>When you're done you must <strong>shut the pool down</strong>, or its threads keep the JVM alive forever. <code>shutdown()</code> is graceful — it stops accepting new tasks but lets queued ones finish. <code>shutdownNow()</code> is abrupt — it tries to interrupt running tasks and returns the ones never started.</p>
+
+        <div class="code-container">
+            <div class="code-tabs">
+                <button class="code-tab active" onclick="showCode(this, 'javaCode')">Java</button>
+                <button class="code-tab" onclick="showCode(this, 'pyCode')">Python</button>
+            </div>
+            <div id="javaCode" class="code-content active">
+<pre><span class="keyword">import</span> java.util.concurrent.*;
+<span class="keyword">import</span> java.util.*;
+
+<span class="comment">// A fixed pool of 4 worker threads, reused for all tasks.</span>
+<span class="type">ExecutorService</span> pool = <span class="type">Executors</span>.<span class="fn">newFixedThreadPool</span>(<span class="number">4</span>);
+
+<span class="type">List</span>&lt;<span class="type">Future</span>&lt;<span class="type">Integer</span>&gt;&gt; futures = <span class="keyword">new</span> <span class="type">ArrayList</span>&lt;&gt;();
+
+<span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">1</span>; i &lt;= <span class="number">8</span>; i++) {
+    <span class="keyword">final int</span> id = i;
+    <span class="comment">// submit() takes a Callable and returns a Future right away</span>
+    <span class="type">Future</span>&lt;<span class="type">Integer</span>&gt; f = pool.<span class="fn">submit</span>(() -&gt; {
+        <span class="type">Thread</span>.<span class="fn">sleep</span>(<span class="number">100</span>);          <span class="comment">// pretend to do real work</span>
+        <span class="keyword">return</span> id * id;             <span class="comment">// Callable returns a value</span>
+    });
+    futures.<span class="fn">add</span>(f);
+}
+
+<span class="comment">// Collect the results (get() blocks until each task finishes)</span>
+<span class="keyword">long</span> total = <span class="number">0</span>;
+<span class="keyword">for</span> (<span class="type">Future</span>&lt;<span class="type">Integer</span>&gt; f : futures) {
+    total += f.<span class="fn">get</span>();              <span class="comment">// may throw if the task failed</span>
+}
+<span class="type">System</span>.out.<span class="fn">println</span>(<span class="string">"sum of squares = "</span> + total);
+
+<span class="comment">// --- Always shut the pool down (graceful) ---</span>
+pool.<span class="fn">shutdown</span>();                              <span class="comment">// stop accepting new tasks</span>
+<span class="keyword">if</span> (!pool.<span class="fn">awaitTermination</span>(<span class="number">10</span>, <span class="type">TimeUnit</span>.SECONDS)) {
+    pool.<span class="fn">shutdownNow</span>();                       <span class="comment">// force-stop stragglers</span>
+}
+
+<span class="comment">// --- Bonus: CompletableFuture chains work without blocking ---</span>
+<span class="type">CompletableFuture</span>
+    .<span class="fn">supplyAsync</span>(() -&gt; <span class="number">21</span>, pool)
+    .<span class="fn">thenApply</span>(x -&gt; x * <span class="number">2</span>)
+    .<span class="fn">thenAccept</span>(r -&gt; <span class="type">System</span>.out.<span class="fn">println</span>(<span class="string">"result = "</span> + r));
+</pre>
+            </div>
+            <div id="pyCode" class="code-content">
+<pre><span class="keyword">from</span> concurrent.futures <span class="keyword">import</span> <span class="type">ThreadPoolExecutor</span>, as_completed
+<span class="keyword">import</span> time
+
+<span class="keyword">def</span> <span class="fn">work</span>(n):
+    time.<span class="fn">sleep</span>(<span class="number">0.1</span>)          <span class="comment"># pretend to do real work</span>
+    <span class="keyword">return</span> n * n
+
+<span class="comment"># The `with` block creates the pool and shuts it down cleanly on exit.</span>
+<span class="keyword">with</span> <span class="type">ThreadPoolExecutor</span>(max_workers=<span class="number">4</span>) <span class="keyword">as</span> pool:
+
+    <span class="comment"># --- submit(): returns a Future for each task ---</span>
+    futures = [pool.<span class="fn">submit</span>(work, i) <span class="keyword">for</span> i <span class="keyword">in</span> <span class="fn">range</span>(<span class="number">1</span>, <span class="number">9</span>)]
+
+    total = <span class="number">0</span>
+    <span class="keyword">for</span> f <span class="keyword">in</span> as_completed(futures):  <span class="comment"># results as they finish</span>
+        total += f.<span class="fn">result</span>()           <span class="comment"># .result() blocks until ready</span>
+    <span class="fn">print</span>(<span class="string">f"sum of squares = {total}"</span>)
+
+    <span class="comment"># --- map(): simpler when you just want ordered results ---</span>
+    squares = <span class="fn">list</span>(pool.<span class="fn">map</span>(work, <span class="fn">range</span>(<span class="number">1</span>, <span class="number">5</span>)))
+    <span class="fn">print</span>(squares)               <span class="comment"># [1, 4, 9, 16]</span>
+
+<span class="comment"># Leaving the `with` block calls shutdown() and waits for tasks to finish.</span>
+
+<span class="comment"># --- Note: threads share the GIL, so they help IO-bound work but NOT</span>
+<span class="comment"># CPU-bound work. For CPU-bound jobs, swap in ProcessPoolExecutor --</span>
+<span class="comment"># same API, but each worker is a separate process that sidesteps the GIL.</span>
+</pre>
+            </div>
+        </div>
+
+        <h2>Designing Your Own Bounded Worker Pool</h2>
+        <p>You won't build one in production — but interviewers love asking, because it ties the whole concurrency toolkit together. The recipe is small:</p>
+        <ol>
+            <li>Create a <strong>shared <code>BlockingQueue</code></strong> of tasks with a fixed capacity. The capacity is your back-pressure: when it's full, submitters wait.</li>
+            <li>Start a <strong>fixed number of worker threads</strong>. Each runs the same loop forever: <em>take</em> a task off the queue (blocking if empty), run it, repeat.</li>
+            <li>To submit work, callers <em>put</em> a task on the queue (blocking if full).</li>
+            <li>To shut down, push a sentinel "poison pill" per worker (or set a flag and interrupt) so each loop exits cleanly.</li>
+        </ol>
+        <p>That blocking queue between producers (submitters) and consumers (workers) is exactly the <a href="producer-consumer.html" style="color:#0d9488">Producer–Consumer</a> pattern — the queue decouples how fast work arrives from how fast it's processed, and naturally throttles both sides.</p>
+
+        <h2>When to Use It</h2>
+        <ul>
+            <li>You have <strong>many short-lived tasks</strong> (web requests, jobs, messages) and want to cap how many run at once.</li>
+            <li>You need <strong>predictable resource usage</strong> and back-pressure under load instead of unbounded thread growth.</li>
+            <li>You want to run work <strong>asynchronously</strong> and collect results later via <code>Future</code> / <code>CompletableFuture</code>.</li>
+            <li>Essentially any time you're tempted to write <code>new Thread()</code> inside a loop — use a pool instead.</li>
+        </ul>
+
+        <h2>Trade-offs</h2>
+        <div class="compare">
+            <div class="pros">
+                <h3>&#10003; Pros</h3>
+                <ul>
+                    <li>Reuses threads — no per-task creation cost.</li>
+                    <li>Bounds concurrency and memory; built-in back-pressure.</li>
+                    <li>Clean async API with <code>Future</code> results.</li>
+                    <li>Decouples task submission from execution.</li>
+                </ul>
+            </div>
+            <div class="cons">
+                <h3>&#10007; Cons</h3>
+                <ul>
+                    <li>Pool <strong>sizing is tricky</strong> — too small starves, too big thrashes.</li>
+                    <li>A blocking/long task can <strong>hog a worker</strong> and starve others.</li>
+                    <li>Unbounded queues can hide overload and grow until OOM.</li>
+                    <li>Forgetting to <strong>shut down</strong> leaks threads and hangs the JVM.</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="note">
+            <strong>Interview tip:</strong> Know how to <em>size</em> the pool. For <strong>CPU-bound</strong> work, threads ≈ the number of cores (more just adds context-switch overhead). For <strong>IO-bound</strong> work (network, disk, DB), go higher — threads spend most of their time waiting, so you want many in flight to keep the CPU busy. And always state that you'd <strong>shut the pool down</strong> (and prefer a bounded queue with an explicit rejection policy over an unbounded one).
+        </div>
+
+        <h2>Related Topics</h2>
+        <p>A custom pool is built directly on the <a href="producer-consumer.html" style="color:#0d9488">Producer–Consumer</a> pattern with a shared blocking queue. Its internals rely on <a href="locks-synchronization.html" style="color:#0d9488">Locks &amp; Synchronization</a> to coordinate the queue, and executors are a core building block across the wider <a href="concurrency-patterns.html" style="color:#0d9488">Concurrency Patterns</a> toolkit.</p>
+    </div>
+
+    <div class="footer">
+        <p>Low-Level Design &middot; <span>Thread Pools &amp; Executors</span> &middot; Java &amp; Python &middot; Interactive Learning</p>
+    </div>
+
+    <script>
+        function showCode(btn, id) {
+            const container = btn.closest('.code-container');
+            container.querySelectorAll('.code-tab').forEach(t => t.classList.remove('active'));
+            container.querySelectorAll('.code-content').forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById(id).classList.add('active');
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Atomics &amp; Lock-Free — LLD Guide</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8fafc; min-height: 100vh; color: #1e293b; -webkit-font-smoothing: antialiased; }
+        .container { max-width: 880px; margin: 0 auto; padding: 40px 24px 80px; }
+        .back-link { display: inline-flex; align-items: center; gap: 6px; color: #0d9488; text-decoration: none; font-size: 0.9em; font-weight: 500; margin-bottom: 28px; padding: 6px 12px; border-radius: 8px; transition: background 0.15s ease; }
+        .back-link:hover { background: #f0fdfa; }
+
+        .pattern-badge { display: inline-block; padding: 5px 14px; border-radius: 100px; font-size: 0.72em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; background: #ccfbf1; color: #0d9488; margin-bottom: 16px; }
+        h1 { font-size: 2.4em; font-weight: 800; color: #0f172a; margin-bottom: 12px; letter-spacing: -0.03em; line-height: 1.2; }
+        .subtitle { font-size: 1.1em; color: #64748b; line-height: 1.7; margin-bottom: 8px; }
+        h2 { font-size: 1.35em; font-weight: 700; color: #0f172a; margin: 40px 0 16px; letter-spacing: -0.02em; }
+        h3 { font-size: 1.1em; font-weight: 600; color: #1e293b; margin: 24px 0 10px; }
+        p, li { line-height: 1.8; color: #475569; margin-bottom: 10px; font-size: 0.95em; }
+        ul, ol { padding-left: 20px; margin-bottom: 15px; }
+        strong { color: #1e293b; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 0.85em; color: #0d9488; }
+
+        .analogy { background: linear-gradient(135deg, #f0fdfa, #fffbeb); border: 1px solid #ccfbf1; border-radius: 16px; padding: 24px 28px; margin: 24px 0; }
+        .analogy .tag { font-size: 0.78em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #0d9488; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+        .analogy p:last-child { margin-bottom: 0; }
+
+        .code-container { margin: 24px 0; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .code-tabs { display: flex; background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0 8px; }
+        .code-tab { padding: 10px 18px; cursor: pointer; border: none; background: transparent; color: #64748b; font-size: 0.85em; font-weight: 500; font-family: 'Inter', sans-serif; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.15s ease; }
+        .code-tab:hover { color: #0d9488; }
+        .code-tab.active { color: #0d9488; border-bottom-color: #0d9488; background: white; }
+        .code-content { display: none; background: white; padding: 24px; overflow-x: auto; }
+        .code-content.active { display: block; }
+        .code-content pre { color: #1e293b; font-family: 'JetBrains Mono', monospace; font-size: 0.82em; line-height: 1.75; white-space: pre; }
+        .keyword { color: #0d9488; } .type { color: #2563eb; } .string { color: #16a34a; }
+        .comment { color: #94a3b8; font-style: italic; } .number { color: #d97706; }
+        .preproc { color: #7c3aed; } .fn { color: #db2777; }
+
+        .note { background: #f0fdfa; border-left: 4px solid #0d9488; padding: 16px 20px; margin: 20px 0; border-radius: 0 12px 12px 0; }
+        .note ul, .note p { margin-bottom: 0; } .note li:last-child { margin-bottom: 0; }
+        .warn { background: #fef2f2; border-left: 4px solid #dc2626; padding: 16px 20px; margin: 20px 0; border-radius: 0 12px 12px 0; }
+        .warn ul, .warn p { margin-bottom: 0; } .warn li:last-child { margin-bottom: 0; }
+
+        .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0; }
+        .compare > div { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .pros h3 { color: #16a34a; margin-top: 0; } .cons h3 { color: #dc2626; margin-top: 0; }
+        .compare ul { margin-bottom: 0; }
+
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; }
+        th, td { padding: 12px 16px; border: 1px solid #e2e8f0; text-align: left; font-size: 0.9em; }
+        th { background: #f8fafc; color: #0f172a; font-weight: 600; }
+        tr:hover { background: #f8fafc; }
+
+        /* Interactive playground */
+        .playground { background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 24px; margin: 24px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .pg-title { font-weight: 700; color: #0f172a; font-size: 0.95em; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+        .pg-sub { color: #64748b; font-size: 0.82em; margin-bottom: 18px; }
+        .pg-stage { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: center; min-height: 120px; padding: 16px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0; }
+        .obj-box { width: 110px; padding: 14px 10px; border-radius: 12px; text-align: center; border: 2px solid #cbd5e1; background: white; transition: all 0.3s ease; }
+        .obj-box .lbl { font-size: 0.72em; color: #64748b; font-weight: 600; }
+        .obj-box .id { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 0.92em; color: #0f172a; margin-top: 4px; word-break: break-all; }
+        .obj-box.same { border-color: #0d9488; background: #f0fdfa; box-shadow: 0 0 0 3px rgba(13,148,136,0.12); }
+        .obj-box.fresh { border-color: #d97706; background: #fffbeb; box-shadow: 0 0 0 3px rgba(217,119,6,0.12); }
+        .pg-status { margin-top: 14px; padding: 12px 14px; background: #f8fafc; border-radius: 8px; font-size: 0.85em; color: #475569; min-height: 44px; display: flex; align-items: center; border: 1px solid #e2e8f0; line-height: 1.5; }
+        .pg-controls { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; align-items: center; }
+        .btn { padding: 8px 16px; border: none; border-radius: 8px; font-size: 0.85em; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.15s ease; }
+        .btn-primary { background: #0d9488; color: white; }
+        .btn-primary:hover { background: #0f766e; transform: translateY(-1px); }
+        .btn-ghost { background: #f1f5f9; color: #475569; }
+        .btn-ghost:hover { background: #e2e8f0; }
+
+        .footer { text-align: center; padding: 32px 20px; color: #94a3b8; font-size: 0.85em; border-top: 1px solid #e2e8f0; background: #f8fafc; }
+        .footer span { color: #0d9488; }
+
+        @media (max-width: 600px) { .compare { grid-template-columns: 1fr; } h1 { font-size: 1.8em; } .container { padding: 20px 16px 60px; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="../index.html" class="back-link">&larr; Back to LLD Topics</a>
+        <div class="pattern-badge">Concurrency</div>
+        <h1>Atomics &amp; Lock-Free</h1>
+        <p class="subtitle">Do thread-safe updates <strong>without locks</strong>, using hardware-level atomic instructions so many threads can make progress at once.</p>
+
+        <div class="analogy">
+            <div class="tag">🥤 Real-World Analogy</div>
+            <p>Picture a vending machine that does <strong>compare-and-swap</strong>. You read the price tag — it says <em>$2</em>. You go to insert your $2, but before you commit, the machine checks: "Does the tag <em>still</em> say $2?" If someone bumped it to $3 while you were fishing for coins, the machine rejects your attempt and you simply <em>read the new price and try again</em>. No one had to lock the whole machine while you decided.</p>
+            <p>It's the same as editing a shared Google Doc <em>optimistically</em>: you make your change assuming nothing shifted under you. If the document changed since you started, the editor detects the conflict and retries your edit on the fresh version. Nobody freezes the document for everyone else just so you can type.</p>
+        </div>
+
+        <h2>The Problem It Solves</h2>
+        <p>The obvious way to make shared data thread-safe is a <strong>lock</strong>: only one thread holds it at a time, so updates can't collide. That works, but it has real costs:</p>
+        <ul>
+            <li><strong>Blocking.</strong> While one thread holds the lock, every other thread that wants it goes to sleep and waits.</li>
+            <li><strong>Context switches.</strong> Parking and waking threads is expensive — the OS has to save and restore state.</li>
+            <li><strong>Deadlock.</strong> Two threads each waiting on a lock the other holds will wait forever.</li>
+            <li><strong>Contention.</strong> Under heavy traffic a hot lock becomes a single-file bottleneck, even on a 32-core machine.</li>
+        </ul>
+        <p><strong>Atomics</strong> take a different route. They lean on a single CPU instruction that updates a value <em>indivisibly</em> — no other thread can observe a half-finished update. Because there's no lock to hold, threads never block each other; in the worst case they just retry. This is the foundation of <strong>lock-free</strong> programming, where the system as a whole always makes progress.</p>
+
+        <h2>CAS: Compare-And-Swap</h2>
+        <p>The single most important primitive is <strong>Compare-And-Swap (CAS)</strong>. In one uninterruptible hardware step it says:</p>
+        <p><em>"If the value at this location still equals <code>expected</code>, replace it with <code>newValue</code> and report success. Otherwise change nothing and report failure."</em></p>
+        <p>That tiny atomic "if" is enough to build almost all lock-free code. The usual shape is a <strong>CAS retry loop</strong>: read the current value, compute the new value from it, then try to CAS it in. If someone else changed the value first, the CAS fails and you loop — re-reading the now-current value and recomputing. Eventually your swap lands. No thread is ever blocked; a thread only retries when it loses a race, which means <em>some other</em> thread won and made progress.</p>
+
+        <div class="warn">
+            <strong>The ABA problem.</strong> CAS only checks that the value <em>equals</em> what you expected — not that it never changed. If a value goes from <strong>A → B → A</strong> while you weren't looking, your CAS sees "A" and happily succeeds, even though the world moved underneath you. This bites lock-free stacks/queues where a reused pointer looks identical but now points at recycled memory. The fix is a <strong>version stamp</strong>: pair the value with a counter (e.g. Java's <code>AtomicStampedReference</code>) so A-at-version-1 and A-at-version-3 are distinguishable.</p>
+        </div>
+
+        <h2>The Tools</h2>
+        <p>Java ships a rich <code>java.util.concurrent.atomic</code> toolkit built directly on CAS. Python is more limited — by design — so we are honest about what it actually offers.</p>
+        <ul>
+            <li><strong>Java <code>AtomicInteger</code> / <code>AtomicLong</code></strong> — atomic counters. <code>incrementAndGet()</code> and <code>compareAndSet(expected, new)</code> never need a lock.</li>
+            <li><strong>Java <code>AtomicReference&lt;T&gt;</code></strong> — atomically swap an object reference; the basis for lock-free data structures.</li>
+            <li><strong>Java <code>LongAdder</code></strong> — a counter tuned for <em>high contention</em>. It spreads writes across multiple internal cells so threads rarely collide, then sums them on read. Prefer it over <code>AtomicLong</code> when many threads increment a shared counter (metrics, hit counts).</li>
+            <li><strong>Python reality</strong> — Python has <em>no</em> rich public atomics library. The <strong>GIL</strong> makes some single bytecode operations effectively atomic, but compound operations like <code>counter += 1</code> are <em>not</em> (they read, add, then store — three steps). Practical tools: a <code>threading.Lock</code>, <code>itertools.count()</code> for a thread-safe incrementing counter, the thread-safe <code>queue.Queue</code>, and <code>multiprocessing.Value</code> for shared state across processes. There are no public <code>AtomicInteger</code>-style classes.</li>
+        </ul>
+
+        <div class="code-container">
+            <div class="code-tabs">
+                <button class="code-tab active" onclick="showCode(this, 'javaCode')">Java</button>
+                <button class="code-tab" onclick="showCode(this, 'pyCode')">Python</button>
+            </div>
+            <div id="javaCode" class="code-content active">
+<pre><span class="keyword">import</span> java.util.concurrent.atomic.<span class="type">AtomicInteger</span>;
+<span class="keyword">import</span> java.util.concurrent.atomic.<span class="type">AtomicLong</span>;
+<span class="keyword">import</span> java.util.concurrent.atomic.<span class="type">LongAdder</span>;
+
+<span class="comment">// --- 1. AtomicInteger: a lock-free counter ---</span>
+<span class="type">AtomicInteger</span> hits = <span class="keyword">new</span> <span class="type">AtomicInteger</span>(<span class="number">0</span>);
+<span class="keyword">int</span> n = hits.<span class="fn">incrementAndGet</span>();   <span class="comment">// atomic ++  -> returns new value</span>
+hits.<span class="fn">addAndGet</span>(<span class="number">5</span>);                 <span class="comment">// atomic += 5</span>
+
+<span class="comment">// --- 2. A manual CAS retry loop: atomic "max" update ---</span>
+<span class="comment">// There is no atomicMax in older JDKs, so we build it from compareAndSet.</span>
+<span class="keyword">static void</span> <span class="fn">updateMax</span>(<span class="type">AtomicInteger</span> max, <span class="keyword">int</span> candidate) {
+    <span class="keyword">while</span> (<span class="keyword">true</span>) {
+        <span class="keyword">int</span> current = max.<span class="fn">get</span>();            <span class="comment">// read the latest value</span>
+        <span class="keyword">if</span> (candidate &lt;= current) <span class="keyword">return</span>;  <span class="comment">// nothing to do</span>
+        <span class="comment">// try to swap current -> candidate; succeeds only if</span>
+        <span class="comment">// nobody changed `max` since our read</span>
+        <span class="keyword">if</span> (max.<span class="fn">compareAndSet</span>(current, candidate)) {
+            <span class="keyword">return</span>;                        <span class="comment">// we won the race</span>
+        }
+        <span class="comment">// CAS failed -> someone else updated max; loop and retry</span>
+    }
+}
+
+<span class="comment">// --- 3. AtomicReference: lock-free reference swap ---</span>
+<span class="type">AtomicReference</span>&lt;<span class="type">String</span>&gt; leader = <span class="keyword">new</span> <span class="type">AtomicReference</span>&lt;&gt;(<span class="string">"none"</span>);
+leader.<span class="fn">compareAndSet</span>(<span class="string">"none"</span>, <span class="string">"node-A"</span>);  <span class="comment">// claim leadership atomically</span>
+
+<span class="comment">// --- 4. LongAdder: best for HIGH-contention counters ---</span>
+<span class="type">LongAdder</span> requests = <span class="keyword">new</span> <span class="type">LongAdder</span>();
+requests.<span class="fn">increment</span>();                  <span class="comment">// many threads, almost no contention</span>
+<span class="keyword">long</span> total = requests.<span class="fn">sum</span>();        <span class="comment">// read the combined total</span>
+</pre>
+            </div>
+            <div id="pyCode" class="code-content">
+<pre><span class="keyword">import</span> threading
+<span class="keyword">import</span> itertools
+
+<span class="comment"># Python has NO rich public atomics library. `counter += 1` is NOT atomic:</span>
+<span class="comment"># it READS, ADDs, then STOREs -- three bytecodes the scheduler can split.</span>
+<span class="comment"># The GIL makes SOME single ops atomic, but never rely on that for += .</span>
+
+<span class="comment"># --- Practical pattern 1: a Lock-guarded counter ---</span>
+<span class="keyword">class</span> <span class="type">AtomicCounter</span>:
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, start=<span class="number">0</span>):
+        self._value = start
+        self._lock = threading.<span class="type">Lock</span>()      <span class="comment"># protects the read-modify-write</span>
+
+    <span class="keyword">def</span> <span class="fn">increment</span>(self):
+        <span class="keyword">with</span> self._lock:                     <span class="comment"># only one thread inside at a time</span>
+            self._value += <span class="number">1</span>
+            <span class="keyword">return</span> self._value
+
+    <span class="keyword">def</span> <span class="fn">get</span>(self):
+        <span class="keyword">with</span> self._lock:
+            <span class="keyword">return</span> self._value
+
+counter = <span class="type">AtomicCounter</span>()
+counter.<span class="fn">increment</span>()                        <span class="comment"># safe from many threads</span>
+
+<span class="comment"># --- Practical pattern 2: itertools.count() for unique IDs ---</span>
+<span class="comment"># count().__next__ is atomic at the C level -> handy lock-free ID source.</span>
+ids = itertools.<span class="fn">count</span>(<span class="number">1</span>)
+next_id = <span class="fn">next</span>(ids)                       <span class="comment"># 1, then 2, then 3 ... thread-safe</span>
+
+<span class="comment"># --- Note: Python 3.13+ free-threading (no-GIL) build ---</span>
+<span class="comment"># Without the GIL, even "atomic-looking" ops lose their accidental safety,</span>
+<span class="comment"># so explicit Locks (or queue.Queue) become REQUIRED, not optional.</span>
+<span class="comment"># For CPU-bound shared counters across processes, use multiprocessing.Value.</span>
+</pre>
+            </div>
+        </div>
+
+        <h2>When to Use It</h2>
+        <ul>
+            <li>Simple shared <strong>counters and flags</strong> — hit counts, sequence numbers, "started/stopped" booleans.</li>
+            <li><strong>High-contention</strong> hot paths where lock blocking and context switches would dominate (use <code>LongAdder</code>).</li>
+            <li>Building <strong>lock-free data structures</strong> (stacks, queues) where the whole system must keep making progress even if one thread stalls.</li>
+            <li>Implementing optimistic "claim once" handoffs with <code>compareAndSet</code> (leader election, one-time initialization).</li>
+        </ul>
+
+        <h2>Trade-offs</h2>
+        <div class="compare">
+            <div class="pros">
+                <h3>&#10003; Pros</h3>
+                <ul>
+                    <li>No blocking — threads never sleep waiting on a lock.</li>
+                    <li>No deadlock (there's no lock to acquire in the wrong order).</li>
+                    <li>Excellent throughput under contention.</li>
+                    <li>System-wide progress guarantee (lock-freedom).</li>
+                </ul>
+            </div>
+            <div class="cons">
+                <h3>&#10007; Cons</h3>
+                <ul>
+                    <li>Hard to reason about and easy to get subtly wrong.</li>
+                    <li>The <strong>ABA problem</strong> needs version stamps to avoid.</li>
+                    <li>Retry loops can <strong>livelock</strong> under extreme contention.</li>
+                    <li>Only works for <strong>simple, single-variable</strong> state — not compound invariants.</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="note">
+            <strong>Interview tip:</strong> The crisp rule is — <strong>atomics for single counters and flags; locks for compound invariants</strong>. If a correct update must touch <em>two or more</em> fields together (e.g. "transfer $10 from A to B, keeping the total constant"), a single CAS can't express that — reach for a lock. Mention CAS, the retry-loop shape, and the ABA problem and you've covered what most interviewers are listening for.
+        </div>
+
+        <h2>Related Topics</h2>
+        <p>Atomics are the lock-free counterpart to traditional <a href="locks-synchronization.html" style="color:#0d9488">Locks &amp; Synchronization</a>. They power the internals of <a href="thread-pools-executors.html" style="color:#0d9488">Thread Pools &amp; Executors</a> (queues and worker counts), and show up throughout the broader <a href="concurrency-patterns.html" style="color:#0d9488">Concurrency Patterns</a> toolkit.</p>
+    </div>
+
+    <div class="footer">
+        <p>Low-Level Design &middot; <span>Atomics &amp; Lock-Free</span> &middot; Java &amp; Python &middot; Interactive Learning</p>
+    </div>
+
+    <script>
+        function showCode(btn, id) {
+            const container = btn.closest('.code-container');
+            container.querySelectorAll('.code-tab').forEach(t => t.classList.remove('active'));
+            container.querySelectorAll('.code-content').forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById(id).classList.add('active');
+        }
+    </script>
+</body>
+</html>

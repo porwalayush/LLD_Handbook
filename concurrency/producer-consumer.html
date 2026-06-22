@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Producer–Consumer — LLD Guide</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8fafc; min-height: 100vh; color: #1e293b; -webkit-font-smoothing: antialiased; }
+        .container { max-width: 880px; margin: 0 auto; padding: 40px 24px 80px; }
+        .back-link { display: inline-flex; align-items: center; gap: 6px; color: #0d9488; text-decoration: none; font-size: 0.9em; font-weight: 500; margin-bottom: 28px; padding: 6px 12px; border-radius: 8px; transition: background 0.15s ease; }
+        .back-link:hover { background: #f0fdfa; }
+
+        .pattern-badge { display: inline-block; padding: 5px 14px; border-radius: 100px; font-size: 0.72em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; background: #ccfbf1; color: #0d9488; margin-bottom: 16px; }
+        h1 { font-size: 2.4em; font-weight: 800; color: #0f172a; margin-bottom: 12px; letter-spacing: -0.03em; line-height: 1.2; }
+        .subtitle { font-size: 1.1em; color: #64748b; line-height: 1.7; margin-bottom: 8px; }
+        h2 { font-size: 1.35em; font-weight: 700; color: #0f172a; margin: 40px 0 16px; letter-spacing: -0.02em; }
+        h3 { font-size: 1.1em; font-weight: 600; color: #1e293b; margin: 24px 0 10px; }
+        p, li { line-height: 1.8; color: #475569; margin-bottom: 10px; font-size: 0.95em; }
+        ul, ol { padding-left: 20px; margin-bottom: 15px; }
+        strong { color: #1e293b; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 0.85em; color: #0d9488; }
+
+        .analogy { background: linear-gradient(135deg, #f0fdfa, #fffbeb); border: 1px solid #ccfbf1; border-radius: 16px; padding: 24px 28px; margin: 24px 0; }
+        .analogy .tag { font-size: 0.78em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #0d9488; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+        .analogy p:last-child { margin-bottom: 0; }
+
+        .code-container { margin: 24px 0; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .code-tabs { display: flex; background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0 8px; }
+        .code-tab { padding: 10px 18px; cursor: pointer; border: none; background: transparent; color: #64748b; font-size: 0.85em; font-weight: 500; font-family: 'Inter', sans-serif; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.15s ease; }
+        .code-tab:hover { color: #0d9488; }
+        .code-tab.active { color: #0d9488; border-bottom-color: #0d9488; background: white; }
+        .code-content { display: none; background: white; padding: 24px; overflow-x: auto; }
+        .code-content.active { display: block; }
+        .code-content pre { color: #1e293b; font-family: 'JetBrains Mono', monospace; font-size: 0.82em; line-height: 1.75; white-space: pre; }
+        .keyword { color: #0d9488; } .type { color: #2563eb; } .string { color: #16a34a; }
+        .comment { color: #94a3b8; font-style: italic; } .number { color: #d97706; }
+        .preproc { color: #7c3aed; } .fn { color: #db2777; }
+
+        .note { background: #f0fdfa; border-left: 4px solid #0d9488; padding: 16px 20px; margin: 20px 0; border-radius: 0 12px 12px 0; }
+        .note ul, .note p { margin-bottom: 0; } .note li:last-child { margin-bottom: 0; }
+        .warn { background: #fef2f2; border-left: 4px solid #dc2626; padding: 16px 20px; margin: 20px 0; border-radius: 0 12px 12px 0; }
+        .warn ul, .warn p { margin-bottom: 0; } .warn li:last-child { margin-bottom: 0; }
+
+        .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0; }
+        .compare > div { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .pros h3 { color: #16a34a; margin-top: 0; } .cons h3 { color: #dc2626; margin-top: 0; }
+        .compare ul { margin-bottom: 0; }
+
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; }
+        th, td { padding: 12px 16px; border: 1px solid #e2e8f0; text-align: left; font-size: 0.9em; }
+        th { background: #f8fafc; color: #0f172a; font-weight: 600; }
+        tr:hover { background: #f8fafc; }
+
+        /* Interactive playground */
+        .playground { background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 24px; margin: 24px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .pg-title { font-weight: 700; color: #0f172a; font-size: 0.95em; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+        .pg-sub { color: #64748b; font-size: 0.82em; margin-bottom: 18px; }
+        .pg-stage { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: center; min-height: 120px; padding: 16px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0; }
+        .obj-box { width: 110px; padding: 14px 10px; border-radius: 12px; text-align: center; border: 2px solid #cbd5e1; background: white; transition: all 0.3s ease; }
+        .obj-box .lbl { font-size: 0.72em; color: #64748b; font-weight: 600; }
+        .obj-box .id { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 0.92em; color: #0f172a; margin-top: 4px; word-break: break-all; }
+        .obj-box.same { border-color: #0d9488; background: #f0fdfa; box-shadow: 0 0 0 3px rgba(13,148,136,0.12); }
+        .obj-box.fresh { border-color: #d97706; background: #fffbeb; box-shadow: 0 0 0 3px rgba(217,119,6,0.12); }
+        .pg-status { margin-top: 14px; padding: 12px 14px; background: #f8fafc; border-radius: 8px; font-size: 0.85em; color: #475569; min-height: 44px; display: flex; align-items: center; border: 1px solid #e2e8f0; line-height: 1.5; }
+        .pg-controls { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; align-items: center; }
+        .btn { padding: 8px 16px; border: none; border-radius: 8px; font-size: 0.85em; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.15s ease; }
+        .btn-primary { background: #0d9488; color: white; }
+        .btn-primary:hover { background: #0f766e; transform: translateY(-1px); }
+        .btn-ghost { background: #f1f5f9; color: #475569; }
+        .btn-ghost:hover { background: #e2e8f0; }
+
+        .footer { text-align: center; padding: 32px 20px; color: #94a3b8; font-size: 0.85em; border-top: 1px solid #e2e8f0; background: #f8fafc; }
+        .footer span { color: #0d9488; }
+
+        @media (max-width: 600px) { .compare { grid-template-columns: 1fr; } h1 { font-size: 1.8em; } .container { padding: 20px 16px 60px; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="../index.html" class="back-link">&larr; Back to LLD Topics</a>
+        <div class="pattern-badge">Concurrency</div>
+        <h1>Producer–Consumer</h1>
+        <p class="subtitle">Decoupling threads that <strong>create</strong> work from threads that <strong>process</strong> it, via a shared buffer.</p>
+
+        <div class="analogy">
+            <div class="tag">🍳 Real-World Analogy</div>
+            <p>Picture a busy restaurant kitchen. The <strong>cooks</strong> (producers) prepare dishes and set them on the <strong>pass</strong> — a counter with limited space. The <strong>waiters</strong> (consumers) pick up dishes from the pass and carry them to tables. The cooks and waiters never hand plates to each other directly; the pass sits between them so each side can work at its own pace.</p>
+            <p>Two natural rules emerge: if the <strong>pass is full</strong>, the cooks must pause until a waiter clears some space. If the <strong>pass is empty</strong>, the waiters must wait until a cook plates something. That waiting — and the shared counter in the middle — <em>is</em> the producer–consumer pattern.</p>
+        </div>
+
+        <h2>The Bounded-Buffer Problem</h2>
+        <p>This is <em>the</em> classic synchronization problem. You have one or more <strong>producer</strong> threads adding items to a shared, fixed-size <strong>buffer</strong>, and one or more <strong>consumer</strong> threads removing them. Three requirements must all hold at once:</p>
+        <ol>
+            <li><strong>Producers block when the buffer is full</strong> — they can't overwrite or overflow it; they wait for space.</li>
+            <li><strong>Consumers block when the buffer is empty</strong> — there's nothing to take; they wait for an item.</li>
+            <li><strong>Mutual exclusion on the buffer</strong> — adding and removing both mutate shared state, so only one thread may touch the buffer at a time (otherwise you corrupt it — see Locks &amp; Synchronization).</li>
+        </ol>
+        <p>The bounded (fixed-size) buffer is what makes this interesting: it acts as a shock absorber. A burst of production gets buffered instead of lost, and a brief slowdown by consumers applies natural <strong>back-pressure</strong> on producers (they block), preventing unbounded memory growth.</p>
+
+        <h2>Two Ways to Solve It</h2>
+        <p>There are two solutions worth knowing. The first is what you should <em>reach for in real code</em>; the second is what you should be able to <em>build from scratch in an interview</em>.</p>
+        <h3>1. Use a BlockingQueue (the idiomatic answer)</h3>
+        <p>A thread-safe blocking queue already implements all three rules internally. You just call put/take and let it handle the locking and waiting.</p>
+        <ul>
+            <li><strong>Java:</strong> <code>BlockingQueue</code> — e.g. <code>ArrayBlockingQueue</code> (bounded). <code>put()</code> blocks when full; <code>take()</code> blocks when empty.</li>
+            <li><strong>Python:</strong> <code>queue.Queue(maxsize=N)</code>. <code>put()</code> blocks when full; <code>get()</code> blocks when empty.</li>
+        </ul>
+        <h3>2. Hand-roll it with a lock + condition variables</h3>
+        <p>To show you understand what the queue does under the hood, you build it from a mutex plus <strong>condition variables</strong>. A condition variable lets a thread <em>wait</em> (releasing the lock and sleeping) until another thread <em>signals</em> that something changed (e.g. "an item was added"). In Java this is <code>wait()</code>/<code>notify()</code> on an object's monitor; in Python it's <code>threading.Condition</code> with <code>wait()</code>/<code>notify()</code>.</p>
+
+        <div class="warn">
+            <strong>Always wait inside a <code>while</code> loop, never an <code>if</code>.</strong> When a thread wakes from <code>wait()</code>, it must <em>re-check</em> the condition. Why? <strong>Spurious wakeups</strong> (the OS can wake a thread for no reason) and the fact that another thread may have grabbed the item first between the signal and your re-acquiring the lock. With <code>if (empty) wait();</code> you might proceed on a buffer that's empty again and crash. With <code>while (empty) wait();</code> you simply loop and wait again. This <code>while</code>-guard is the single most important detail of the hand-rolled version.
+        </div>
+
+        <h2>Implementation</h2>
+        <p>Each tab shows <strong>both</strong> versions: the BlockingQueue / <code>queue.Queue</code> answer first, then the hand-rolled lock + condition version with the <code>while</code>-guard.</p>
+
+        <div class="code-container">
+            <div class="code-tabs">
+                <button class="code-tab active" onclick="showCode(this, 'javaCode')">Java</button>
+                <button class="code-tab" onclick="showCode(this, 'pyCode')">Python</button>
+            </div>
+            <div id="javaCode" class="code-content active">
+<pre><span class="comment">// ===== VERSION 1: BlockingQueue (idiomatic) =====</span>
+<span class="keyword">import</span> java.util.concurrent.*;
+
+<span class="type">BlockingQueue</span>&lt;<span class="type">Integer</span>&gt; queue = <span class="keyword">new</span> <span class="type">ArrayBlockingQueue</span>&lt;&gt;(<span class="number">10</span>);  <span class="comment">// bounded, capacity 10</span>
+
+<span class="type">Runnable</span> producer = () -&gt; {
+    <span class="keyword">try</span> {
+        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">100</span>; i++) {
+            queue.<span class="fn">put</span>(i);            <span class="comment">// blocks automatically if the queue is full</span>
+        }
+    } <span class="keyword">catch</span> (<span class="type">InterruptedException</span> e) { <span class="type">Thread</span>.<span class="fn">currentThread</span>().<span class="fn">interrupt</span>(); }
+};
+
+<span class="type">Runnable</span> consumer = () -&gt; {
+    <span class="keyword">try</span> {
+        <span class="keyword">while</span> (<span class="keyword">true</span>) {
+            <span class="keyword">int</span> item = queue.<span class="fn">take</span>();   <span class="comment">// blocks automatically if the queue is empty</span>
+            <span class="fn">process</span>(item);
+        }
+    } <span class="keyword">catch</span> (<span class="type">InterruptedException</span> e) { <span class="type">Thread</span>.<span class="fn">currentThread</span>().<span class="fn">interrupt</span>(); }
+};
+
+
+<span class="comment">// ===== VERSION 2: hand-rolled with lock + condition variables =====</span>
+<span class="keyword">class</span> <span class="type">BoundedBuffer</span>&lt;<span class="type">T</span>&gt; {
+    <span class="keyword">private final</span> <span class="type">Queue</span>&lt;<span class="type">T</span>&gt; buf = <span class="keyword">new</span> <span class="type">LinkedList</span>&lt;&gt;();
+    <span class="keyword">private final int</span> capacity;
+
+    <span class="keyword">public</span> <span class="fn">BoundedBuffer</span>(<span class="keyword">int</span> capacity) { <span class="keyword">this</span>.capacity = capacity; }
+
+    <span class="keyword">public synchronized void</span> <span class="fn">put</span>(<span class="type">T</span> item) <span class="keyword">throws</span> <span class="type">InterruptedException</span> {
+        <span class="keyword">while</span> (buf.<span class="fn">size</span>() == capacity) {   <span class="comment">// WHILE, not if — re-check on wake</span>
+            <span class="fn">wait</span>();                       <span class="comment">// release lock + sleep until notified</span>
+        }
+        buf.<span class="fn">add</span>(item);
+        <span class="fn">notifyAll</span>();                     <span class="comment">// wake any waiting consumers</span>
+    }
+
+    <span class="keyword">public synchronized</span> <span class="type">T</span> <span class="fn">take</span>() <span class="keyword">throws</span> <span class="type">InterruptedException</span> {
+        <span class="keyword">while</span> (buf.<span class="fn">isEmpty</span>()) {           <span class="comment">// WHILE, not if</span>
+            <span class="fn">wait</span>();
+        }
+        <span class="type">T</span> item = buf.<span class="fn">poll</span>();
+        <span class="fn">notifyAll</span>();                     <span class="comment">// wake any waiting producers</span>
+        <span class="keyword">return</span> item;
+    }
+}
+</pre>
+            </div>
+            <div id="pyCode" class="code-content">
+<pre><span class="comment"># ===== VERSION 1: queue.Queue (idiomatic) =====</span>
+<span class="keyword">import</span> queue, threading
+
+q = queue.<span class="type">Queue</span>(maxsize=<span class="number">10</span>)   <span class="comment"># bounded, capacity 10</span>
+
+<span class="keyword">def</span> <span class="fn">producer</span>():
+    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="fn">range</span>(<span class="number">100</span>):
+        q.<span class="fn">put</span>(i)              <span class="comment"># blocks automatically if the queue is full</span>
+
+<span class="keyword">def</span> <span class="fn">consumer</span>():
+    <span class="keyword">while</span> <span class="keyword">True</span>:
+        item = q.<span class="fn">get</span>()       <span class="comment"># blocks automatically if the queue is empty</span>
+        <span class="fn">process</span>(item)
+        q.<span class="fn">task_done</span>()         <span class="comment"># optional: lets q.join() track completion</span>
+
+
+<span class="comment"># ===== VERSION 2: hand-rolled with threading.Condition =====</span>
+<span class="keyword">from</span> collections <span class="keyword">import</span> deque
+
+<span class="keyword">class</span> <span class="type">BoundedBuffer</span>:
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, capacity):
+        self._buf = <span class="fn">deque</span>()
+        self._capacity = capacity
+        self._cond = threading.<span class="type">Condition</span>()   <span class="comment"># lock + wait/notify in one</span>
+
+    <span class="keyword">def</span> <span class="fn">put</span>(self, item):
+        <span class="keyword">with</span> self._cond:                          <span class="comment"># acquire the underlying lock</span>
+            <span class="keyword">while</span> <span class="fn">len</span>(self._buf) == self._capacity:  <span class="comment"># WHILE, not if</span>
+                self._cond.<span class="fn">wait</span>()                  <span class="comment"># release lock + sleep until notified</span>
+            self._buf.<span class="fn">append</span>(item)
+            self._cond.<span class="fn">notify_all</span>()                 <span class="comment"># wake waiting consumers</span>
+
+    <span class="keyword">def</span> <span class="fn">take</span>(self):
+        <span class="keyword">with</span> self._cond:
+            <span class="keyword">while</span> <span class="keyword">not</span> self._buf:                   <span class="comment"># WHILE, not if</span>
+                self._cond.<span class="fn">wait</span>()
+            item = self._buf.<span class="fn">popleft</span>()
+            self._cond.<span class="fn">notify_all</span>()                 <span class="comment"># wake waiting producers</span>
+            <span class="keyword">return</span> item
+</pre>
+            </div>
+        </div>
+
+        <div class="note">
+            <strong>Why <code>notifyAll</code> over <code>notify</code>?</strong> With a single condition shared by both producers and consumers, <code>notify()</code> might wake the "wrong" kind of thread (a consumer that then sees an empty buffer and waits again, leaving a real waiter asleep — a lost-wakeup deadlock). <code>notifyAll()</code> wakes everyone; harmless threads simply re-check their <code>while</code> guard and go back to sleep. Use separate "not full" / "not empty" conditions if you want the precision of <code>notify()</code>.
+        </div>
+
+        <h2>When to Use It</h2>
+        <ul>
+            <li>Work is generated and processed at <strong>different, variable rates</strong> and you want to smooth the mismatch with a buffer.</li>
+            <li>You want to <strong>decouple</strong> producers from consumers so each can scale and fail independently.</li>
+            <li>You need <strong>back-pressure</strong> — slow consumers should naturally throttle fast producers instead of exhausting memory.</li>
+            <li>Pipeline stages: the output of one stage feeds a queue that the next stage consumes.</li>
+        </ul>
+
+        <h2>Trade-offs</h2>
+        <div class="compare">
+            <div class="pros">
+                <h3>✓ Pros</h3>
+                <ul>
+                    <li>Cleanly decouples producers and consumers.</li>
+                    <li>Bounded buffer gives free back-pressure and bounded memory.</li>
+                    <li>Easy to scale throughput — just add more consumer threads.</li>
+                    <li>Buffer absorbs bursts and smooths uneven workloads.</li>
+                </ul>
+            </div>
+            <div class="cons">
+                <h3>✗ Cons</h3>
+                <ul>
+                    <li>The shared buffer can become a <strong>contention point</strong>.</li>
+                    <li>Hand-rolled versions are subtle — spurious wakeups, <code>if</code>-vs-<code>while</code>, lost notifications.</li>
+                    <li>Adds latency (an item sits in the buffer) and tuning (what capacity?).</li>
+                    <li>Needs a clean <strong>shutdown</strong> strategy (e.g. a "poison pill" sentinel to stop consumers).</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="note">
+            <strong>Interview tip:</strong> Lead with "I'd use a <strong>BlockingQueue</strong> (<code>ArrayBlockingQueue</code> in Java, <code>queue.Queue</code> in Python) because it already handles the blocking and locking." Then offer to implement it by hand with a lock and condition variables to prove you understand the internals — and make a point of the <strong><code>while</code>-loop guard against spurious wakeups</strong>. Finish by noting this pattern is the backbone of <strong>thread pools and work queues</strong>: an executor is just a fixed set of consumer threads draining a shared task queue that callers produce into.
+        </div>
+
+        <h2>Related Topics</h2>
+        <p>The buffer relies on <a href="locks-synchronization.html" style="color:#0d9488">Locks &amp; Synchronization</a> (mutex + condition variables) under the hood. In practice you rarely manage the threads yourself — you hand work to <a href="thread-pools-executors.html" style="color:#0d9488">Thread Pools &amp; Executors</a>, which are producer–consumer made reusable. For the bigger picture, see the <a href="concurrency-patterns.html" style="color:#0d9488">Concurrency Patterns</a>.</p>
+    </div>
+
+    <div class="footer">
+        <p>Low-Level Design · <span>Producer–Consumer</span> · Java &amp; Python · Interactive Learning</p>
+    </div>
+
+    <script>
+        function showCode(btn, id) {
+            const container = btn.closest('.code-container');
+            container.querySelectorAll('.code-tab').forEach(t => t.classList.remove('active'));
+            container.querySelectorAll('.code-content').forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById(id).classList.add('active');
+        }
+    </script>
+</body>
+</html>

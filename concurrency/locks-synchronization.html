@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Locks &amp; Synchronization — LLD Guide</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8fafc; min-height: 100vh; color: #1e293b; -webkit-font-smoothing: antialiased; }
+        .container { max-width: 880px; margin: 0 auto; padding: 40px 24px 80px; }
+        .back-link { display: inline-flex; align-items: center; gap: 6px; color: #0d9488; text-decoration: none; font-size: 0.9em; font-weight: 500; margin-bottom: 28px; padding: 6px 12px; border-radius: 8px; transition: background 0.15s ease; }
+        .back-link:hover { background: #f0fdfa; }
+
+        .pattern-badge { display: inline-block; padding: 5px 14px; border-radius: 100px; font-size: 0.72em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; background: #ccfbf1; color: #0d9488; margin-bottom: 16px; }
+        h1 { font-size: 2.4em; font-weight: 800; color: #0f172a; margin-bottom: 12px; letter-spacing: -0.03em; line-height: 1.2; }
+        .subtitle { font-size: 1.1em; color: #64748b; line-height: 1.7; margin-bottom: 8px; }
+        h2 { font-size: 1.35em; font-weight: 700; color: #0f172a; margin: 40px 0 16px; letter-spacing: -0.02em; }
+        h3 { font-size: 1.1em; font-weight: 600; color: #1e293b; margin: 24px 0 10px; }
+        p, li { line-height: 1.8; color: #475569; margin-bottom: 10px; font-size: 0.95em; }
+        ul, ol { padding-left: 20px; margin-bottom: 15px; }
+        strong { color: #1e293b; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 0.85em; color: #0d9488; }
+
+        .analogy { background: linear-gradient(135deg, #f0fdfa, #fffbeb); border: 1px solid #ccfbf1; border-radius: 16px; padding: 24px 28px; margin: 24px 0; }
+        .analogy .tag { font-size: 0.78em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #0d9488; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+        .analogy p:last-child { margin-bottom: 0; }
+
+        .code-container { margin: 24px 0; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .code-tabs { display: flex; background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0 8px; }
+        .code-tab { padding: 10px 18px; cursor: pointer; border: none; background: transparent; color: #64748b; font-size: 0.85em; font-weight: 500; font-family: 'Inter', sans-serif; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.15s ease; }
+        .code-tab:hover { color: #0d9488; }
+        .code-tab.active { color: #0d9488; border-bottom-color: #0d9488; background: white; }
+        .code-content { display: none; background: white; padding: 24px; overflow-x: auto; }
+        .code-content.active { display: block; }
+        .code-content pre { color: #1e293b; font-family: 'JetBrains Mono', monospace; font-size: 0.82em; line-height: 1.75; white-space: pre; }
+        .keyword { color: #0d9488; } .type { color: #2563eb; } .string { color: #16a34a; }
+        .comment { color: #94a3b8; font-style: italic; } .number { color: #d97706; }
+        .preproc { color: #7c3aed; } .fn { color: #db2777; }
+
+        .note { background: #f0fdfa; border-left: 4px solid #0d9488; padding: 16px 20px; margin: 20px 0; border-radius: 0 12px 12px 0; }
+        .note ul, .note p { margin-bottom: 0; } .note li:last-child { margin-bottom: 0; }
+        .warn { background: #fef2f2; border-left: 4px solid #dc2626; padding: 16px 20px; margin: 20px 0; border-radius: 0 12px 12px 0; }
+        .warn ul, .warn p { margin-bottom: 0; } .warn li:last-child { margin-bottom: 0; }
+
+        .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0; }
+        .compare > div { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .pros h3 { color: #16a34a; margin-top: 0; } .cons h3 { color: #dc2626; margin-top: 0; }
+        .compare ul { margin-bottom: 0; }
+
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; }
+        th, td { padding: 12px 16px; border: 1px solid #e2e8f0; text-align: left; font-size: 0.9em; }
+        th { background: #f8fafc; color: #0f172a; font-weight: 600; }
+        tr:hover { background: #f8fafc; }
+
+        /* Interactive playground */
+        .playground { background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 24px; margin: 24px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .pg-title { font-weight: 700; color: #0f172a; font-size: 0.95em; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+        .pg-sub { color: #64748b; font-size: 0.82em; margin-bottom: 18px; }
+        .pg-stage { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: center; min-height: 120px; padding: 16px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0; }
+        .obj-box { width: 110px; padding: 14px 10px; border-radius: 12px; text-align: center; border: 2px solid #cbd5e1; background: white; transition: all 0.3s ease; }
+        .obj-box .lbl { font-size: 0.72em; color: #64748b; font-weight: 600; }
+        .obj-box .id { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 0.92em; color: #0f172a; margin-top: 4px; word-break: break-all; }
+        .obj-box.same { border-color: #0d9488; background: #f0fdfa; box-shadow: 0 0 0 3px rgba(13,148,136,0.12); }
+        .obj-box.fresh { border-color: #d97706; background: #fffbeb; box-shadow: 0 0 0 3px rgba(217,119,6,0.12); }
+        .pg-status { margin-top: 14px; padding: 12px 14px; background: #f8fafc; border-radius: 8px; font-size: 0.85em; color: #475569; min-height: 44px; display: flex; align-items: center; border: 1px solid #e2e8f0; line-height: 1.5; }
+        .pg-controls { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; align-items: center; }
+        .btn { padding: 8px 16px; border: none; border-radius: 8px; font-size: 0.85em; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.15s ease; }
+        .btn-primary { background: #0d9488; color: white; }
+        .btn-primary:hover { background: #0f766e; transform: translateY(-1px); }
+        .btn-ghost { background: #f1f5f9; color: #475569; }
+        .btn-ghost:hover { background: #e2e8f0; }
+
+        .footer { text-align: center; padding: 32px 20px; color: #94a3b8; font-size: 0.85em; border-top: 1px solid #e2e8f0; background: #f8fafc; }
+        .footer span { color: #0d9488; }
+
+        @media (max-width: 600px) { .compare { grid-template-columns: 1fr; } h1 { font-size: 1.8em; } .container { padding: 20px 16px 60px; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="../index.html" class="back-link">&larr; Back to LLD Topics</a>
+        <div class="pattern-badge">Concurrency</div>
+        <h1>Locks &amp; Synchronization</h1>
+        <p class="subtitle">Keeping shared data <strong>correct</strong> when many threads touch it at the same time.</p>
+
+        <div class="analogy">
+            <div class="tag">🚻 Real-World Analogy</div>
+            <p>Picture a <strong>single-occupancy restroom with one key</strong>. Only the person holding the key may go in; everyone else waits in line outside. When that person comes out and hands back the key, the next person can enter. There is never any confusion about who is inside, because only one key exists.</p>
+            <p>A <strong>lock</strong> is exactly that key. The shared resource is the room. A thread must "grab the key" before touching the resource and "return the key" when done. Like a <em>talking stick</em> passed around a meeting — only the holder may speak; everyone else listens and waits their turn.</p>
+        </div>
+
+        <h2>The Core Problem: Race Conditions</h2>
+        <p>When two or more threads read and write the same data at the same time, and the final result depends on the <em>exact timing</em> of who got there first, you have a <strong>race condition</strong>. The bug is non-deterministic — it might pass a thousand tests and then corrupt data in production.</p>
+        <p>The classic example is the innocent-looking line <code>count++</code>. It looks like one step, but the CPU actually performs <strong>three</strong>:</p>
+        <ol>
+            <li><strong>Read</strong> the current value of <code>count</code> from memory into a register.</li>
+            <li><strong>Modify</strong> it — add one in the register.</li>
+            <li><strong>Write</strong> the new value back to memory.</li>
+        </ol>
+        <p>This is called a <strong>read-modify-write</strong>. Now imagine two threads both run <code>count++</code> when <code>count == 5</code>, and their steps interleave:</p>
+        <table>
+            <tr><th>Time</th><th>Thread A</th><th>Thread B</th><th>count</th></tr>
+            <tr><td>t1</td><td>reads 5</td><td>&nbsp;</td><td>5</td></tr>
+            <tr><td>t2</td><td>&nbsp;</td><td>reads 5</td><td>5</td></tr>
+            <tr><td>t3</td><td>computes 6, writes 6</td><td>&nbsp;</td><td>6</td></tr>
+            <tr><td>t4</td><td>&nbsp;</td><td>computes 6, writes 6</td><td>6</td></tr>
+        </table>
+        <p>Two increments happened, but <code>count</code> ended at <strong>6 instead of 7</strong> — one update was silently lost. The fix is to make that read-modify-write <strong>atomic</strong> (indivisible) so no other thread can sneak in between the steps.</p>
+
+        <h2>The Critical Section</h2>
+        <p>The block of code that touches shared data and must <em>not</em> be run by more than one thread at a time is called a <strong>critical section</strong>. The whole job of locks is to enforce <strong>mutual exclusion</strong> (often shortened to "mutex"): at most one thread inside the critical section at any instant. Everyone else blocks until the holder leaves.</p>
+
+        <h2>The Toolbox</h2>
+        <h3>Java</h3>
+        <ul>
+            <li><strong><code>synchronized</code></strong> — every Java object has a built-in <em>intrinsic monitor lock</em>. A <code>synchronized</code> method locks on <code>this</code> (or the class for static methods); a <code>synchronized (obj) { ... }</code> block locks on a chosen object. The lock is released automatically when the block exits, even on exception. It is <em>reentrant</em> — the same thread can re-acquire a lock it already holds.</li>
+            <li><strong><code>ReentrantLock</code></strong> — an explicit lock object. More flexible than <code>synchronized</code>: you must call <code>lock()</code> and <code>unlock()</code> yourself (always in a <code>try/finally</code>), but you also get <code>tryLock()</code> (give up instead of blocking forever), <code>tryLock(timeout)</code>, interruptible locking, and an optional <strong>fairness</strong> policy (longest-waiting thread goes first).</li>
+            <li><strong><code>ReadWriteLock</code></strong> — splits the lock into a read lock and a write lock. <em>Many readers</em> can hold the read lock at once (reading doesn't conflict), but the write lock is exclusive. Great when reads vastly outnumber writes.</li>
+            <li><strong><code>volatile</code></strong> — guarantees <em>visibility</em>: a write by one thread is immediately seen by others (no stale cached copy). It does <strong>not</strong> provide atomicity — <code>volatile count++</code> still races, because the increment is still three steps.</li>
+        </ul>
+        <h3>Python &amp; the GIL</h3>
+        <p>CPython has a <strong>Global Interpreter Lock (GIL)</strong>: only one thread executes Python bytecode at a time. This means a <em>single</em> bytecode operation won't be interrupted, so some operations look safe. But <code>count += 1</code> still compiles to multiple bytecodes (load, add, store), and the interpreter can switch threads between them — so it <strong>still races</strong>. The GIL protects the interpreter's internals, not <em>your</em> compound operations. Be honest about this in interviews: the GIL is not a substitute for locking.</p>
+        <ul>
+            <li><strong><code>threading.Lock</code></strong> — the basic mutex. Acquire with <code>lock.acquire()</code> / release with <code>lock.release()</code>, or far better, use <code>with lock:</code> which releases automatically.</li>
+            <li><strong><code>threading.RLock</code></strong> — a reentrant lock; the same thread may acquire it multiple times (it tracks a count). Useful when a locked method calls another locked method.</li>
+        </ul>
+
+        <h2>Fixing the Unsafe Counter</h2>
+        <p>Below: first the broken version, then the corrected one. In Java we show both <code>synchronized</code> and <code>ReentrantLock</code> (with the mandatory <code>try/finally</code>); in Python we use <code>with lock:</code>.</p>
+
+        <div class="code-container">
+            <div class="code-tabs">
+                <button class="code-tab active" onclick="showCode(this, 'javaCode')">Java</button>
+                <button class="code-tab" onclick="showCode(this, 'pyCode')">Python</button>
+            </div>
+            <div id="javaCode" class="code-content active">
+<pre><span class="comment">// --- UNSAFE: count++ is a read-modify-write, not atomic ---</span>
+<span class="keyword">class</span> <span class="type">UnsafeCounter</span> {
+    <span class="keyword">private int</span> count = <span class="number">0</span>;
+    <span class="keyword">public void</span> <span class="fn">increment</span>() { count++; }   <span class="comment">// RACE: updates get lost</span>
+    <span class="keyword">public int</span> <span class="fn">get</span>() { <span class="keyword">return</span> count; }
+}
+
+<span class="comment">// --- FIX 1: synchronized (intrinsic monitor lock) ---</span>
+<span class="keyword">class</span> <span class="type">SyncCounter</span> {
+    <span class="keyword">private int</span> count = <span class="number">0</span>;
+
+    <span class="comment">// only one thread can be inside this method at a time</span>
+    <span class="keyword">public synchronized void</span> <span class="fn">increment</span>() { count++; }
+
+    <span class="keyword">public int</span> <span class="fn">get</span>() {
+        <span class="keyword">synchronized</span> (<span class="keyword">this</span>) { <span class="keyword">return</span> count; }   <span class="comment">// block form</span>
+    }
+}
+
+<span class="comment">// --- FIX 2: ReentrantLock (lock/unlock in try/finally) ---</span>
+<span class="keyword">import</span> java.util.concurrent.locks.*;
+
+<span class="keyword">class</span> <span class="type">LockCounter</span> {
+    <span class="keyword">private final</span> <span class="type">ReentrantLock</span> lock = <span class="keyword">new</span> <span class="type">ReentrantLock</span>();  <span class="comment">// new ReentrantLock(true) = fair</span>
+    <span class="keyword">private int</span> count = <span class="number">0</span>;
+
+    <span class="keyword">public void</span> <span class="fn">increment</span>() {
+        lock.<span class="fn">lock</span>();
+        <span class="keyword">try</span> {
+            count++;                       <span class="comment">// the critical section</span>
+        } <span class="keyword">finally</span> {
+            lock.<span class="fn">unlock</span>();              <span class="comment">// ALWAYS release, even on exception</span>
+        }
+    }
+
+    <span class="keyword">public boolean</span> <span class="fn">tryIncrement</span>() {
+        <span class="keyword">if</span> (!lock.<span class="fn">tryLock</span>()) <span class="keyword">return</span> <span class="keyword">false</span>;  <span class="comment">// don't block — bail if busy</span>
+        <span class="keyword">try</span> { count++; <span class="keyword">return</span> <span class="keyword">true</span>; }
+        <span class="keyword">finally</span> { lock.<span class="fn">unlock</span>(); }
+    }
+}
+
+<span class="comment">// --- ReadWriteLock: many readers OR one writer ---</span>
+<span class="keyword">class</span> <span class="type">Cache</span> {
+    <span class="keyword">private final</span> <span class="type">ReadWriteLock</span> rw = <span class="keyword">new</span> <span class="type">ReentrantReadWriteLock</span>();
+    <span class="keyword">private</span> <span class="type">String</span> value = <span class="string">""</span>;
+
+    <span class="keyword">public</span> <span class="type">String</span> <span class="fn">read</span>() {
+        rw.<span class="fn">readLock</span>().<span class="fn">lock</span>();          <span class="comment">// shared — many readers at once</span>
+        <span class="keyword">try</span> { <span class="keyword">return</span> value; } <span class="keyword">finally</span> { rw.<span class="fn">readLock</span>().<span class="fn">unlock</span>(); }
+    }
+    <span class="keyword">public void</span> <span class="fn">write</span>(<span class="type">String</span> v) {
+        rw.<span class="fn">writeLock</span>().<span class="fn">lock</span>();         <span class="comment">// exclusive — one writer, no readers</span>
+        <span class="keyword">try</span> { value = v; } <span class="keyword">finally</span> { rw.<span class="fn">writeLock</span>().<span class="fn">unlock</span>(); }
+    }
+}
+
+<span class="comment">// --- volatile: visibility only (NOT atomicity) ---</span>
+<span class="keyword">private volatile boolean</span> running = <span class="keyword">true</span>;   <span class="comment">// a flag other threads will see promptly</span>
+</pre>
+            </div>
+            <div id="pyCode" class="code-content">
+<pre><span class="keyword">import</span> threading
+
+<span class="comment"># --- UNSAFE: count += 1 is several bytecodes; the GIL won't save you ---</span>
+<span class="keyword">class</span> <span class="type">UnsafeCounter</span>:
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self):
+        self.count = <span class="number">0</span>
+    <span class="keyword">def</span> <span class="fn">increment</span>(self):
+        self.count += <span class="number">1</span>          <span class="comment"># RACE: load, add, store can interleave</span>
+
+
+<span class="comment"># --- FIX: threading.Lock with the `with` context manager ---</span>
+<span class="keyword">class</span> <span class="type">SafeCounter</span>:
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self):
+        self.count = <span class="number">0</span>
+        self._lock = threading.<span class="type">Lock</span>()
+
+    <span class="keyword">def</span> <span class="fn">increment</span>(self):
+        <span class="keyword">with</span> self._lock:          <span class="comment"># acquires on enter, releases on exit</span>
+            self.count += <span class="number">1</span>      <span class="comment"># the critical section</span>
+
+    <span class="keyword">def</span> <span class="fn">get</span>(self):
+        <span class="keyword">with</span> self._lock:
+            <span class="keyword">return</span> self.count
+
+
+<span class="comment"># --- RLock: reentrant — same thread can acquire it again ---</span>
+<span class="keyword">class</span> <span class="type">Account</span>:
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self):
+        self.balance = <span class="number">0</span>
+        self._lock = threading.<span class="type">RLock</span>()
+
+    <span class="keyword">def</span> <span class="fn">deposit</span>(self, amount):
+        <span class="keyword">with</span> self._lock:
+            self.balance += amount
+
+    <span class="keyword">def</span> <span class="fn">transfer_in</span>(self, amount):
+        <span class="keyword">with</span> self._lock:        <span class="comment"># already holding the lock here...</span>
+            self.<span class="fn">deposit</span>(amount)   <span class="comment"># ...and deposit() grabs it again — OK with RLock</span>
+
+
+<span class="comment"># --- tryLock equivalent: acquire(blocking=False) ---</span>
+lock = threading.<span class="type">Lock</span>()
+<span class="keyword">if</span> lock.<span class="fn">acquire</span>(blocking=<span class="keyword">False</span>):   <span class="comment"># grab it only if free</span>
+    <span class="keyword">try</span>:
+        ...                          <span class="comment"># do work</span>
+    <span class="keyword">finally</span>:
+        lock.<span class="fn">release</span>()
+<span class="keyword">else</span>:
+    <span class="fn">print</span>(<span class="string">"lock busy, skipping"</span>)
+</pre>
+            </div>
+        </div>
+
+        <div class="warn">
+            <strong><code>volatile</code> is not a lock.</strong> A common mistake is thinking <code>volatile count++</code> is thread-safe. It is not — <code>volatile</code> only guarantees that reads and writes are <em>visible</em> across threads, not that the read-modify-write happens atomically. For "make this number safe to increment", reach for a lock or an atomic type (see Atomics &amp; Lock-Free), not <code>volatile</code>.
+        </div>
+
+        <h2>Deadlock</h2>
+        <p>Locks solve race conditions but introduce a new hazard: <strong>deadlock</strong> — two or more threads each waiting forever for a lock the other holds. Nobody can proceed; the program hangs. Deadlock requires <strong>all four</strong> of the <em>Coffman conditions</em> to hold simultaneously:</p>
+        <ol>
+            <li><strong>Mutual exclusion</strong> — at least one resource is held in a non-shareable way.</li>
+            <li><strong>Hold and wait</strong> — a thread holds one lock while waiting to acquire another.</li>
+            <li><strong>No preemption</strong> — a lock can't be forcibly taken away; it's released only voluntarily.</li>
+            <li><strong>Circular wait</strong> — a cycle exists: A waits on B, B waits on A (or a longer ring).</li>
+        </ol>
+        <p>The classic trigger is <strong>two locks acquired in opposite order</strong>. Thread 1 grabs lock A then wants B; Thread 2 grabs lock B then wants A. Each holds what the other needs:</p>
+
+        <div class="code-container">
+            <div class="code-tabs">
+                <button class="code-tab active" onclick="showCode(this, 'dlJava')">Java</button>
+                <button class="code-tab" onclick="showCode(this, 'dlPy')">Python</button>
+            </div>
+            <div id="dlJava" class="code-content active">
+<pre><span class="type">Object</span> lockA = <span class="keyword">new</span> <span class="type">Object</span>(), lockB = <span class="keyword">new</span> <span class="type">Object</span>();
+
+<span class="comment">// Thread 1: A then B          // Thread 2: B then A  &lt;-- opposite order = DEADLOCK</span>
+<span class="keyword">synchronized</span> (lockA) {              <span class="keyword">synchronized</span> (lockB) {
+    <span class="keyword">synchronized</span> (lockB) { ... }        <span class="keyword">synchronized</span> (lockA) { ... }
+}                                   }
+
+<span class="comment">// --- AVOIDANCE 1: global lock ordering (always A before B) ---</span>
+<span class="comment">// Both threads acquire in the SAME order, so no cycle can form.</span>
+<span class="keyword">synchronized</span> (lockA) {
+    <span class="keyword">synchronized</span> (lockB) { ... }
+}
+
+<span class="comment">// --- AVOIDANCE 2: tryLock with timeout, back off and retry ---</span>
+<span class="keyword">if</span> (lockA.<span class="fn">tryLock</span>(<span class="number">1</span>, <span class="type">TimeUnit</span>.SECONDS)) {
+    <span class="keyword">try</span> {
+        <span class="keyword">if</span> (lockB.<span class="fn">tryLock</span>(<span class="number">1</span>, <span class="type">TimeUnit</span>.SECONDS)) {
+            <span class="keyword">try</span> { ... } <span class="keyword">finally</span> { lockB.<span class="fn">unlock</span>(); }
+        }
+    } <span class="keyword">finally</span> { lockA.<span class="fn">unlock</span>(); }   <span class="comment">// couldn't get both? release and retry</span>
+}
+</pre>
+            </div>
+            <div id="dlPy" class="code-content">
+<pre><span class="keyword">import</span> threading
+
+lock_a = threading.<span class="type">Lock</span>()
+lock_b = threading.<span class="type">Lock</span>()
+
+<span class="comment"># Thread 1: A then B            # Thread 2: B then A  &lt;-- opposite order = DEADLOCK</span>
+<span class="keyword">with</span> lock_a:                     <span class="keyword">with</span> lock_b:
+    <span class="keyword">with</span> lock_b:                      <span class="keyword">with</span> lock_a:
+        ...                              ...
+
+<span class="comment"># --- AVOIDANCE 1: always acquire in the SAME order ---</span>
+<span class="keyword">def</span> <span class="fn">acquire_in_order</span>(first, second):
+    <span class="keyword">with</span> first:          <span class="comment"># e.g. always lock_a before lock_b</span>
+        <span class="keyword">with</span> second:
+            ...
+
+<span class="comment"># --- AVOIDANCE 2: non-blocking acquire, back off and retry ---</span>
+<span class="keyword">def</span> <span class="fn">transfer</span>():
+    <span class="keyword">while</span> <span class="keyword">True</span>:
+        <span class="keyword">if</span> lock_a.<span class="fn">acquire</span>(timeout=<span class="number">1</span>):
+            <span class="keyword">try</span>:
+                <span class="keyword">if</span> lock_b.<span class="fn">acquire</span>(timeout=<span class="number">1</span>):
+                    <span class="keyword">try</span>:
+                        ...
+                        <span class="keyword">return</span>
+                    <span class="keyword">finally</span>:
+                        lock_b.<span class="fn">release</span>()
+            <span class="keyword">finally</span>:
+                lock_a.<span class="fn">release</span>()   <span class="comment"># release and loop to retry</span>
+</pre>
+            </div>
+        </div>
+
+        <p><strong>Avoidance strategies</strong> break one of the four conditions. The most practical are: (1) <strong>lock ordering</strong> — every thread acquires locks in the same global order, breaking circular wait; and (2) <strong>tryLock with timeout</strong> — if you can't get all the locks you need, release what you hold and retry, breaking hold-and-wait. Keeping critical sections small and grabbing as few locks as possible also helps enormously.</p>
+
+        <h2>When to Use It</h2>
+        <ul>
+            <li>Multiple threads <strong>read and write</strong> the same mutable state (counters, collections, caches, balances).</li>
+            <li>A sequence of operations must happen as one <strong>atomic, all-or-nothing</strong> unit (check-then-act, read-modify-write).</li>
+            <li>You need to coordinate access to a shared external resource (a file, a connection, a hardware device).</li>
+            <li>Use a <strong><code>ReadWriteLock</code></strong> specifically when reads heavily outnumber writes.</li>
+        </ul>
+
+        <h2>Trade-offs</h2>
+        <div class="compare">
+            <div class="pros">
+                <h3>✓ Pros</h3>
+                <ul>
+                    <li>Simple, correct mutual exclusion for shared state.</li>
+                    <li>Well understood; built into every language/runtime.</li>
+                    <li>Flexible — fairness, timeouts, read/write split when you need them.</li>
+                </ul>
+            </div>
+            <div class="cons">
+                <h3>✗ Cons</h3>
+                <ul>
+                    <li><strong>Contention</strong> — threads queue up on a hot lock, serializing work and killing parallelism.</li>
+                    <li><strong>Deadlock</strong> (and livelock/starvation) risk from acquiring multiple locks.</li>
+                    <li><strong>Performance cost</strong> — acquiring/releasing and context-switching aren't free.</li>
+                    <li>Easy to misuse: forgetting to unlock, locking on the wrong object, holding locks too long.</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="note">
+            <strong>Interview tip:</strong> When asked "how do you make this thread-safe?", don't just say "add a lock." Name the <em>race condition</em> precisely (the read-modify-write on <code>count++</code>), define the <em>critical section</em>, then pick the lightest tool that works — <code>synchronized</code> or a single <code>Lock</code> for simple cases, <code>ReadWriteLock</code> for read-heavy data, atomics for a single counter. Always mention <strong>deadlock</strong> and that you'd prevent it with <strong>consistent lock ordering</strong>. Bonus points for noting that <code>volatile</code> gives visibility but not atomicity, and that Python's GIL does not make compound operations safe.
+        </div>
+
+        <h2>Related Topics</h2>
+        <p>Locks are the foundation for the <a href="producer-consumer.html" style="color:#0d9488">Producer–Consumer</a> problem (lock + condition variables). For counters and flags you can often avoid locks entirely with <a href="atomics-lock-free.html" style="color:#0d9488">Atomics &amp; Lock-Free</a> techniques. For higher-level coordination, see the <a href="concurrency-patterns.html" style="color:#0d9488">Concurrency Patterns</a>.</p>
+    </div>
+
+    <div class="footer">
+        <p>Low-Level Design · <span>Locks &amp; Synchronization</span> · Java &amp; Python · Interactive Learning</p>
+    </div>
+
+    <script>
+        function showCode(btn, id) {
+            const container = btn.closest('.code-container');
+            container.querySelectorAll('.code-tab').forEach(t => t.classList.remove('active'));
+            container.querySelectorAll('.code-content').forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById(id).classList.add('active');
+        }
+    </script>
+</body>
+</html>

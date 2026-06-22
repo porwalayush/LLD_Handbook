@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Concurrency Patterns — LLD Guide</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8fafc; min-height: 100vh; color: #1e293b; -webkit-font-smoothing: antialiased; }
+        .container { max-width: 880px; margin: 0 auto; padding: 40px 24px 80px; }
+        .back-link { display: inline-flex; align-items: center; gap: 6px; color: #0d9488; text-decoration: none; font-size: 0.9em; font-weight: 500; margin-bottom: 28px; padding: 6px 12px; border-radius: 8px; transition: background 0.15s ease; }
+        .back-link:hover { background: #f0fdfa; }
+
+        .pattern-badge { display: inline-block; padding: 5px 14px; border-radius: 100px; font-size: 0.72em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; background: #ccfbf1; color: #0d9488; margin-bottom: 16px; }
+        h1 { font-size: 2.4em; font-weight: 800; color: #0f172a; margin-bottom: 12px; letter-spacing: -0.03em; line-height: 1.2; }
+        .subtitle { font-size: 1.1em; color: #64748b; line-height: 1.7; margin-bottom: 8px; }
+        h2 { font-size: 1.35em; font-weight: 700; color: #0f172a; margin: 40px 0 16px; letter-spacing: -0.02em; }
+        h3 { font-size: 1.1em; font-weight: 600; color: #1e293b; margin: 24px 0 10px; }
+        p, li { line-height: 1.8; color: #475569; margin-bottom: 10px; font-size: 0.95em; }
+        ul, ol { padding-left: 20px; margin-bottom: 15px; }
+        strong { color: #1e293b; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 0.85em; color: #0d9488; }
+
+        .analogy { background: linear-gradient(135deg, #f0fdfa, #fffbeb); border: 1px solid #ccfbf1; border-radius: 16px; padding: 24px 28px; margin: 24px 0; }
+        .analogy .tag { font-size: 0.78em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #0d9488; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+        .analogy p:last-child { margin-bottom: 0; }
+
+        .code-container { margin: 24px 0; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .code-tabs { display: flex; background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0 8px; }
+        .code-tab { padding: 10px 18px; cursor: pointer; border: none; background: transparent; color: #64748b; font-size: 0.85em; font-weight: 500; font-family: 'Inter', sans-serif; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.15s ease; }
+        .code-tab:hover { color: #0d9488; }
+        .code-tab.active { color: #0d9488; border-bottom-color: #0d9488; background: white; }
+        .code-content { display: none; background: white; padding: 24px; overflow-x: auto; }
+        .code-content.active { display: block; }
+        .code-content pre { color: #1e293b; font-family: 'JetBrains Mono', monospace; font-size: 0.82em; line-height: 1.75; white-space: pre; }
+        .keyword { color: #0d9488; } .type { color: #2563eb; } .string { color: #16a34a; }
+        .comment { color: #94a3b8; font-style: italic; } .number { color: #d97706; }
+        .preproc { color: #7c3aed; } .fn { color: #db2777; }
+
+        .note { background: #f0fdfa; border-left: 4px solid #0d9488; padding: 16px 20px; margin: 20px 0; border-radius: 0 12px 12px 0; }
+        .note ul, .note p { margin-bottom: 0; } .note li:last-child { margin-bottom: 0; }
+        .warn { background: #fef2f2; border-left: 4px solid #dc2626; padding: 16px 20px; margin: 20px 0; border-radius: 0 12px 12px 0; }
+        .warn ul, .warn p { margin-bottom: 0; } .warn li:last-child { margin-bottom: 0; }
+
+        .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0; }
+        .compare > div { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .pros h3 { color: #16a34a; margin-top: 0; } .cons h3 { color: #dc2626; margin-top: 0; }
+        .compare ul { margin-bottom: 0; }
+
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; }
+        th, td { padding: 12px 16px; border: 1px solid #e2e8f0; text-align: left; font-size: 0.9em; }
+        th { background: #f8fafc; color: #0f172a; font-weight: 600; }
+        tr:hover { background: #f8fafc; }
+
+        /* Interactive playground */
+        .playground { background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 24px; margin: 24px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .pg-title { font-weight: 700; color: #0f172a; font-size: 0.95em; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+        .pg-sub { color: #64748b; font-size: 0.82em; margin-bottom: 18px; }
+        .pg-stage { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: center; min-height: 120px; padding: 16px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0; }
+        .obj-box { width: 110px; padding: 14px 10px; border-radius: 12px; text-align: center; border: 2px solid #cbd5e1; background: white; transition: all 0.3s ease; }
+        .obj-box .lbl { font-size: 0.72em; color: #64748b; font-weight: 600; }
+        .obj-box .id { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 0.92em; color: #0f172a; margin-top: 4px; word-break: break-all; }
+        .obj-box.same { border-color: #0d9488; background: #f0fdfa; box-shadow: 0 0 0 3px rgba(13,148,136,0.12); }
+        .obj-box.fresh { border-color: #d97706; background: #fffbeb; box-shadow: 0 0 0 3px rgba(217,119,6,0.12); }
+        .pg-status { margin-top: 14px; padding: 12px 14px; background: #f8fafc; border-radius: 8px; font-size: 0.85em; color: #475569; min-height: 44px; display: flex; align-items: center; border: 1px solid #e2e8f0; line-height: 1.5; }
+        .pg-controls { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; align-items: center; }
+        .btn { padding: 8px 16px; border: none; border-radius: 8px; font-size: 0.85em; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.15s ease; }
+        .btn-primary { background: #0d9488; color: white; }
+        .btn-primary:hover { background: #0f766e; transform: translateY(-1px); }
+        .btn-ghost { background: #f1f5f9; color: #475569; }
+        .btn-ghost:hover { background: #e2e8f0; }
+
+        .footer { text-align: center; padding: 32px 20px; color: #94a3b8; font-size: 0.85em; border-top: 1px solid #e2e8f0; background: #f8fafc; }
+        .footer span { color: #0d9488; }
+
+        @media (max-width: 600px) { .compare { grid-template-columns: 1fr; } h1 { font-size: 1.8em; } .container { padding: 20px 16px 60px; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="../index.html" class="back-link">&larr; Back to LLD Topics</a>
+        <div class="pattern-badge">Concurrency</div>
+        <h1>Concurrency Patterns</h1>
+        <p class="subtitle">Battle-tested templates for writing <strong>correct</strong> concurrent code — reusable solutions to the recurring problems of sharing data and coordinating work across threads.</p>
+
+        <div class="analogy">
+            <div class="tag">🚦 Real-World Analogy</div>
+            <p>Think about how a city stops thousands of independent drivers from crashing into each other. Engineers didn't reinvent a new rule for every intersection — they reach for a small toolbox of proven <em>patterns</em>: <strong>traffic lights</strong> let one direction proceed at a time, <strong>roundabouts</strong> let everyone keep moving without a central stop, <strong>one-way streets</strong> remove whole classes of head-on collisions, and <strong>roadworks signs</strong> warn drivers to slow before a hazard.</p>
+            <p>Concurrency patterns are exactly this kind of toolbox for code. Each one is a named, well-understood template that keeps many threads — your "drivers" — from colliding over shared memory. Learn the handful below and most multithreading problems become "which pattern fits?" instead of "how do I invent thread-safety from scratch?".</p>
+        </div>
+
+        <p>This page is a guided tour. For each pattern we cover <strong>what</strong> it is, <strong>why</strong> it helps, and <strong>when</strong> to reach for it — with focused code where the implementation detail matters. None of these are exotic; they are the everyday vocabulary of senior engineers and a frequent source of interview questions.</p>
+
+        <h2>1. Thread-Safe Singleton</h2>
+        <p>A <a href="../creational/singleton.html" style="color:#0d9488">Singleton</a> guarantees exactly one instance of a class. In a single-threaded program that is trivial; under concurrency it is a classic trap, because two threads can both see "no instance yet" and each create one. The <strong>thread-safe Singleton</strong> patterns close that race.</p>
+        <p><strong>When to use it:</strong> shared, expensive-to-build objects that must be unique — a configuration object, a connection pool, a registry, a logger.</p>
+        <p>The two idiomatic Java solutions are the <strong>Bill Pugh "initialization-on-demand holder"</strong> (a static nested class that the JVM loads lazily and initializes safely with zero locking) and the <strong>enum</strong> singleton. In Python, the simplest correct approach is a module-level object; when you need a class-based singleton created from multiple threads, guard creation with a <code>threading.Lock</code>.</p>
+
+        <div class="code-container">
+            <div class="code-tabs">
+                <button class="code-tab active" onclick="showCode(this, 'singletonJava')">Java</button>
+                <button class="code-tab" onclick="showCode(this, 'singletonPy')">Python</button>
+            </div>
+            <div id="singletonJava" class="code-content active">
+<pre><span class="comment">// --- Bill Pugh: initialization-on-demand holder idiom ---</span>
+<span class="comment">// The JVM guarantees a class is initialized exactly once, lazily,</span>
+<span class="comment">// in a thread-safe way -> no synchronized, no volatile needed.</span>
+<span class="keyword">public class</span> <span class="type">Config</span> {
+
+    <span class="keyword">private</span> <span class="fn">Config</span>() {
+        <span class="comment">// expensive one-time setup runs only when getInstance() is first called</span>
+    }
+
+    <span class="keyword">private static class</span> <span class="type">Holder</span> {
+        <span class="comment">// loaded only when Holder is first referenced (in getInstance)</span>
+        <span class="keyword">private static final</span> <span class="type">Config</span> INSTANCE = <span class="keyword">new</span> <span class="type">Config</span>();
+    }
+
+    <span class="keyword">public static</span> <span class="type">Config</span> <span class="fn">getInstance</span>() {
+        <span class="keyword">return</span> <span class="type">Holder</span>.INSTANCE;   <span class="comment">// triggers safe, lazy class init</span>
+    }
+}
+
+<span class="comment">// --- The bullet-proof alternative: enum singleton ---</span>
+<span class="keyword">public enum</span> <span class="type">Logger</span> {
+    INSTANCE;
+    <span class="keyword">public void</span> <span class="fn">log</span>(<span class="type">String</span> msg) {
+        <span class="type">System</span>.out.<span class="fn">println</span>(<span class="string">"[LOG] "</span> + msg);
+    }
+}
+
+<span class="comment">// Usage</span>
+<span class="type">Config</span> c = <span class="type">Config</span>.<span class="fn">getInstance</span>();
+<span class="type">Logger</span>.INSTANCE.<span class="fn">log</span>(<span class="string">"started"</span>);
+</pre>
+            </div>
+            <div id="singletonPy" class="code-content">
+<pre><span class="keyword">import</span> threading
+
+<span class="comment"># --- Lock-guarded, thread-safe class singleton ---</span>
+<span class="keyword">class</span> <span class="type">Config</span>:
+    _instance = <span class="keyword">None</span>
+    _lock = threading.<span class="type">Lock</span>()        <span class="comment"># guards instance creation</span>
+
+    <span class="keyword">def</span> <span class="fn">__new__</span>(cls):
+        <span class="keyword">if</span> cls._instance <span class="keyword">is</span> <span class="keyword">None</span>:           <span class="comment"># fast path, no lock</span>
+            <span class="keyword">with</span> cls._lock:                  <span class="comment"># only racing threads pay the lock</span>
+                <span class="keyword">if</span> cls._instance <span class="keyword">is</span> <span class="keyword">None</span>:   <span class="comment"># re-check inside the lock</span>
+                    cls._instance = <span class="fn">super</span>().<span class="fn">__new__</span>(cls)
+                    cls._instance.db_url = <span class="string">"postgresql://localhost/app"</span>
+        <span class="keyword">return</span> cls._instance
+
+
+<span class="comment"># --- Most Pythonic: a module-level object ---</span>
+<span class="comment"># config.py  ->  config = Config()   then  `from config import config`</span>
+<span class="comment"># Module top-level code runs once under an import lock, so this is</span>
+<span class="comment"># inherently thread-safe.</span>
+
+<span class="comment"># Usage</span>
+a = <span class="type">Config</span>()
+b = <span class="type">Config</span>()
+<span class="keyword">assert</span> a <span class="keyword">is</span> b          <span class="comment"># same object</span>
+</pre>
+            </div>
+        </div>
+
+        <h2>2. Monitor Object</h2>
+        <p>The <strong>Monitor Object</strong> pattern bundles together the shared state <em>and</em> the lock that protects it inside a single object, so that every method runs with mutual exclusion automatically. Callers never see the lock; they just call methods, and the object guarantees that only one thread is "inside" at a time.</p>
+        <p><strong>Why it helps:</strong> it removes the biggest source of concurrency bugs — forgetting to acquire the right lock at every access site. Synchronization becomes a property of the object, not a discipline you must remember everywhere.</p>
+        <p><strong>When to use it:</strong> any mutable object shared across threads where you want all access serialized — a bank account, a counter, a bounded buffer, an in-memory cache. In Java this is what <code>synchronized</code> methods give you; in Python you wrap a <code>threading.Lock</code> (or <code>RLock</code>) inside the class.</p>
+
+        <div class="code-container">
+            <div class="code-tabs">
+                <button class="code-tab active" onclick="showCode(this, 'monitorJava')">Java</button>
+                <button class="code-tab" onclick="showCode(this, 'monitorPy')">Python</button>
+            </div>
+            <div id="monitorJava" class="code-content active">
+<pre><span class="comment">// Every public method is synchronized on `this`, so only one</span>
+<span class="comment">// thread can mutate the balance at a time -> no lost updates.</span>
+<span class="keyword">public class</span> <span class="type">BankAccount</span> {
+    <span class="keyword">private</span> <span class="type">long</span> balanceCents = <span class="number">0</span>;
+
+    <span class="keyword">public synchronized void</span> <span class="fn">deposit</span>(<span class="type">long</span> cents) {
+        balanceCents += cents;
+    }
+
+    <span class="keyword">public synchronized boolean</span> <span class="fn">withdraw</span>(<span class="type">long</span> cents) {
+        <span class="keyword">if</span> (cents &gt; balanceCents) <span class="keyword">return</span> <span class="keyword">false</span>;
+        balanceCents -= cents;
+        <span class="keyword">return</span> <span class="keyword">true</span>;
+    }
+
+    <span class="keyword">public synchronized</span> <span class="type">long</span> <span class="fn">getBalance</span>() {
+        <span class="keyword">return</span> balanceCents;   <span class="comment">// also synchronized -> sees latest value</span>
+    }
+}
+</pre>
+            </div>
+            <div id="monitorPy" class="code-content">
+<pre><span class="keyword">import</span> threading
+
+<span class="comment"># The lock lives inside the object; callers just call methods.</span>
+<span class="keyword">class</span> <span class="type">BankAccount</span>:
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self):
+        self._balance = <span class="number">0</span>
+        self._lock = threading.<span class="type">RLock</span>()   <span class="comment"># re-entrant, guards all access</span>
+
+    <span class="keyword">def</span> <span class="fn">deposit</span>(self, cents):
+        <span class="keyword">with</span> self._lock:
+            self._balance += cents
+
+    <span class="keyword">def</span> <span class="fn">withdraw</span>(self, cents):
+        <span class="keyword">with</span> self._lock:
+            <span class="keyword">if</span> cents &gt; self._balance:
+                <span class="keyword">return</span> <span class="keyword">False</span>
+            self._balance -= cents
+            <span class="keyword">return</span> <span class="keyword">True</span>
+
+    <span class="keyword">def</span> <span class="fn">balance</span>(self):
+        <span class="keyword">with</span> self._lock:
+            <span class="keyword">return</span> self._balance
+</pre>
+            </div>
+        </div>
+
+        <h2>3. Read-Copy-Update (RCU) / Copy-on-Write</h2>
+        <p>When data is <strong>read far more often than it is written</strong>, locking on every read is wasteful — readers spend their time contending for a lock they almost never need to mutate behind. <strong>Copy-on-Write</strong> (and the closely related RCU technique) flips the cost: <em>readers never block at all</em>. A writer makes a private copy of the data, mutates the copy, then atomically swaps the shared reference to point at the new version. Readers already holding the old reference keep using a consistent, immutable snapshot until they finish.</p>
+        <p><strong>When it shines:</strong> read-mostly, write-rarely structures — configuration that reloads occasionally, a set of event listeners, routing tables, feature flags. Java ships this as <code>CopyOnWriteArrayList</code> and <code>CopyOnWriteArraySet</code>; iterating them never throws <code>ConcurrentModificationException</code> because each iterator sees a frozen snapshot.</p>
+
+        <div class="note">
+            <strong>The trade-off:</strong> every write copies the whole structure, so writes are O(n) and produce garbage. Copy-on-Write is a poor choice for write-heavy data, but unbeatable for "many readers, occasional writer" scenarios where read latency is what you care about.
+        </div>
+
+        <div class="code-container">
+            <div class="code-tabs">
+                <button class="code-tab active" onclick="showCode(this, 'rcuJava')">Java</button>
+                <button class="code-tab" onclick="showCode(this, 'rcuPy')">Python</button>
+            </div>
+            <div id="rcuJava" class="code-content active">
+<pre><span class="keyword">import</span> java.util.concurrent.<span class="type">CopyOnWriteArrayList</span>;
+
+<span class="comment">// Read-mostly listener registry. Reads (notify) are lock-free;</span>
+<span class="comment">// the rare add/remove copies the backing array internally.</span>
+<span class="keyword">public class</span> <span class="type">EventBus</span> {
+    <span class="keyword">private final</span> <span class="type">CopyOnWriteArrayList</span>&lt;<span class="type">Runnable</span>&gt; listeners
+            = <span class="keyword">new</span> <span class="type">CopyOnWriteArrayList</span>&lt;&gt;();
+
+    <span class="keyword">public void</span> <span class="fn">subscribe</span>(<span class="type">Runnable</span> r) { listeners.<span class="fn">add</span>(r); }      <span class="comment">// writer: copies</span>
+
+    <span class="keyword">public void</span> <span class="fn">publish</span>() {
+        <span class="comment">// reader: iterates a stable snapshot, never blocks, never throws</span>
+        <span class="keyword">for</span> (<span class="type">Runnable</span> r : listeners) r.<span class="fn">run</span>();
+    }
+}
+</pre>
+            </div>
+            <div id="rcuPy" class="code-content">
+<pre><span class="keyword">import</span> threading
+
+<span class="comment"># Writers build a new tuple and swap the reference under a lock.</span>
+<span class="comment"># Readers just grab the current reference -> a stable snapshot.</span>
+<span class="keyword">class</span> <span class="type">EventBus</span>:
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self):
+        self._listeners = ()              <span class="comment"># immutable snapshot</span>
+        self._write_lock = threading.<span class="type">Lock</span>()
+
+    <span class="keyword">def</span> <span class="fn">subscribe</span>(self, fn):
+        <span class="keyword">with</span> self._write_lock:         <span class="comment"># copy-on-write</span>
+            self._listeners = self._listeners + (fn,)
+
+    <span class="keyword">def</span> <span class="fn">publish</span>(self):
+        <span class="keyword">for</span> fn <span class="keyword">in</span> self._listeners:      <span class="comment"># lock-free read of a frozen tuple</span>
+            <span class="fn">fn</span>()
+</pre>
+            </div>
+        </div>
+
+        <h2>4. Double-Checked Locking</h2>
+        <p><strong>Double-checked locking</strong> is an optimization for lazy initialization: check whether the instance exists <em>without</em> a lock (the fast, common path), and only if it appears missing do you acquire the lock and check <em>again</em> before creating it. The second check prevents two threads that both passed the first check from each creating an instance.</p>
+        <p>The subtle, infamous part is that a naive version is <strong>broken</strong>. Without the <code>volatile</code> keyword on the instance field, the JVM (or CPU) is free to reorder the writes that happen during construction. A second thread can then observe a <em>non-null but partially-constructed</em> object — the reference is published before the object's fields are fully written — and use a half-built instance. Marking the field <code>volatile</code> forbids that reordering and guarantees a happens-before relationship, so any thread that sees the reference sees a fully-built object.</p>
+
+        <div class="note">
+            <strong>Prefer not to hand-roll it.</strong> Double-checked locking is correct only with <code>volatile</code>, and it is easy to get wrong. The <strong>Bill Pugh holder idiom</strong> shown in the Singleton section above achieves the same lazy, thread-safe initialization with no locking and no <code>volatile</code> — reach for it first. Know double-checked locking mainly so you can explain <em>why</em> the holder idiom is cleaner.
+        </div>
+
+        <h2>5. Producer-Consumer &amp; Thread Pool</h2>
+        <p>Two of the most important concurrency patterns get their own dedicated pages, but they belong on this map:</p>
+        <ul>
+            <li><strong><a href="producer-consumer.html" style="color:#0d9488">Producer-Consumer</a></strong> — decouple threads that <em>create</em> work from threads that <em>process</em> it using a shared, thread-safe <code>BlockingQueue</code>. Producers and consumers run at their own pace; the queue handles buffering and blocking when it is full or empty.</li>
+            <li><strong><a href="thread-pools-executors.html" style="color:#0d9488">Thread Pool / Executor</a></strong> — reuse a fixed set of worker threads to run many short tasks, instead of paying the cost of creating a thread per task. The pool caps concurrency, queues overflow work, and is the foundation of nearly every server.</li>
+        </ul>
+
+        <h2>6. Future / Promise</h2>
+        <p>A <strong>Future</strong> (also called a <em>promise</em> in some languages) is a placeholder for a result that <em>will</em> exist later. You hand off work to run asynchronously and immediately get back a Future; you can keep doing other things and later call <code>get()</code> to retrieve the result (blocking if it isn't ready), attach callbacks, or compose several Futures into a pipeline.</p>
+        <p><strong>Why it helps:</strong> it lets you express "do this work in the background and let me continue" without manually managing threads, shared result variables, and the locks to read them safely. In Java, <code>Future</code> and the far richer <code>CompletableFuture</code> support chaining and combining; in Python, use <code>concurrent.futures</code> (thread/process pools) or <code>asyncio</code> for coroutine-based concurrency.</p>
+
+        <div class="code-container">
+            <div class="code-tabs">
+                <button class="code-tab active" onclick="showCode(this, 'futureJava')">Java</button>
+                <button class="code-tab" onclick="showCode(this, 'futurePy')">Python</button>
+            </div>
+            <div id="futureJava" class="code-content active">
+<pre><span class="keyword">import</span> java.util.concurrent.<span class="type">CompletableFuture</span>;
+
+<span class="comment">// Run work asynchronously, then transform the result -- no</span>
+<span class="comment">// manual threads, no shared mutable result variable to lock.</span>
+<span class="type">CompletableFuture</span>&lt;<span class="type">String</span>&gt; pipeline =
+    <span class="type">CompletableFuture</span>
+        .<span class="fn">supplyAsync</span>(() -&gt; <span class="fn">fetchUserId</span>())        <span class="comment">// runs on a pool thread</span>
+        .<span class="fn">thenApply</span>(id -&gt; <span class="string">"user-"</span> + id)          <span class="comment">// transform when ready</span>
+        .<span class="fn">thenApply</span>(<span class="type">String</span>::toUpperCase);
+
+<span class="type">String</span> result = pipeline.<span class="fn">join</span>();              <span class="comment">// block only when we need the value</span>
+</pre>
+            </div>
+            <div id="futurePy" class="code-content">
+<pre><span class="keyword">from</span> concurrent.futures <span class="keyword">import</span> <span class="type">ThreadPoolExecutor</span>
+
+<span class="keyword">def</span> <span class="fn">fetch_user_id</span>():
+    <span class="keyword">return</span> <span class="number">42</span>
+
+<span class="keyword">with</span> <span class="type">ThreadPoolExecutor</span>() <span class="keyword">as</span> pool:
+    future = pool.<span class="fn">submit</span>(fetch_user_id)   <span class="comment"># returns immediately</span>
+    <span class="comment"># ... do other work here ...</span>
+    user_id = future.<span class="fn">result</span>()             <span class="comment"># block only when the value is needed</span>
+    <span class="fn">print</span>(<span class="string">f"user-{user_id}"</span>)
+
+<span class="comment"># asyncio offers the same idea for coroutine-based concurrency:</span>
+<span class="comment">#   result = await some_async_call()</span>
+</pre>
+            </div>
+        </div>
+
+        <div class="warn">
+            <strong>The bugs these patterns exist to prevent.</strong> Concurrency goes wrong in a handful of classic ways:
+            <ul>
+                <li><strong>Race condition</strong> — two threads touch shared data simultaneously and the result depends on timing (e.g. a lost update on <code>counter++</code>).</li>
+                <li><strong>Deadlock</strong> — threads wait on each other in a cycle and none can proceed (acquire locks in a consistent global order to avoid).</li>
+                <li><strong>Livelock</strong> — threads keep reacting to each other and changing state, but make no real progress.</li>
+                <li><strong>Starvation</strong> — a thread is perpetually denied a resource because others keep winning it.</li>
+                <li><strong>Visibility / stale reads</strong> — one thread's write is never seen by another due to caching/reordering (the bug <code>volatile</code> and proper synchronization fix).</li>
+            </ul>
+            <strong>Golden rule:</strong> prefer high-level constructs — <code>BlockingQueue</code>, <code>ExecutorService</code>, <code>ConcurrentHashMap</code>, atomics, <code>CompletableFuture</code> — over hand-rolled locks. They are correct, tested, and far harder to misuse.
+        </div>
+
+        <h2>When to Use Which</h2>
+        <table>
+            <thead>
+                <tr><th>Situation</th><th>Recommended Pattern</th></tr>
+            </thead>
+            <tbody>
+                <tr><td>Exactly one shared, expensive instance needed</td><td>Thread-Safe Singleton (holder idiom / enum)</td></tr>
+                <tr><td>A mutable object accessed by many threads</td><td>Monitor Object (synchronized methods / lock-in-class)</td></tr>
+                <tr><td>Data read constantly, written rarely</td><td>Copy-on-Write / RCU (<code>CopyOnWriteArrayList</code>)</td></tr>
+                <tr><td>Lazy init of one field with minimal locking</td><td>Bill Pugh holder (avoid hand-rolled double-checked locking)</td></tr>
+                <tr><td>Threads producing work faster/slower than consumers</td><td>Producer-Consumer (<code>BlockingQueue</code>)</td></tr>
+                <tr><td>Many short tasks to run efficiently</td><td>Thread Pool / Executor</td></tr>
+                <tr><td>A result computed asynchronously, needed later</td><td>Future / Promise (<code>CompletableFuture</code>, <code>asyncio</code>)</td></tr>
+                <tr><td>A single counter or flag updated by many threads</td><td>Atomics / lock-free (<code>AtomicLong</code>, CAS)</td></tr>
+            </tbody>
+        </table>
+
+        <h2>Trade-offs</h2>
+        <div class="compare">
+            <div class="pros">
+                <h3>✓ Pros</h3>
+                <ul>
+                    <li>Reusable, named solutions to recurring problems.</li>
+                    <li>Encapsulate synchronization so callers can't misuse it.</li>
+                    <li>Map directly to battle-tested library classes.</li>
+                    <li>Shared vocabulary for design discussions and reviews.</li>
+                </ul>
+            </div>
+            <div class="cons">
+                <h3>✗ Cons</h3>
+                <ul>
+                    <li>Picking the wrong pattern can hurt (e.g. Copy-on-Write on write-heavy data).</li>
+                    <li>Still require understanding the memory model underneath.</li>
+                    <li>Over-synchronizing kills the parallelism you wanted.</li>
+                    <li>No pattern saves you from a bad lock-ordering design.</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="note">
+            <strong>Interview tip:</strong> when asked "how would you make this thread-safe?", name the pattern before writing code — "this is a read-mostly structure, so I'd use Copy-on-Write" or "I'll make this a Monitor with a lock inside the class". Then mention you'd reach for <code>java.util.concurrent</code> primitives over raw <code>synchronized</code>, and call out the specific bug each choice prevents (lost update, stale read, deadlock). Showing you know <em>why</em> double-checked locking needs <code>volatile</code> — and that the holder idiom avoids the whole question — is a reliable way to stand out.
+        </div>
+
+        <h2>Related Topics</h2>
+        <p>Go deeper on the building blocks: <a href="locks-synchronization.html" style="color:#0d9488">Locks &amp; Synchronization</a>, <a href="producer-consumer.html" style="color:#0d9488">Producer-Consumer</a>, <a href="atomics-lock-free.html" style="color:#0d9488">Atomics &amp; Lock-Free</a>, <a href="thread-pools-executors.html" style="color:#0d9488">Thread Pools &amp; Executors</a>, and the <a href="../creational/singleton.html" style="color:#0d9488">Singleton Pattern</a>.</p>
+    </div>
+
+    <div class="footer">
+        <p>Low-Level Design · <span>Concurrency Patterns</span> · Java &amp; Python · Interactive Learning</p>
+    </div>
+
+    <script>
+        function showCode(btn, id) {
+            const container = btn.closest('.code-container');
+            container.querySelectorAll('.code-tab').forEach(t => t.classList.remove('active'));
+            container.querySelectorAll('.code-content').forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById(id).classList.add('active');
+        }
+
+    </script>
+</body>
+</html>

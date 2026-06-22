@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logging Framework — LLD Problem</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8fafc; min-height: 100vh; color: #1e293b; -webkit-font-smoothing: antialiased; }
+        .container { max-width: 880px; margin: 0 auto; padding: 40px 24px 80px; }
+        .back-link { display: inline-flex; align-items: center; gap: 6px; color: #0d9488; text-decoration: none; font-size: 0.9em; font-weight: 500; margin-bottom: 28px; padding: 6px 12px; border-radius: 8px; transition: background 0.15s ease; }
+        .back-link:hover { background: #f0fdfa; }
+
+        .badges { display: flex; gap: 10px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+        .pattern-badge { display: inline-block; padding: 5px 14px; border-radius: 100px; font-size: 0.72em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; background: #e0e7ff; color: #4338ca; }
+        .diff-badge { display: inline-block; padding: 5px 14px; border-radius: 100px; font-size: 0.72em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+        .diff-easy   { background: #dcfce7; color: #16a34a; }
+        .diff-medium { background: #fef3c7; color: #d97706; }
+        .diff-hard   { background: #fee2e2; color: #dc2626; }
+
+        h1 { font-size: 2.4em; font-weight: 800; color: #0f172a; margin-bottom: 12px; letter-spacing: -0.03em; line-height: 1.2; }
+        .subtitle { font-size: 1.1em; color: #64748b; line-height: 1.7; margin-bottom: 8px; }
+        h2 { font-size: 1.35em; font-weight: 700; color: #0f172a; margin: 40px 0 16px; letter-spacing: -0.02em; }
+        h3 { font-size: 1.1em; font-weight: 600; color: #1e293b; margin: 24px 0 10px; }
+        p, li { line-height: 1.8; color: #475569; margin-bottom: 10px; font-size: 0.95em; }
+        ul, ol { padding-left: 20px; margin-bottom: 15px; }
+        strong { color: #1e293b; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 0.85em; color: #0d9488; }
+
+        .statement { background: linear-gradient(135deg, #eef2ff, #f0fdfa); border: 1px solid #e0e7ff; border-radius: 16px; padding: 24px 28px; margin: 24px 0; }
+        .statement .tag { font-size: 0.78em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #4338ca; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+        .statement p:last-child { margin-bottom: 0; }
+
+        .req-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0; }
+        .req-grid > div { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .req-grid h3 { margin-top: 0; }
+        .req-grid.func h3 { color: #0d9488; } .req-grid.nonfunc h3 { color: #4338ca; }
+        .req-grid ul { margin-bottom: 0; }
+
+        .diagram { background: #0f172a; border-radius: 16px; padding: 24px; margin: 24px 0; overflow-x: auto; }
+        .diagram pre { color: #e2e8f0; font-family: 'JetBrains Mono', monospace; font-size: 0.8em; line-height: 1.6; white-space: pre; }
+        .diagram .cls { color: #5eead4; font-weight: 600; } .diagram .rel { color: #fbbf24; } .diagram .note { color: #94a3b8; font-style: italic; }
+
+        .pattern-pills { display: flex; flex-wrap: wrap; gap: 10px; margin: 16px 0 24px; }
+        .pattern-pill { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; background: white; border: 1px solid #e2e8f0; border-radius: 100px; font-size: 0.82em; font-weight: 500; color: #475569; text-decoration: none; transition: all 0.15s ease; }
+        .pattern-pill:hover { border-color: #0d9488; color: #0d9488; background: #f0fdfa; }
+        .pattern-pill .dot { width: 8px; height: 8px; border-radius: 50%; background: #0d9488; }
+
+        .code-container { margin: 24px 0; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .code-tabs { display: flex; background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0 8px; }
+        .code-tab { padding: 10px 18px; cursor: pointer; border: none; background: transparent; color: #64748b; font-size: 0.85em; font-weight: 500; font-family: 'Inter', sans-serif; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.15s ease; }
+        .code-tab:hover { color: #0d9488; }
+        .code-tab.active { color: #0d9488; border-bottom-color: #0d9488; background: white; }
+        .code-content { display: none; background: white; padding: 24px; overflow-x: auto; }
+        .code-content.active { display: block; }
+        .code-content pre { color: #1e293b; font-family: 'JetBrains Mono', monospace; font-size: 0.82em; line-height: 1.75; white-space: pre; }
+        .keyword { color: #0d9488; } .type { color: #2563eb; } .string { color: #16a34a; }
+        .comment { color: #94a3b8; font-style: italic; } .number { color: #d97706; }
+        .preproc { color: #7c3aed; } .fn { color: #db2777; }
+
+        .note { background: #f0fdfa; border-left: 4px solid #0d9488; padding: 16px 20px; margin: 20px 0; border-radius: 0 12px 12px 0; }
+        .note ul, .note p { margin-bottom: 0; } .note li:last-child { margin-bottom: 0; }
+        .warn { background: #fef2f2; border-left: 4px solid #dc2626; padding: 16px 20px; margin: 20px 0; border-radius: 0 12px 12px 0; }
+        .warn ul, .warn p { margin-bottom: 0; } .warn li:last-child { margin-bottom: 0; }
+
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; }
+        th, td { padding: 12px 16px; border: 1px solid #e2e8f0; text-align: left; font-size: 0.9em; }
+        th { background: #f8fafc; color: #0f172a; font-weight: 600; }
+        tr:hover { background: #f8fafc; }
+
+        .footer { text-align: center; padding: 32px 20px; color: #94a3b8; font-size: 0.85em; border-top: 1px solid #e2e8f0; background: #f8fafc; }
+        .footer span { color: #0d9488; }
+
+        @media (max-width: 600px) { .req-grid { grid-template-columns: 1fr; } h1 { font-size: 1.8em; } .container { padding: 20px 16px 60px; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="../index.html" class="back-link">&larr; Back to LLD Topics</a>
+        <div class="badges">
+            <span class="pattern-badge">LLD Problem</span>
+            <span class="diff-badge diff-easy">Easy</span>
+        </div>
+        <h1>Design a Logging Framework</h1>
+        <p class="subtitle">The textbook Chain of Responsibility problem. A log message flows through a chain of level-based handlers — each either handles it or passes it along — so a single <code>log()</code> call routes to the right destination by severity.</p>
+
+        <div class="statement">
+            <div class="tag">📋 Problem Statement</div>
+            <p>Design a logging framework like Log4j. Application code calls <code>logger.info("...")</code> or <code>logger.error("...")</code>. Each <strong>log level</strong> (DEBUG, INFO, WARN, ERROR) should be processed by an appropriate <strong>handler</strong>, and a message can be written to one or more <strong>destinations</strong> — console, file, etc. The design must make it easy to add new levels and destinations, and be safe to call from many threads.</p>
+        </div>
+
+        <h2>Step 1 — Gather Requirements</h2>
+        <p>Start by pinning down scope. Say your assumptions out loud — interviewers want to see you separate the must-haves from the nice-to-haves.</p>
+        <div class="req-grid func">
+            <div>
+                <h3>✓ Functional</h3>
+                <ul>
+                    <li>Four levels: DEBUG &lt; INFO &lt; WARN &lt; ERROR.</li>
+                    <li>A single <code>log(level, message)</code> entry point.</li>
+                    <li>Each level handled by a dedicated handler; lower-priority handlers pass up the chain.</li>
+                    <li>Pluggable destinations: console, file (appenders).</li>
+                    <li>Configurable minimum level (drop everything below it).</li>
+                </ul>
+            </div>
+            <div>
+                <h3>◆ Non-Functional</h3>
+                <ul>
+                    <li><strong>Thread-safety:</strong> many threads log concurrently.</li>
+                    <li><strong>Extensibility:</strong> add a level or appender without editing existing code.</li>
+                    <li><strong>Single global logger</strong> (Singleton) shared across the app.</li>
+                    <li>Low overhead when a message is below the threshold.</li>
+                </ul>
+            </div>
+        </div>
+
+        <h2>Step 2 — Identify the Core Entities</h2>
+        <p>Find the nouns in the problem. These become your classes:</p>
+        <ul>
+            <li><strong>Logger</strong> — the public entry point (often a Singleton); kicks off the chain.</li>
+            <li><strong>LogLevel</strong> — ordered enum DEBUG/INFO/WARN/ERROR.</li>
+            <li><strong>LogMessage</strong> — bundles the level, text, and timestamp.</li>
+            <li><strong>LogHandler</strong> (abstract) — a link in the chain; has a level and a <code>next</code> pointer.</li>
+            <li><strong>DebugHandler, InfoHandler, WarnHandler, ErrorHandler</strong> — concrete links.</li>
+            <li><strong>Appender</strong> — where text actually goes: <strong>ConsoleAppender, FileAppender</strong>.</li>
+            <li><strong>Formatter</strong> — turns a LogMessage into a string.</li>
+        </ul>
+
+        <h2>Step 3 — Class Diagram</h2>
+        <p>The key idea: a message enters the chain at the lowest level and walks up. A handler processes it if its own level matches, then forwards to <code>next</code> regardless — so an ERROR can be handled by ERROR while DEBUG simply ignores it.</p>
+        <div class="diagram">
+<pre><span class="cls">Logger</span> (Singleton) ──starts──▶ chain head
+   │ log(level, msg)
+   ▼
+<span class="cls">LogHandler</span> (abstract) { level · next · handle(msg) · write(msg) }
+   ▲ next ──▶ next ──▶ next ──▶ next
+   │
+   ├── <span class="cls">DebugHandler</span> ─▶ <span class="cls">InfoHandler</span> ─▶ <span class="cls">WarnHandler</span> ─▶ <span class="cls">ErrorHandler</span>
+
+<span class="cls">LogHandler</span> ──uses──▶ <span class="cls">Appender</span> (interface)
+                          ▲
+              ┌───────────┴───────────┐
+        <span class="cls">ConsoleAppender</span>          <span class="cls">FileAppender</span>
+<span class="cls">Appender</span> ──uses──▶ <span class="cls">Formatter</span> ──formats──▶ <span class="cls">LogMessage</span> {level, text, ts}
+
+<span class="note">// Chain of Responsibility: each handler decides handle-or-pass.</span>
+  DEBUG msg -> Debug handles -> passes up (others ignore)
+  ERROR msg -> Debug/Info/Warn pass -> Error handles</pre>
+        </div>
+
+        <h2>Step 4 — Patterns in Play</h2>
+        <p>Name the patterns as you design — it signals maturity. This problem is the canonical home of Chain of Responsibility:</p>
+        <div class="pattern-pills">
+            <a class="pattern-pill" href="../behavioral/chain-of-responsibility.html"><span class="dot"></span> Chain of Responsibility — handler-per-level chain</a>
+            <a class="pattern-pill" href="../creational/singleton.html"><span class="dot"></span> Singleton — one global Logger</a>
+            <a class="pattern-pill" href="../behavioral/strategy.html"><span class="dot"></span> Strategy — pluggable Formatter</a>
+            <a class="pattern-pill" href="../concurrency/locks-synchronization.html"><span class="dot"></span> Locking — thread-safe writes</a>
+        </div>
+
+        <h2>Step 5 — Implementation</h2>
+        <p>Each handler knows only its own level. <code>handle()</code> writes if the message's level is at least its own, then always forwards to <code>next</code> — that single rule, repeated down the chain, routes everything correctly.</p>
+
+        <div class="code-container">
+            <div class="code-tabs">
+                <button class="code-tab active" onclick="showCode(this, 'javaCode')">Java</button>
+                <button class="code-tab" onclick="showCode(this, 'pyCode')">Python</button>
+            </div>
+            <div id="javaCode" class="code-content active">
+<pre><span class="keyword">enum</span> <span class="type">LogLevel</span> { DEBUG, INFO, WARN, ERROR }   <span class="comment">// ordinal gives priority</span>
+
+<span class="keyword">class</span> <span class="type">LogMessage</span> {
+    <span class="keyword">final</span> <span class="type">LogLevel</span> level; <span class="keyword">final</span> <span class="type">String</span> text; <span class="keyword">final</span> <span class="keyword">long</span> ts;
+    <span class="type">LogMessage</span>(<span class="type">LogLevel</span> level, <span class="type">String</span> text) {
+        <span class="keyword">this</span>.level = level; <span class="keyword">this</span>.text = text; <span class="keyword">this</span>.ts = <span class="type">System</span>.<span class="fn">currentTimeMillis</span>();
+    }
+}
+
+<span class="comment">// Strategy: how a message becomes a line of text</span>
+<span class="keyword">interface</span> <span class="type">Formatter</span> { <span class="type">String</span> <span class="fn">format</span>(<span class="type">LogMessage</span> m); }
+<span class="keyword">class</span> <span class="type">SimpleFormatter</span> <span class="keyword">implements</span> <span class="type">Formatter</span> {
+    <span class="keyword">public</span> <span class="type">String</span> <span class="fn">format</span>(<span class="type">LogMessage</span> m) { <span class="keyword">return</span> m.ts + <span class="string">" ["</span> + m.level + <span class="string">"] "</span> + m.text; }
+}
+
+<span class="comment">// Appender: where text physically goes</span>
+<span class="keyword">interface</span> <span class="type">Appender</span> { <span class="keyword">void</span> <span class="fn">append</span>(<span class="type">String</span> line); }
+<span class="keyword">class</span> <span class="type">ConsoleAppender</span> <span class="keyword">implements</span> <span class="type">Appender</span> {
+    <span class="keyword">public synchronized</span> <span class="keyword">void</span> <span class="fn">append</span>(<span class="type">String</span> line) { <span class="type">System</span>.out.<span class="fn">println</span>(line); }
+}
+
+<span class="comment">// Chain of Responsibility: each handler owns one level</span>
+<span class="keyword">abstract class</span> <span class="type">LogHandler</span> {
+    <span class="keyword">protected final</span> <span class="type">LogLevel</span> level;
+    <span class="keyword">protected</span> <span class="type">LogHandler</span> next;
+    <span class="keyword">protected final</span> <span class="type">Appender</span> appender;
+    <span class="keyword">protected final</span> <span class="type">Formatter</span> formatter = <span class="keyword">new</span> <span class="type">SimpleFormatter</span>();
+
+    <span class="type">LogHandler</span>(<span class="type">LogLevel</span> level, <span class="type">Appender</span> appender) { <span class="keyword">this</span>.level = level; <span class="keyword">this</span>.appender = appender; }
+    <span class="type">LogHandler</span> <span class="fn">setNext</span>(<span class="type">LogHandler</span> next) { <span class="keyword">this</span>.next = next; <span class="keyword">return</span> next; }
+
+    <span class="keyword">void</span> <span class="fn">handle</span>(<span class="type">LogMessage</span> m) {
+        <span class="keyword">if</span> (m.level.<span class="fn">ordinal</span>() &gt;= level.<span class="fn">ordinal</span>()) {   <span class="comment">// this link cares</span>
+            appender.<span class="fn">append</span>(formatter.<span class="fn">format</span>(m));
+        }
+        <span class="keyword">if</span> (next != <span class="keyword">null</span>) next.<span class="fn">handle</span>(m);          <span class="comment">// always pass it on</span>
+    }
+}
+<span class="keyword">class</span> <span class="type">DebugHandler</span> <span class="keyword">extends</span> <span class="type">LogHandler</span> { <span class="type">DebugHandler</span>(<span class="type">Appender</span> a) { <span class="keyword">super</span>(<span class="type">LogLevel</span>.DEBUG, a); } }
+<span class="keyword">class</span> <span class="type">InfoHandler</span>  <span class="keyword">extends</span> <span class="type">LogHandler</span> { <span class="type">InfoHandler</span>(<span class="type">Appender</span> a)  { <span class="keyword">super</span>(<span class="type">LogLevel</span>.INFO, a); } }
+<span class="keyword">class</span> <span class="type">WarnHandler</span>  <span class="keyword">extends</span> <span class="type">LogHandler</span> { <span class="type">WarnHandler</span>(<span class="type">Appender</span> a)  { <span class="keyword">super</span>(<span class="type">LogLevel</span>.WARN, a); } }
+<span class="keyword">class</span> <span class="type">ErrorHandler</span> <span class="keyword">extends</span> <span class="type">LogHandler</span> { <span class="type">ErrorHandler</span>(<span class="type">Appender</span> a) { <span class="keyword">super</span>(<span class="type">LogLevel</span>.ERROR, a); } }
+
+<span class="keyword">class</span> <span class="type">Logger</span> {                                  <span class="comment">// Singleton entry point</span>
+    <span class="keyword">private static final</span> <span class="type">Logger</span> INSTANCE = <span class="keyword">new</span> <span class="type">Logger</span>();
+    <span class="keyword">public static</span> <span class="type">Logger</span> <span class="fn">get</span>() { <span class="keyword">return</span> INSTANCE; }
+
+    <span class="keyword">private final</span> <span class="type">LogHandler</span> chain;
+    <span class="keyword">private</span> <span class="type">Logger</span>() {
+        <span class="type">Appender</span> console = <span class="keyword">new</span> <span class="type">ConsoleAppender</span>();
+        chain = <span class="keyword">new</span> <span class="type">DebugHandler</span>(console);    <span class="comment">// build the chain head -> ... -> tail</span>
+        chain.<span class="fn">setNext</span>(<span class="keyword">new</span> <span class="type">InfoHandler</span>(console))
+             .<span class="fn">setNext</span>(<span class="keyword">new</span> <span class="type">WarnHandler</span>(console))
+             .<span class="fn">setNext</span>(<span class="keyword">new</span> <span class="type">ErrorHandler</span>(console));
+    }
+    <span class="keyword">public</span> <span class="keyword">void</span> <span class="fn">log</span>(<span class="type">LogLevel</span> level, <span class="type">String</span> text) { chain.<span class="fn">handle</span>(<span class="keyword">new</span> <span class="type">LogMessage</span>(level, text)); }
+    <span class="keyword">public</span> <span class="keyword">void</span> <span class="fn">debug</span>(<span class="type">String</span> t) { <span class="fn">log</span>(<span class="type">LogLevel</span>.DEBUG, t); }
+    <span class="keyword">public</span> <span class="keyword">void</span> <span class="fn">info</span>(<span class="type">String</span> t)  { <span class="fn">log</span>(<span class="type">LogLevel</span>.INFO, t); }
+    <span class="keyword">public</span> <span class="keyword">void</span> <span class="fn">warn</span>(<span class="type">String</span> t)  { <span class="fn">log</span>(<span class="type">LogLevel</span>.WARN, t); }
+    <span class="keyword">public</span> <span class="keyword">void</span> <span class="fn">error</span>(<span class="type">String</span> t) { <span class="fn">log</span>(<span class="type">LogLevel</span>.ERROR, t); }
+}
+
+<span class="comment">// Usage:  Logger.get().error("disk full");  // walks chain, Error link writes it</span>
+</pre>
+            </div>
+            <div id="pyCode" class="code-content">
+<pre><span class="keyword">from</span> enum <span class="keyword">import</span> IntEnum
+<span class="keyword">from</span> abc <span class="keyword">import</span> ABC, abstractmethod
+<span class="keyword">import</span> time, threading
+
+<span class="keyword">class</span> <span class="type">LogLevel</span>(IntEnum):              <span class="comment"># value gives priority</span>
+    DEBUG = <span class="number">0</span>; INFO = <span class="number">1</span>; WARN = <span class="number">2</span>; ERROR = <span class="number">3</span>
+
+<span class="keyword">class</span> <span class="type">LogMessage</span>:
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, level, text):
+        self.level, self.text, self.ts = level, text, time.<span class="fn">time</span>()
+
+<span class="comment"># Strategy: how a message becomes a line of text</span>
+<span class="keyword">class</span> <span class="type">SimpleFormatter</span>:
+    <span class="keyword">def</span> <span class="fn">format</span>(self, m):
+        <span class="keyword">return</span> <span class="string">f"{m.ts:.0f} [{m.level.name}] {m.text}"</span>
+
+<span class="comment"># Appender: where text physically goes</span>
+<span class="keyword">class</span> <span class="type">Appender</span>(ABC):
+    <span class="meta">@abstractmethod</span>
+    <span class="keyword">def</span> <span class="fn">append</span>(self, line): ...
+
+<span class="keyword">class</span> <span class="type">ConsoleAppender</span>(<span class="type">Appender</span>):
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self): self._lock = threading.<span class="type">Lock</span>()
+    <span class="keyword">def</span> <span class="fn">append</span>(self, line):
+        <span class="keyword">with</span> self._lock:                 <span class="comment"># thread-safe write</span>
+            <span class="fn">print</span>(line)
+
+<span class="comment"># Chain of Responsibility: each handler owns one level</span>
+<span class="keyword">class</span> <span class="type">LogHandler</span>:
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, level, appender):
+        self.level, self.appender = level, appender
+        self.next = <span class="keyword">None</span>
+        self.formatter = <span class="type">SimpleFormatter</span>()
+    <span class="keyword">def</span> <span class="fn">set_next</span>(self, nxt):
+        self.next = nxt; <span class="keyword">return</span> nxt        <span class="comment"># chainable</span>
+    <span class="keyword">def</span> <span class="fn">handle</span>(self, m):
+        <span class="keyword">if</span> m.level &gt;= self.level:         <span class="comment"># this link cares</span>
+            self.appender.<span class="fn">append</span>(self.formatter.<span class="fn">format</span>(m))
+        <span class="keyword">if</span> self.next:                    <span class="comment"># always pass it on</span>
+            self.next.<span class="fn">handle</span>(m)
+
+<span class="keyword">class</span> <span class="type">DebugHandler</span>(<span class="type">LogHandler</span>):
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, a): <span class="fn">super</span>().<span class="fn">__init__</span>(<span class="type">LogLevel</span>.DEBUG, a)
+<span class="keyword">class</span> <span class="type">InfoHandler</span>(<span class="type">LogHandler</span>):
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, a): <span class="fn">super</span>().<span class="fn">__init__</span>(<span class="type">LogLevel</span>.INFO, a)
+<span class="keyword">class</span> <span class="type">WarnHandler</span>(<span class="type">LogHandler</span>):
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, a): <span class="fn">super</span>().<span class="fn">__init__</span>(<span class="type">LogLevel</span>.WARN, a)
+<span class="keyword">class</span> <span class="type">ErrorHandler</span>(<span class="type">LogHandler</span>):
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, a): <span class="fn">super</span>().<span class="fn">__init__</span>(<span class="type">LogLevel</span>.ERROR, a)
+
+<span class="keyword">class</span> <span class="type">Logger</span>:                          <span class="comment"># Singleton entry point</span>
+    _instance = <span class="keyword">None</span>
+    _lock = threading.<span class="type">Lock</span>()
+    <span class="keyword">def</span> <span class="fn">__new__</span>(cls):
+        <span class="keyword">with</span> cls._lock:                  <span class="comment"># thread-safe singleton</span>
+            <span class="keyword">if</span> cls._instance <span class="keyword">is</span> <span class="keyword">None</span>:
+                cls._instance = <span class="fn">super</span>().<span class="fn">__new__</span>(cls)
+                console = <span class="type">ConsoleAppender</span>()
+                head = <span class="type">DebugHandler</span>(console)   <span class="comment"># build the chain</span>
+                head.<span class="fn">set_next</span>(<span class="type">InfoHandler</span>(console)) \
+                    .<span class="fn">set_next</span>(<span class="type">WarnHandler</span>(console)) \
+                    .<span class="fn">set_next</span>(<span class="type">ErrorHandler</span>(console))
+                cls._instance.chain = head
+        <span class="keyword">return</span> cls._instance
+    <span class="keyword">def</span> <span class="fn">log</span>(self, level, text): self.chain.<span class="fn">handle</span>(<span class="type">LogMessage</span>(level, text))
+    <span class="keyword">def</span> <span class="fn">debug</span>(self, t): self.<span class="fn">log</span>(<span class="type">LogLevel</span>.DEBUG, t)
+    <span class="keyword">def</span> <span class="fn">info</span>(self, t):  self.<span class="fn">log</span>(<span class="type">LogLevel</span>.INFO, t)
+    <span class="keyword">def</span> <span class="fn">warn</span>(self, t):  self.<span class="fn">log</span>(<span class="type">LogLevel</span>.WARN, t)
+    <span class="keyword">def</span> <span class="fn">error</span>(self, t): self.<span class="fn">log</span>(<span class="type">LogLevel</span>.ERROR, t)
+
+<span class="comment"># --- demo ---</span>
+log = <span class="type">Logger</span>()
+log.<span class="fn">error</span>(<span class="string">"disk full"</span>)   <span class="comment"># walks chain; Error link writes it</span>
+log.<span class="fn">debug</span>(<span class="string">"cache hit"</span>)   <span class="comment"># Debug link writes it; others ignore</span>
+</pre>
+            </div>
+        </div>
+
+        <div class="note">
+            <strong>Why this design scores well:</strong> the <code>Logger</code> never branches on level with <code>if/else</code> — it just hands the message to the chain head. Each handler applies one tiny rule (<code>handle-if-mine, always-forward</code>), so routing emerges from the chain's structure. Swapping a <code>ConsoleAppender</code> for a <code>FileAppender</code>, or adding a <code>FATAL</code> level, touches no existing handler. The <code>synchronized</code>/<code>Lock</code> on the appender is the thread-safety detail interviewers probe.
+        </div>
+
+        <h2>Step 6 — Follow-up Extensions</h2>
+        <p>Strong candidates anticipate where the interviewer pushes next:</p>
+        <ul>
+            <li><strong>Multiple appenders per level:</strong> give a handler a list of appenders (console + file + network).</li>
+            <li><strong>Async logging:</strong> push messages onto a queue and drain on a background thread — a Producer/Consumer setup.</li>
+            <li><strong>Per-package loggers:</strong> a hierarchy where child loggers inherit the parent's level/appenders.</li>
+            <li><strong>Rolling files:</strong> a <code>RollingFileAppender</code> that rotates by size or date.</li>
+            <li><strong>Structured logs:</strong> a JSON <code>Formatter</code> via the Strategy slot.</li>
+        </ul>
+
+        <div class="warn">
+            <strong>Common mistakes:</strong> writing one method with a giant <code>switch(level)</code> (the anti-pattern Chain of Responsibility removes); forgetting to forward to <code>next</code> so messages get dropped; not synchronizing the appender so concurrent lines interleave; and hardcoding <code>System.out</code> instead of an <code>Appender</code> abstraction. Model handlers as a chain and destinations as appenders, and the framework stays open for extension.
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>Low-Level Design · <span>Logging Framework</span> · Java &amp; Python · Interactive Learning</p>
+    </div>
+
+    <script>
+        function showCode(btn, id) {
+            const container = btn.closest('.code-container');
+            container.querySelectorAll('.code-tab').forEach(t => t.classList.remove('active'));
+            container.querySelectorAll('.code-content').forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById(id).classList.add('active');
+        }
+    </script>
+</body>
+</html>

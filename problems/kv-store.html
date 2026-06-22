@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>In-Memory Key-Value Store — LLD Problem</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8fafc; min-height: 100vh; color: #1e293b; -webkit-font-smoothing: antialiased; }
+        .container { max-width: 880px; margin: 0 auto; padding: 40px 24px 80px; }
+        .back-link { display: inline-flex; align-items: center; gap: 6px; color: #0d9488; text-decoration: none; font-size: 0.9em; font-weight: 500; margin-bottom: 28px; padding: 6px 12px; border-radius: 8px; transition: background 0.15s ease; }
+        .back-link:hover { background: #f0fdfa; }
+
+        .badges { display: flex; gap: 10px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+        .pattern-badge { display: inline-block; padding: 5px 14px; border-radius: 100px; font-size: 0.72em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; background: #e0e7ff; color: #4338ca; }
+        .diff-badge { display: inline-block; padding: 5px 14px; border-radius: 100px; font-size: 0.72em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+        .diff-easy   { background: #dcfce7; color: #16a34a; }
+        .diff-medium { background: #fef3c7; color: #d97706; }
+        .diff-hard   { background: #fee2e2; color: #dc2626; }
+
+        h1 { font-size: 2.4em; font-weight: 800; color: #0f172a; margin-bottom: 12px; letter-spacing: -0.03em; line-height: 1.2; }
+        .subtitle { font-size: 1.1em; color: #64748b; line-height: 1.7; margin-bottom: 8px; }
+        h2 { font-size: 1.35em; font-weight: 700; color: #0f172a; margin: 40px 0 16px; letter-spacing: -0.02em; }
+        h3 { font-size: 1.1em; font-weight: 600; color: #1e293b; margin: 24px 0 10px; }
+        p, li { line-height: 1.8; color: #475569; margin-bottom: 10px; font-size: 0.95em; }
+        ul, ol { padding-left: 20px; margin-bottom: 15px; }
+        strong { color: #1e293b; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 0.85em; color: #0d9488; }
+
+        .statement { background: linear-gradient(135deg, #eef2ff, #f0fdfa); border: 1px solid #e0e7ff; border-radius: 16px; padding: 24px 28px; margin: 24px 0; }
+        .statement .tag { font-size: 0.78em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #4338ca; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+        .statement p:last-child { margin-bottom: 0; }
+
+        .req-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0; }
+        .req-grid > div { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .req-grid h3 { margin-top: 0; }
+        .req-grid.func h3 { color: #0d9488; } .req-grid.nonfunc h3 { color: #4338ca; }
+        .req-grid ul { margin-bottom: 0; }
+
+        .diagram { background: #0f172a; border-radius: 16px; padding: 24px; margin: 24px 0; overflow-x: auto; }
+        .diagram pre { color: #e2e8f0; font-family: 'JetBrains Mono', monospace; font-size: 0.8em; line-height: 1.6; white-space: pre; }
+        .diagram .cls { color: #5eead4; font-weight: 600; } .diagram .rel { color: #fbbf24; } .diagram .note { color: #94a3b8; font-style: italic; }
+
+        .pattern-pills { display: flex; flex-wrap: wrap; gap: 10px; margin: 16px 0 24px; }
+        .pattern-pill { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; background: white; border: 1px solid #e2e8f0; border-radius: 100px; font-size: 0.82em; font-weight: 500; color: #475569; text-decoration: none; transition: all 0.15s ease; }
+        .pattern-pill:hover { border-color: #0d9488; color: #0d9488; background: #f0fdfa; }
+        .pattern-pill .dot { width: 8px; height: 8px; border-radius: 50%; background: #0d9488; }
+
+        .code-container { margin: 24px 0; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .code-tabs { display: flex; background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0 8px; }
+        .code-tab { padding: 10px 18px; cursor: pointer; border: none; background: transparent; color: #64748b; font-size: 0.85em; font-weight: 500; font-family: 'Inter', sans-serif; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.15s ease; }
+        .code-tab:hover { color: #0d9488; }
+        .code-tab.active { color: #0d9488; border-bottom-color: #0d9488; background: white; }
+        .code-content { display: none; background: white; padding: 24px; overflow-x: auto; }
+        .code-content.active { display: block; }
+        .code-content pre { color: #1e293b; font-family: 'JetBrains Mono', monospace; font-size: 0.82em; line-height: 1.75; white-space: pre; }
+        .keyword { color: #0d9488; } .type { color: #2563eb; } .string { color: #16a34a; }
+        .comment { color: #94a3b8; font-style: italic; } .number { color: #d97706; }
+        .preproc { color: #7c3aed; } .fn { color: #db2777; }
+
+        .note { background: #f0fdfa; border-left: 4px solid #0d9488; padding: 16px 20px; margin: 20px 0; border-radius: 0 12px 12px 0; }
+        .note ul, .note p { margin-bottom: 0; } .note li:last-child { margin-bottom: 0; }
+        .warn { background: #fef2f2; border-left: 4px solid #dc2626; padding: 16px 20px; margin: 20px 0; border-radius: 0 12px 12px 0; }
+        .warn ul, .warn p { margin-bottom: 0; } .warn li:last-child { margin-bottom: 0; }
+
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; }
+        th, td { padding: 12px 16px; border: 1px solid #e2e8f0; text-align: left; font-size: 0.9em; }
+        th { background: #f8fafc; color: #0f172a; font-weight: 600; }
+        tr:hover { background: #f8fafc; }
+
+        .footer { text-align: center; padding: 32px 20px; color: #94a3b8; font-size: 0.85em; border-top: 1px solid #e2e8f0; background: #f8fafc; }
+        .footer span { color: #0d9488; }
+
+        @media (max-width: 600px) { .req-grid { grid-template-columns: 1fr; } h1 { font-size: 1.8em; } .container { padding: 20px 16px 60px; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="../index.html" class="back-link">&larr; Back to LLD Topics</a>
+        <div class="badges">
+            <span class="pattern-badge">LLD Problem</span>
+            <span class="diff-badge diff-hard">Hard</span>
+        </div>
+        <h1>Design an In-Memory Key-Value Store</h1>
+        <p class="subtitle">A Redis-style store supporting O(1) get/put/delete, per-key TTL expiry, a pluggable eviction policy (LRU/LFU), and transactions. The interview centerpiece is a correct, O(1) LRU cache built from a HashMap plus a doubly-linked list.</p>
+
+        <div class="statement">
+            <div class="tag">📋 Problem Statement</div>
+            <p>Design an in-memory <strong>KeyValueStore</strong> with <code>get(k)</code>, <code>put(k, v)</code>, and <code>delete(k)</code>. The store has a fixed <strong>capacity</strong>; when full, it evicts an entry chosen by a pluggable <strong>EvictionPolicy</strong> (LRU or LFU). Keys may have a <strong>TTL</strong> and expire lazily. The store must support simple <strong>transactions</strong> — <code>begin / commit / rollback</code> — and be safe under concurrent access. All core operations should be <strong>O(1)</strong>.</p>
+        </div>
+
+        <h2>Step 1 — Gather Requirements</h2>
+        <p>Scope first. The hard part isn't the API — it's hitting O(1) for every operation including eviction.</p>
+        <div class="req-grid func">
+            <div>
+                <h3>✓ Functional</h3>
+                <ul>
+                    <li><code>get</code>, <code>put</code>, <code>delete</code> on string keys.</li>
+                    <li>Fixed capacity with automatic eviction when full.</li>
+                    <li>Pluggable eviction policy: LRU or LFU.</li>
+                    <li>Optional per-key TTL; expired keys disappear.</li>
+                    <li>Transactions: begin / commit / rollback.</li>
+                </ul>
+            </div>
+            <div>
+                <h3>◆ Non-Functional</h3>
+                <ul>
+                    <li><strong>O(1)</strong> get / put / delete / evict.</li>
+                    <li><strong>Thread-safe</strong> under concurrent readers and writers.</li>
+                    <li><strong>Extensibility:</strong> add eviction policies without editing the store.</li>
+                    <li>Bounded memory — never exceed capacity.</li>
+                </ul>
+            </div>
+        </div>
+
+        <h2>Step 2 — Identify the Core Entities</h2>
+        <p>The nouns become classes:</p>
+        <ul>
+            <li><strong>KeyValueStore</strong> — the facade: <code>get/put/delete</code>, holds the map and capacity.</li>
+            <li><strong>Entry / Node</strong> — value + expiry timestamp; in the LRU it's a doubly-linked-list node.</li>
+            <li><strong>EvictionPolicy</strong> (interface) — Strategy: <code>recordAccess</code>, <code>recordInsert</code>, <code>evict</code>.</li>
+            <li><strong>LRUPolicy / LFUPolicy</strong> — concrete strategies; LRU uses a HashMap + doubly-linked list.</li>
+            <li><strong>TransactionManager</strong> — stacks change-sets (Memento/Command) so rollback restores prior state.</li>
+        </ul>
+
+        <h2>Step 3 — Class Diagram</h2>
+        <p>The LRU's magic is two data structures cooperating: a HashMap for O(1) lookup, and a doubly-linked list for O(1) reorder/eviction. The eviction rule itself is a swappable Strategy.</p>
+        <div class="diagram">
+<pre><span class="cls">KeyValueStore</span>
+   │ holds   <span class="rel">Map&lt;K, Node&gt;</span>  ───────────▶ O(1) key lookup
+   │ uses
+   ▼
+<span class="cls">EvictionPolicy</span> (interface)  {recordAccess(k), recordInsert(k), evict()}
+   ▲
+   ├──────────────────────────────┐
+<span class="cls">LRUPolicy</span>                       <span class="cls">LFUPolicy</span>
+   │ owns                            │ owns
+   ▼                                 ▼
+<span class="rel">Doubly-Linked List</span>            <span class="rel">freq buckets</span>
+ head ⇄ [MRU] ⇄ ... ⇄ [LRU] ⇄ tail   <span class="note">// evict = node before tail (O(1))</span>
+
+<span class="cls">Node</span> {key, value, expireAt, prev, next}
+<span class="cls">TransactionManager</span> ──stack-of──▶ <span class="cls">ChangeSet</span> (Memento: undo log)
+   <span class="note">// Strategy decouples WHAT to evict from the store; Memento powers rollback</span></pre>
+        </div>
+
+        <h2>Step 4 — Patterns in Play</h2>
+        <p>Name the patterns — they map cleanly onto this problem:</p>
+        <div class="pattern-pills">
+            <a class="pattern-pill" href="../behavioral/strategy.html"><span class="dot"></span> Strategy — pluggable eviction (LRU/LFU)</a>
+            <a class="pattern-pill" href="../behavioral/memento.html"><span class="dot"></span> Memento — transaction rollback log</a>
+            <a class="pattern-pill" href="../behavioral/command.html"><span class="dot"></span> Command — replayable write ops</a>
+            <a class="pattern-pill" href="../concurrency/locks-synchronization.html"><span class="dot"></span> Locking — thread-safe access</a>
+        </div>
+
+        <h2>Step 5 — Implementation</h2>
+        <p>The heart of the answer: a fully working <strong>O(1) LRU cache</strong> — HashMap for lookup, doubly-linked list (with sentinel head/tail) for recency. TTL is checked lazily on read; transactions are sketched at the end.</p>
+
+        <div class="code-container">
+            <div class="code-tabs">
+                <button class="code-tab active" onclick="showCode(this, 'javaCode')">Java</button>
+                <button class="code-tab" onclick="showCode(this, 'pyCode')">Python</button>
+            </div>
+            <div id="javaCode" class="code-content active">
+<pre><span class="keyword">import</span> java.util.*;
+
+<span class="comment">// Doubly-linked-list node: also the stored Entry (value + expiry)</span>
+<span class="keyword">class</span> <span class="type">Node</span> {
+    <span class="type">String</span> key, value; <span class="keyword">long</span> expireAt;   <span class="comment">// 0 = never expires</span>
+    <span class="type">Node</span> prev, next;
+    <span class="type">Node</span>(<span class="type">String</span> k, <span class="type">String</span> v, <span class="keyword">long</span> exp) { key = k; value = v; expireAt = exp; }
+}
+
+<span class="comment">// ---- Strategy: an LRU eviction policy backed by a doubly-linked list ----</span>
+<span class="comment">// head &lt;-&gt; (most recent) ... (least recent) &lt;-&gt; tail   (both are sentinels)</span>
+<span class="keyword">class</span> <span class="type">LRUStore</span> {
+    <span class="keyword">private final</span> <span class="keyword">int</span> capacity;
+    <span class="keyword">private final</span> <span class="type">Map</span>&lt;<span class="type">String</span>, <span class="type">Node</span>&gt; map = <span class="keyword">new</span> <span class="type">HashMap</span>&lt;&gt;();
+    <span class="keyword">private final</span> <span class="type">Node</span> head = <span class="keyword">new</span> <span class="type">Node</span>(<span class="keyword">null</span>, <span class="keyword">null</span>, <span class="number">0</span>);
+    <span class="keyword">private final</span> <span class="type">Node</span> tail = <span class="keyword">new</span> <span class="type">Node</span>(<span class="keyword">null</span>, <span class="keyword">null</span>, <span class="number">0</span>);
+    <span class="keyword">private final</span> <span class="type">Object</span> lock = <span class="keyword">new</span> <span class="type">Object</span>();   <span class="comment">// thread-safety guard</span>
+
+    <span class="type">LRUStore</span>(<span class="keyword">int</span> capacity) {
+        <span class="keyword">this</span>.capacity = capacity;
+        head.next = tail; tail.prev = head;     <span class="comment">// empty list</span>
+    }
+
+    <span class="comment">// --- O(1) list surgery helpers ---</span>
+    <span class="keyword">private void</span> <span class="fn">remove</span>(<span class="type">Node</span> n) { n.prev.next = n.next; n.next.prev = n.prev; }
+    <span class="keyword">private void</span> <span class="fn">addFront</span>(<span class="type">Node</span> n) {          <span class="comment">// insert right after head = most recent</span>
+        n.next = head.next; n.prev = head;
+        head.next.prev = n; head.next = n;
+    }
+    <span class="keyword">private void</span> <span class="fn">touch</span>(<span class="type">Node</span> n) { <span class="fn">remove</span>(n); <span class="fn">addFront</span>(n); }   <span class="comment">// mark as recently used</span>
+
+    <span class="keyword">private boolean</span> <span class="fn">expired</span>(<span class="type">Node</span> n) {
+        <span class="keyword">return</span> n.expireAt != <span class="number">0</span> &amp;&amp; <span class="type">System</span>.<span class="fn">currentTimeMillis</span>() &gt; n.expireAt;
+    }
+
+    <span class="type">String</span> <span class="fn">get</span>(<span class="type">String</span> key) {
+        <span class="keyword">synchronized</span> (lock) {
+            <span class="type">Node</span> n = map.<span class="fn">get</span>(key);
+            <span class="keyword">if</span> (n == <span class="keyword">null</span>) <span class="keyword">return</span> <span class="keyword">null</span>;
+            <span class="keyword">if</span> (<span class="fn">expired</span>(n)) { <span class="fn">remove</span>(n); map.<span class="fn">remove</span>(key); <span class="keyword">return</span> <span class="keyword">null</span>; }  <span class="comment">// lazy TTL</span>
+            <span class="fn">touch</span>(n);                          <span class="comment">// most-recently-used now</span>
+            <span class="keyword">return</span> n.value;
+        }
+    }
+
+    <span class="keyword">void</span> <span class="fn">put</span>(<span class="type">String</span> key, <span class="type">String</span> value, <span class="keyword">long</span> ttlMs) {
+        <span class="keyword">synchronized</span> (lock) {
+            <span class="keyword">long</span> exp = ttlMs &gt; <span class="number">0</span> ? <span class="type">System</span>.<span class="fn">currentTimeMillis</span>() + ttlMs : <span class="number">0</span>;
+            <span class="type">Node</span> n = map.<span class="fn">get</span>(key);
+            <span class="keyword">if</span> (n != <span class="keyword">null</span>) {                  <span class="comment">// update in place + promote</span>
+                n.value = value; n.expireAt = exp; <span class="fn">touch</span>(n); <span class="keyword">return</span>;
+            }
+            <span class="keyword">if</span> (map.<span class="fn">size</span>() &gt;= capacity) {       <span class="comment">// evict LRU = node before tail</span>
+                <span class="type">Node</span> lru = tail.prev;
+                <span class="fn">remove</span>(lru); map.<span class="fn">remove</span>(lru.key);
+            }
+            <span class="type">Node</span> fresh = <span class="keyword">new</span> <span class="type">Node</span>(key, value, exp);
+            <span class="fn">addFront</span>(fresh); map.<span class="fn">put</span>(key, fresh);
+        }
+    }
+
+    <span class="keyword">void</span> <span class="fn">delete</span>(<span class="type">String</span> key) {
+        <span class="keyword">synchronized</span> (lock) {
+            <span class="type">Node</span> n = map.<span class="fn">remove</span>(key);
+            <span class="keyword">if</span> (n != <span class="keyword">null</span>) <span class="fn">remove</span>(n);
+        }
+    }
+
+    <span class="keyword">public static void</span> <span class="fn">main</span>(<span class="type">String</span>[] a) {
+        <span class="type">LRUStore</span> kv = <span class="keyword">new</span> <span class="type">LRUStore</span>(<span class="number">2</span>);
+        kv.<span class="fn">put</span>(<span class="string">"a"</span>, <span class="string">"1"</span>, <span class="number">0</span>);
+        kv.<span class="fn">put</span>(<span class="string">"b"</span>, <span class="string">"2"</span>, <span class="number">0</span>);
+        kv.<span class="fn">get</span>(<span class="string">"a"</span>);                <span class="comment">// 'a' is now most-recent</span>
+        kv.<span class="fn">put</span>(<span class="string">"c"</span>, <span class="string">"3"</span>, <span class="number">0</span>);       <span class="comment">// capacity hit -&gt; evicts 'b' (LRU)</span>
+        <span class="type">System</span>.out.<span class="fn">println</span>(kv.<span class="fn">get</span>(<span class="string">"b"</span>));  <span class="comment">// null</span>
+        <span class="type">System</span>.out.<span class="fn">println</span>(kv.<span class="fn">get</span>(<span class="string">"a"</span>));  <span class="comment">// 1</span>
+        <span class="type">System</span>.out.<span class="fn">println</span>(kv.<span class="fn">get</span>(<span class="string">"c"</span>));  <span class="comment">// 3</span>
+    }
+}
+
+<span class="comment">// ---- Memento: transactions stack undo logs; rollback replays them ----</span>
+<span class="comment">// begin()  -&gt; push an empty change-set onto a stack</span>
+<span class="comment">// on each put/delete inside a txn, record the OLD value in the top set</span>
+<span class="comment">// commit() -&gt; discard the change-set (changes already applied)</span>
+<span class="comment">// rollback() -&gt; pop the set and restore every recorded OLD value</span>
+</pre>
+            </div>
+            <div id="pyCode" class="code-content">
+<pre><span class="keyword">import</span> time, threading
+
+<span class="keyword">class</span> <span class="type">Node</span>:                       <span class="comment"># DLL node = stored Entry (value + expiry)</span>
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, key, value, expire_at=<span class="number">0</span>):   <span class="comment"># 0 = never expires</span>
+        self.key, self.value, self.expire_at = key, value, expire_at
+        self.prev = self.next = <span class="keyword">None</span>
+
+<span class="comment"># ---- O(1) LRU: HashMap for lookup + doubly-linked list for recency ----</span>
+<span class="comment"># head &lt;-&gt; (most recent) ... (least recent) &lt;-&gt; tail   (both sentinels)</span>
+<span class="keyword">class</span> <span class="type">LRUStore</span>:
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, capacity):
+        self.capacity = capacity
+        self.map = {}
+        self.head, self.tail = <span class="type">Node</span>(<span class="keyword">None</span>, <span class="keyword">None</span>), <span class="type">Node</span>(<span class="keyword">None</span>, <span class="keyword">None</span>)
+        self.head.next, self.tail.prev = self.tail, self.head
+        self.lock = threading.<span class="type">RLock</span>()       <span class="comment"># thread-safety guard</span>
+
+    <span class="comment"># --- O(1) list surgery helpers ---</span>
+    <span class="keyword">def</span> <span class="fn">_remove</span>(self, n):
+        n.prev.next, n.next.prev = n.next, n.prev
+    <span class="keyword">def</span> <span class="fn">_add_front</span>(self, n):              <span class="comment"># right after head = most recent</span>
+        n.next, n.prev = self.head.next, self.head
+        self.head.next.prev = n
+        self.head.next = n
+    <span class="keyword">def</span> <span class="fn">_touch</span>(self, n):                  <span class="comment"># mark recently used</span>
+        self.<span class="fn">_remove</span>(n); self.<span class="fn">_add_front</span>(n)
+
+    <span class="keyword">def</span> <span class="fn">_expired</span>(self, n):
+        <span class="keyword">return</span> n.expire_at <span class="keyword">and</span> time.<span class="fn">time</span>() &gt; n.expire_at
+
+    <span class="keyword">def</span> <span class="fn">get</span>(self, key):
+        <span class="keyword">with</span> self.lock:
+            n = self.map.<span class="fn">get</span>(key)
+            <span class="keyword">if</span> n <span class="keyword">is</span> <span class="keyword">None</span>: <span class="keyword">return</span> <span class="keyword">None</span>
+            <span class="keyword">if</span> self.<span class="fn">_expired</span>(n):           <span class="comment"># lazy TTL</span>
+                self.<span class="fn">_remove</span>(n); <span class="keyword">del</span> self.map[key]; <span class="keyword">return</span> <span class="keyword">None</span>
+            self.<span class="fn">_touch</span>(n)                  <span class="comment"># most-recently-used now</span>
+            <span class="keyword">return</span> n.value
+
+    <span class="keyword">def</span> <span class="fn">put</span>(self, key, value, ttl=<span class="number">0</span>):
+        <span class="keyword">with</span> self.lock:
+            exp = time.<span class="fn">time</span>() + ttl <span class="keyword">if</span> ttl &gt; <span class="number">0</span> <span class="keyword">else</span> <span class="number">0</span>
+            n = self.map.<span class="fn">get</span>(key)
+            <span class="keyword">if</span> n:                          <span class="comment"># update in place + promote</span>
+                n.value, n.expire_at = value, exp
+                self.<span class="fn">_touch</span>(n); <span class="keyword">return</span>
+            <span class="keyword">if</span> <span class="fn">len</span>(self.map) &gt;= self.capacity:   <span class="comment"># evict LRU = node before tail</span>
+                lru = self.tail.prev
+                self.<span class="fn">_remove</span>(lru); <span class="keyword">del</span> self.map[lru.key]
+            fresh = <span class="type">Node</span>(key, value, exp)
+            self.<span class="fn">_add_front</span>(fresh)
+            self.map[key] = fresh
+
+    <span class="keyword">def</span> <span class="fn">delete</span>(self, key):
+        <span class="keyword">with</span> self.lock:
+            n = self.map.<span class="fn">pop</span>(key, <span class="keyword">None</span>)
+            <span class="keyword">if</span> n: self.<span class="fn">_remove</span>(n)
+
+<span class="keyword">if</span> __name__ == <span class="string">"__main__"</span>:
+    kv = <span class="type">LRUStore</span>(<span class="number">2</span>)
+    kv.<span class="fn">put</span>(<span class="string">"a"</span>, <span class="string">"1"</span>)
+    kv.<span class="fn">put</span>(<span class="string">"b"</span>, <span class="string">"2"</span>)
+    kv.<span class="fn">get</span>(<span class="string">"a"</span>)                # 'a' is now most-recent
+    kv.<span class="fn">put</span>(<span class="string">"c"</span>, <span class="string">"3"</span>)           # capacity hit -&gt; evicts 'b' (LRU)
+    <span class="fn">print</span>(kv.<span class="fn">get</span>(<span class="string">"b"</span>))         # None
+    <span class="fn">print</span>(kv.<span class="fn">get</span>(<span class="string">"a"</span>))         # 1
+    <span class="fn">print</span>(kv.<span class="fn">get</span>(<span class="string">"c"</span>))         # 3
+
+<span class="comment"># ---- Memento: transactions as a stack of undo logs ----</span>
+<span class="comment"># begin()    -&gt; self._txn.append({})            push a fresh change-set</span>
+<span class="comment"># put/delete -&gt; if in txn, record OLD value once in the top change-set</span>
+<span class="comment"># commit()   -&gt; self._txn.pop()                  changes already applied</span>
+<span class="comment"># rollback() -&gt; for k, old in self._txn.pop().items(): restore old value</span>
+</pre>
+            </div>
+        </div>
+
+        <div class="note">
+            <strong>Why this design scores well:</strong> the LRU hits true <strong>O(1)</strong> for every operation because the HashMap gives O(1) lookup and the doubly-linked list gives O(1) move-to-front and O(1) eviction (the node just before <code>tail</code>). The <strong>sentinel</strong> head/tail nodes eliminate every null-check during list surgery — a detail interviewers love. TTL is checked <em>lazily on read</em> (no background thread needed for the core), and the <code>EvictionPolicy</code> is a Strategy so swapping to LFU never touches <code>get/put</code>. Rollback is a Memento: an undo log of prior values.
+        </div>
+
+        <h2>Step 6 — Follow-up Extensions</h2>
+        <p>Where the interviewer pushes next:</p>
+        <ul>
+            <li><strong>LFU eviction:</strong> add frequency buckets (a map of freq → ordered list) for O(1) least-frequent eviction; same <code>EvictionPolicy</code> interface.</li>
+            <li><strong>Active TTL expiry:</strong> a background sweeper or a min-heap of expirations to reclaim memory eagerly, not just on read.</li>
+            <li><strong>Concurrency at scale:</strong> shard the store into N segments each with its own lock (like <code>ConcurrentHashMap</code>) to cut contention — see <a href="../concurrency/locks-synchronization.html">locks &amp; synchronization</a>.</li>
+            <li><strong>Nested transactions:</strong> the change-set stack already supports nesting; rollback pops one level, commit merges into the parent.</li>
+            <li><strong>Persistence:</strong> append-only write log (like Redis AOF) replayed on restart; snapshots for fast recovery.</li>
+        </ul>
+
+        <div class="warn">
+            <strong>Common mistakes:</strong> using only a HashMap and a list — eviction becomes O(n) because you scan for the LRU; forgetting sentinel head/tail and drowning in null-checks; checking TTL only in <code>get</code> but never reclaiming the memory; hardcoding LRU instead of a Strategy so LFU forces a rewrite; and omitting the lock so concurrent <code>put</code>s corrupt the linked list. Avoid all five and you're in the top tier.
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>Low-Level Design · <span>In-Memory Key-Value Store</span> · Java &amp; Python · Interactive Learning</p>
+    </div>
+
+    <script>
+        function showCode(btn, id) {
+            const container = btn.closest('.code-container');
+            container.querySelectorAll('.code-tab').forEach(t => t.classList.remove('active'));
+            container.querySelectorAll('.code-content').forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById(id).classList.add('active');
+        }
+    </script>
+</body>
+</html>

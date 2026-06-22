@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Food Delivery System — LLD Problem</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8fafc; min-height: 100vh; color: #1e293b; -webkit-font-smoothing: antialiased; }
+        .container { max-width: 880px; margin: 0 auto; padding: 40px 24px 80px; }
+        .back-link { display: inline-flex; align-items: center; gap: 6px; color: #0d9488; text-decoration: none; font-size: 0.9em; font-weight: 500; margin-bottom: 28px; padding: 6px 12px; border-radius: 8px; transition: background 0.15s ease; }
+        .back-link:hover { background: #f0fdfa; }
+
+        .badges { display: flex; gap: 10px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+        .pattern-badge { display: inline-block; padding: 5px 14px; border-radius: 100px; font-size: 0.72em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; background: #e0e7ff; color: #4338ca; }
+        .diff-badge { display: inline-block; padding: 5px 14px; border-radius: 100px; font-size: 0.72em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+        .diff-easy   { background: #dcfce7; color: #16a34a; }
+        .diff-medium { background: #fef3c7; color: #d97706; }
+        .diff-hard   { background: #fee2e2; color: #dc2626; }
+
+        h1 { font-size: 2.4em; font-weight: 800; color: #0f172a; margin-bottom: 12px; letter-spacing: -0.03em; line-height: 1.2; }
+        .subtitle { font-size: 1.1em; color: #64748b; line-height: 1.7; margin-bottom: 8px; }
+        h2 { font-size: 1.35em; font-weight: 700; color: #0f172a; margin: 40px 0 16px; letter-spacing: -0.02em; }
+        h3 { font-size: 1.1em; font-weight: 600; color: #1e293b; margin: 24px 0 10px; }
+        p, li { line-height: 1.8; color: #475569; margin-bottom: 10px; font-size: 0.95em; }
+        ul, ol { padding-left: 20px; margin-bottom: 15px; }
+        strong { color: #1e293b; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 0.85em; color: #0d9488; }
+
+        .statement { background: linear-gradient(135deg, #eef2ff, #f0fdfa); border: 1px solid #e0e7ff; border-radius: 16px; padding: 24px 28px; margin: 24px 0; }
+        .statement .tag { font-size: 0.78em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #4338ca; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+        .statement p:last-child { margin-bottom: 0; }
+
+        .req-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0; }
+        .req-grid > div { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .req-grid h3 { margin-top: 0; }
+        .req-grid.func h3 { color: #0d9488; } .req-grid.nonfunc h3 { color: #4338ca; }
+        .req-grid ul { margin-bottom: 0; }
+
+        .diagram { background: #0f172a; border-radius: 16px; padding: 24px; margin: 24px 0; overflow-x: auto; }
+        .diagram pre { color: #e2e8f0; font-family: 'JetBrains Mono', monospace; font-size: 0.8em; line-height: 1.6; white-space: pre; }
+        .diagram .cls { color: #5eead4; font-weight: 600; } .diagram .rel { color: #fbbf24; } .diagram .note { color: #94a3b8; font-style: italic; }
+
+        .pattern-pills { display: flex; flex-wrap: wrap; gap: 10px; margin: 16px 0 24px; }
+        .pattern-pill { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; background: white; border: 1px solid #e2e8f0; border-radius: 100px; font-size: 0.82em; font-weight: 500; color: #475569; text-decoration: none; transition: all 0.15s ease; }
+        .pattern-pill:hover { border-color: #0d9488; color: #0d9488; background: #f0fdfa; }
+        .pattern-pill .dot { width: 8px; height: 8px; border-radius: 50%; background: #0d9488; }
+
+        .code-container { margin: 24px 0; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .code-tabs { display: flex; background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0 8px; }
+        .code-tab { padding: 10px 18px; cursor: pointer; border: none; background: transparent; color: #64748b; font-size: 0.85em; font-weight: 500; font-family: 'Inter', sans-serif; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.15s ease; }
+        .code-tab:hover { color: #0d9488; }
+        .code-tab.active { color: #0d9488; border-bottom-color: #0d9488; background: white; }
+        .code-content { display: none; background: white; padding: 24px; overflow-x: auto; }
+        .code-content.active { display: block; }
+        .code-content pre { color: #1e293b; font-family: 'JetBrains Mono', monospace; font-size: 0.82em; line-height: 1.75; white-space: pre; }
+        .keyword { color: #0d9488; } .type { color: #2563eb; } .string { color: #16a34a; }
+        .comment { color: #94a3b8; font-style: italic; } .number { color: #d97706; }
+        .preproc { color: #7c3aed; } .fn { color: #db2777; }
+
+        .note { background: #f0fdfa; border-left: 4px solid #0d9488; padding: 16px 20px; margin: 20px 0; border-radius: 0 12px 12px 0; }
+        .note ul, .note p { margin-bottom: 0; } .note li:last-child { margin-bottom: 0; }
+        .warn { background: #fef2f2; border-left: 4px solid #dc2626; padding: 16px 20px; margin: 20px 0; border-radius: 0 12px 12px 0; }
+        .warn ul, .warn p { margin-bottom: 0; } .warn li:last-child { margin-bottom: 0; }
+
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; }
+        th, td { padding: 12px 16px; border: 1px solid #e2e8f0; text-align: left; font-size: 0.9em; }
+        th { background: #f8fafc; color: #0f172a; font-weight: 600; }
+        tr:hover { background: #f8fafc; }
+
+        .footer { text-align: center; padding: 32px 20px; color: #94a3b8; font-size: 0.85em; border-top: 1px solid #e2e8f0; background: #f8fafc; }
+        .footer span { color: #0d9488; }
+
+        @media (max-width: 600px) { .req-grid { grid-template-columns: 1fr; } h1 { font-size: 1.8em; } .container { padding: 20px 16px 60px; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="../index.html" class="back-link">&larr; Back to LLD Topics</a>
+        <div class="badges">
+            <span class="pattern-badge">LLD Problem</span>
+            <span class="diff-badge diff-hard">Hard</span>
+        </div>
+        <h1>Design a Food Delivery System</h1>
+        <p class="subtitle">A Swiggy/Zomato-style platform that connects customers, restaurants, and delivery partners. Customers browse menus, place orders, restaurants accept and cook, and a delivery partner is dispatched — all while the order moves through a strict lifecycle and everyone gets notified.</p>
+
+        <div class="statement">
+            <div class="tag">📋 Problem Statement</div>
+            <p>Design the core of a food delivery service. A <strong>Customer</strong> browses nearby <strong>Restaurants</strong>, adds <strong>MenuItems</strong> to a <strong>Cart</strong>, and places an <strong>Order</strong>. The restaurant <strong>accepts</strong> and prepares it; the system <strong>assigns the nearest free DeliveryPartner</strong>; the order then flows <code>PLACED → CONFIRMED → PREPARING → OUT_FOR_DELIVERY → DELIVERED</code>. At every transition, the customer (and other subscribers) must be <strong>notified</strong>. Pricing/assignment rules must be swappable.</p>
+        </div>
+
+        <h2>Step 1 — Gather Requirements</h2>
+        <p>Pin down scope first. Call out the must-haves versus the nice-to-haves so the interviewer sees you can prioritize.</p>
+        <div class="req-grid func">
+            <div>
+                <h3>✓ Functional</h3>
+                <ul>
+                    <li>Browse restaurants and their menus.</li>
+                    <li>Build a cart and place an order with payment.</li>
+                    <li>Restaurant accepts/rejects; order is prepared.</li>
+                    <li>Assign the nearest available delivery partner.</li>
+                    <li>Track order through a fixed lifecycle of states.</li>
+                    <li>Notify the customer on every status change.</li>
+                </ul>
+            </div>
+            <div>
+                <h3>◆ Non-Functional</h3>
+                <ul>
+                    <li><strong>Valid transitions only:</strong> an order can't skip from PLACED to DELIVERED.</li>
+                    <li><strong>Extensibility:</strong> add new assignment / pricing rules without edits.</li>
+                    <li><strong>Decoupling:</strong> order logic shouldn't know who is listening.</li>
+                    <li><strong>Concurrency:</strong> one partner is never double-assigned.</li>
+                    <li>Low-latency partner lookup at scale.</li>
+                </ul>
+            </div>
+        </div>
+
+        <h2>Step 2 — Identify the Core Entities</h2>
+        <p>Pull the nouns out of the statement — these become your classes:</p>
+        <ul>
+            <li><strong>Customer</strong> — places orders; subscribes to updates.</li>
+            <li><strong>Restaurant</strong> — owns a menu; accepts/rejects orders.</li>
+            <li><strong>MenuItem</strong> — a dish with a price and availability.</li>
+            <li><strong>Cart</strong> — a customer's in-progress selection of items.</li>
+            <li><strong>Order</strong> — the central entity; holds a state and line items.</li>
+            <li><strong>OrderState</strong> (interface) — the State pattern: each lifecycle phase is a class controlling what comes next.</li>
+            <li><strong>DeliveryPartner</strong> — a rider with a location and availability.</li>
+            <li><strong>DeliveryAssignmentStrategy</strong> — pluggable rule to pick a partner (e.g. nearest).</li>
+            <li><strong>Payment</strong> — captures the order amount.</li>
+            <li><strong>Observer / Notification</strong> — listeners notified on state changes.</li>
+        </ul>
+
+        <h2>Step 3 — Class Diagram</h2>
+        <p>Three patterns hang off the <code>Order</code>: State drives its lifecycle, Strategy picks the rider, and Observer fans out notifications.</p>
+        <div class="diagram">
+<pre><span class="cls">Customer</span> ──places──▶ <span class="cls">Order</span> ◀──has-many── <span class="cls">OrderLineItem</span> ──refers──▶ <span class="cls">MenuItem</span>
+                  │                                            ▲
+                  │ current                                    │ owns-menu
+                  ▼                                       <span class="cls">Restaurant</span>
+            <span class="cls">OrderState</span> (interface)            <span class="rel">accept() / prepare()</span>
+                  ▲
+   ┌──────────────┼───────────────┬──────────────────┬─────────────────┐
+<span class="cls">Placed</span>      <span class="cls">Confirmed</span>      <span class="cls">Preparing</span>      <span class="cls">OutForDelivery</span>      <span class="cls">Delivered</span>
+   <span class="note">// State pattern: each state allows only its legal next() transition</span>
+
+<span class="cls">Order</span> ──uses──▶ <span class="cls">DeliveryAssignmentStrategy</span> (interface)
+                          ▲
+                <span class="cls">NearestPartnerStrategy</span>  ──picks──▶ <span class="cls">DeliveryPartner</span> {location, free}
+
+<span class="cls">Order</span> (Subject) ──notifies──▶ <span class="cls">OrderObserver</span> (interface)
+                                  ▲
+                  ┌───────────────┴────────────────┐
+          <span class="cls">CustomerNotifier</span>            <span class="cls">RestaurantNotifier</span>
+   <span class="note">// Observer pattern: Order doesn't know who listens — just publishes</span></pre>
+        </div>
+
+        <h2>Step 4 — Patterns in Play</h2>
+        <p>Name the patterns as you go — it signals design maturity:</p>
+        <div class="pattern-pills">
+            <a class="pattern-pill" href="../behavioral/state.html"><span class="dot"></span> State — order lifecycle transitions</a>
+            <a class="pattern-pill" href="../behavioral/strategy.html"><span class="dot"></span> Strategy — pluggable partner assignment</a>
+            <a class="pattern-pill" href="../behavioral/observer.html"><span class="dot"></span> Observer — fan-out status notifications</a>
+            <a class="pattern-pill" href="../creational/singleton.html"><span class="dot"></span> Singleton — central dispatch service</a>
+            <a class="pattern-pill" href="../concurrency/locks-synchronization.html"><span class="dot"></span> Locking — safe partner assignment</a>
+        </div>
+
+        <h2>Step 5 — Implementation</h2>
+        <p>A runnable core showing the three patterns working together: the order moves through states, Strategy picks a rider, and observers get pinged on every change.</p>
+
+        <div class="code-container">
+            <div class="code-tabs">
+                <button class="code-tab active" onclick="showCode(this, 'javaCode')">Java</button>
+                <button class="code-tab" onclick="showCode(this, 'pyCode')">Python</button>
+            </div>
+            <div id="javaCode" class="code-content active">
+<pre><span class="keyword">import</span> java.util.*;
+
+<span class="comment">// ---- Domain ----</span>
+<span class="keyword">class</span> <span class="type">MenuItem</span> {
+    <span class="keyword">final</span> <span class="type">String</span> name; <span class="keyword">final</span> <span class="keyword">double</span> price;
+    <span class="type">MenuItem</span>(<span class="type">String</span> n, <span class="keyword">double</span> p) { name = n; price = p; }
+}
+
+<span class="keyword">class</span> <span class="type">DeliveryPartner</span> {
+    <span class="keyword">final</span> <span class="type">String</span> name; <span class="keyword">int</span> x, y; <span class="keyword">boolean</span> free = <span class="keyword">true</span>;
+    <span class="type">DeliveryPartner</span>(<span class="type">String</span> n, <span class="keyword">int</span> x, <span class="keyword">int</span> y) { name = n; <span class="keyword">this</span>.x = x; <span class="keyword">this</span>.y = y; }
+}
+
+<span class="comment">// ---- Observer pattern ----</span>
+<span class="keyword">interface</span> <span class="type">OrderObserver</span> { <span class="keyword">void</span> <span class="fn">onStatusChange</span>(<span class="type">Order</span> o, <span class="type">String</span> status); }
+<span class="keyword">class</span> <span class="type">CustomerNotifier</span> <span class="keyword">implements</span> <span class="type">OrderObserver</span> {
+    <span class="keyword">public void</span> <span class="fn">onStatusChange</span>(<span class="type">Order</span> o, <span class="type">String</span> status) {
+        <span class="type">System</span>.out.<span class="fn">println</span>(<span class="string">"[SMS] Order "</span> + o.id + <span class="string">" is now "</span> + status);
+    }
+}
+
+<span class="comment">// ---- Strategy pattern: how to choose a delivery partner ----</span>
+<span class="keyword">interface</span> <span class="type">DeliveryAssignmentStrategy</span> {
+    <span class="type">DeliveryPartner</span> <span class="fn">assign</span>(<span class="type">List</span>&lt;<span class="type">DeliveryPartner</span>&gt; pool, <span class="keyword">int</span> rx, <span class="keyword">int</span> ry);
+}
+<span class="keyword">class</span> <span class="type">NearestPartnerStrategy</span> <span class="keyword">implements</span> <span class="type">DeliveryAssignmentStrategy</span> {
+    <span class="keyword">public synchronized</span> <span class="type">DeliveryPartner</span> <span class="fn">assign</span>(<span class="type">List</span>&lt;<span class="type">DeliveryPartner</span>&gt; pool, <span class="keyword">int</span> rx, <span class="keyword">int</span> ry) {
+        <span class="type">DeliveryPartner</span> best = <span class="keyword">null</span>; <span class="keyword">long</span> bestD = <span class="type">Long</span>.MAX_VALUE;
+        <span class="keyword">for</span> (<span class="type">DeliveryPartner</span> p : pool) {
+            <span class="keyword">if</span> (!p.free) <span class="keyword">continue</span>;
+            <span class="keyword">long</span> d = (<span class="keyword">long</span>)(p.x-rx)*(p.x-rx) + (<span class="keyword">long</span>)(p.y-ry)*(p.y-ry);
+            <span class="keyword">if</span> (d &lt; bestD) { bestD = d; best = p; }
+        }
+        <span class="keyword">if</span> (best != <span class="keyword">null</span>) best.free = <span class="keyword">false</span>;   <span class="comment">// reserve atomically</span>
+        <span class="keyword">return</span> best;
+    }
+}
+
+<span class="comment">// ---- State pattern: each phase decides the legal next() ----</span>
+<span class="keyword">interface</span> <span class="type">OrderState</span> {
+    <span class="type">String</span> <span class="fn">name</span>();
+    <span class="type">OrderState</span> <span class="fn">next</span>(<span class="type">Order</span> o);   <span class="comment">// advance; throws if terminal</span>
+}
+<span class="keyword">class</span> <span class="type">Placed</span> <span class="keyword">implements</span> <span class="type">OrderState</span> {
+    <span class="keyword">public</span> <span class="type">String</span> <span class="fn">name</span>() { <span class="keyword">return</span> <span class="string">"PLACED"</span>; }
+    <span class="keyword">public</span> <span class="type">OrderState</span> <span class="fn">next</span>(<span class="type">Order</span> o) { <span class="keyword">return</span> <span class="keyword">new</span> <span class="type">Confirmed</span>(); }
+}
+<span class="keyword">class</span> <span class="type">Confirmed</span> <span class="keyword">implements</span> <span class="type">OrderState</span> {
+    <span class="keyword">public</span> <span class="type">String</span> <span class="fn">name</span>() { <span class="keyword">return</span> <span class="string">"CONFIRMED"</span>; }
+    <span class="keyword">public</span> <span class="type">OrderState</span> <span class="fn">next</span>(<span class="type">Order</span> o) { <span class="keyword">return</span> <span class="keyword">new</span> <span class="type">Preparing</span>(); }
+}
+<span class="keyword">class</span> <span class="type">Preparing</span> <span class="keyword">implements</span> <span class="type">OrderState</span> {
+    <span class="keyword">public</span> <span class="type">String</span> <span class="fn">name</span>() { <span class="keyword">return</span> <span class="string">"PREPARING"</span>; }
+    <span class="keyword">public</span> <span class="type">OrderState</span> <span class="fn">next</span>(<span class="type">Order</span> o) {
+        o.<span class="fn">assignPartner</span>();              <span class="comment">// dispatch on leaving the kitchen</span>
+        <span class="keyword">return</span> <span class="keyword">new</span> <span class="type">OutForDelivery</span>();
+    }
+}
+<span class="keyword">class</span> <span class="type">OutForDelivery</span> <span class="keyword">implements</span> <span class="type">OrderState</span> {
+    <span class="keyword">public</span> <span class="type">String</span> <span class="fn">name</span>() { <span class="keyword">return</span> <span class="string">"OUT_FOR_DELIVERY"</span>; }
+    <span class="keyword">public</span> <span class="type">OrderState</span> <span class="fn">next</span>(<span class="type">Order</span> o) {
+        <span class="keyword">if</span> (o.partner != <span class="keyword">null</span>) o.partner.free = <span class="keyword">true</span>;   <span class="comment">// release rider</span>
+        <span class="keyword">return</span> <span class="keyword">new</span> <span class="type">Delivered</span>();
+    }
+}
+<span class="keyword">class</span> <span class="type">Delivered</span> <span class="keyword">implements</span> <span class="type">OrderState</span> {
+    <span class="keyword">public</span> <span class="type">String</span> <span class="fn">name</span>() { <span class="keyword">return</span> <span class="string">"DELIVERED"</span>; }
+    <span class="keyword">public</span> <span class="type">OrderState</span> <span class="fn">next</span>(<span class="type">Order</span> o) {
+        <span class="keyword">throw new</span> <span class="type">IllegalStateException</span>(<span class="string">"Order already delivered"</span>);
+    }
+}
+
+<span class="keyword">class</span> <span class="type">Order</span> {
+    <span class="keyword">final</span> <span class="type">String</span> id; <span class="keyword">final</span> <span class="keyword">int</span> rx, ry;   <span class="comment">// restaurant location</span>
+    <span class="keyword">final</span> <span class="type">List</span>&lt;<span class="type">MenuItem</span>&gt; items;
+    <span class="keyword">final</span> <span class="type">List</span>&lt;<span class="type">DeliveryPartner</span>&gt; pool;
+    <span class="keyword">final</span> <span class="type">DeliveryAssignmentStrategy</span> strategy;
+    <span class="keyword">private final</span> <span class="type">List</span>&lt;<span class="type">OrderObserver</span>&gt; observers = <span class="keyword">new</span> <span class="type">ArrayList</span>&lt;&gt;();
+    <span class="type">OrderState</span> state = <span class="keyword">new</span> <span class="type">Placed</span>();
+    <span class="type">DeliveryPartner</span> partner;
+
+    <span class="type">Order</span>(<span class="type">String</span> id, <span class="keyword">int</span> rx, <span class="keyword">int</span> ry, <span class="type">List</span>&lt;<span class="type">MenuItem</span>&gt; items,
+          <span class="type">List</span>&lt;<span class="type">DeliveryPartner</span>&gt; pool, <span class="type">DeliveryAssignmentStrategy</span> s) {
+        <span class="keyword">this</span>.id = id; <span class="keyword">this</span>.rx = rx; <span class="keyword">this</span>.ry = ry;
+        <span class="keyword">this</span>.items = items; <span class="keyword">this</span>.pool = pool; <span class="keyword">this</span>.strategy = s;
+    }
+    <span class="keyword">void</span> <span class="fn">subscribe</span>(<span class="type">OrderObserver</span> o) { observers.<span class="fn">add</span>(o); }
+    <span class="keyword">double</span> <span class="fn">total</span>() { <span class="keyword">return</span> items.<span class="fn">stream</span>().<span class="fn">mapToDouble</span>(i -&gt; i.price).<span class="fn">sum</span>(); }
+
+    <span class="keyword">void</span> <span class="fn">assignPartner</span>() {
+        partner = strategy.<span class="fn">assign</span>(pool, rx, ry);
+        <span class="keyword">if</span> (partner == <span class="keyword">null</span>) <span class="keyword">throw new</span> <span class="type">IllegalStateException</span>(<span class="string">"No riders free"</span>);
+        <span class="type">System</span>.out.<span class="fn">println</span>(<span class="string">"  -&gt; assigned "</span> + partner.name);
+    }
+
+    <span class="keyword">void</span> <span class="fn">advance</span>() {                       <span class="comment">// delegate to current state</span>
+        state = state.<span class="fn">next</span>(<span class="keyword">this</span>);
+        <span class="keyword">for</span> (<span class="type">OrderObserver</span> o : observers) o.<span class="fn">onStatusChange</span>(<span class="keyword">this</span>, state.<span class="fn">name</span>());
+    }
+}
+
+<span class="keyword">public class</span> <span class="type">Demo</span> {
+    <span class="keyword">public static void</span> <span class="fn">main</span>(<span class="type">String</span>[] a) {
+        <span class="type">List</span>&lt;<span class="type">DeliveryPartner</span>&gt; pool = <span class="type">List</span>.<span class="fn">of</span>(
+            <span class="keyword">new</span> <span class="type">DeliveryPartner</span>(<span class="string">"Asha"</span>, <span class="number">10</span>, <span class="number">10</span>),
+            <span class="keyword">new</span> <span class="type">DeliveryPartner</span>(<span class="string">"Ravi"</span>, <span class="number">2</span>, <span class="number">3</span>));
+        <span class="type">Order</span> o = <span class="keyword">new</span> <span class="type">Order</span>(<span class="string">"OD1"</span>, <span class="number">1</span>, <span class="number">1</span>,
+            <span class="type">List</span>.<span class="fn">of</span>(<span class="keyword">new</span> <span class="type">MenuItem</span>(<span class="string">"Pizza"</span>, <span class="number">299</span>)), pool, <span class="keyword">new</span> <span class="type">NearestPartnerStrategy</span>());
+        o.<span class="fn">subscribe</span>(<span class="keyword">new</span> <span class="type">CustomerNotifier</span>());
+        <span class="type">System</span>.out.<span class="fn">println</span>(<span class="string">"Total: "</span> + o.<span class="fn">total</span>());
+        o.<span class="fn">advance</span>();  <span class="comment">// CONFIRMED</span>
+        o.<span class="fn">advance</span>();  <span class="comment">// PREPARING</span>
+        o.<span class="fn">advance</span>();  <span class="comment">// OUT_FOR_DELIVERY (picks Ravi, nearest to 1,1)</span>
+        o.<span class="fn">advance</span>();  <span class="comment">// DELIVERED</span>
+    }
+}
+</pre>
+            </div>
+            <div id="pyCode" class="code-content">
+<pre><span class="keyword">from</span> abc <span class="keyword">import</span> ABC, abstractmethod
+<span class="keyword">import</span> threading
+
+<span class="comment"># ---- Domain ----</span>
+<span class="keyword">class</span> <span class="type">MenuItem</span>:
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, name, price):
+        self.name, self.price = name, price
+
+<span class="keyword">class</span> <span class="type">DeliveryPartner</span>:
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, name, x, y):
+        self.name, self.x, self.y, self.free = name, x, y, <span class="keyword">True</span>
+
+<span class="comment"># ---- Observer pattern ----</span>
+<span class="keyword">class</span> <span class="type">OrderObserver</span>(ABC):
+    <span class="preproc">@abstractmethod</span>
+    <span class="keyword">def</span> <span class="fn">on_status_change</span>(self, order, status): ...
+
+<span class="keyword">class</span> <span class="type">CustomerNotifier</span>(<span class="type">OrderObserver</span>):
+    <span class="keyword">def</span> <span class="fn">on_status_change</span>(self, order, status):
+        <span class="fn">print</span>(<span class="string">f"[SMS] Order {order.id} is now {status}"</span>)
+
+<span class="comment"># ---- Strategy pattern: how to choose a delivery partner ----</span>
+<span class="keyword">class</span> <span class="type">DeliveryAssignmentStrategy</span>(ABC):
+    <span class="preproc">@abstractmethod</span>
+    <span class="keyword">def</span> <span class="fn">assign</span>(self, pool, rx, ry): ...
+
+<span class="keyword">class</span> <span class="type">NearestPartnerStrategy</span>(<span class="type">DeliveryAssignmentStrategy</span>):
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self):
+        self._lock = threading.<span class="type">Lock</span>()
+    <span class="keyword">def</span> <span class="fn">assign</span>(self, pool, rx, ry):
+        <span class="keyword">with</span> self._lock:                 <span class="comment"># reserve atomically</span>
+            free = [p <span class="keyword">for</span> p <span class="keyword">in</span> pool <span class="keyword">if</span> p.free]
+            <span class="keyword">if</span> <span class="keyword">not</span> free: <span class="keyword">return</span> <span class="keyword">None</span>
+            best = <span class="fn">min</span>(free, key=<span class="keyword">lambda</span> p: (p.x-rx)**<span class="number">2</span> + (p.y-ry)**<span class="number">2</span>)
+            best.free = <span class="keyword">False</span>
+            <span class="keyword">return</span> best
+
+<span class="comment"># ---- State pattern: each phase decides the legal next() ----</span>
+<span class="keyword">class</span> <span class="type">OrderState</span>(ABC):
+    name = <span class="string">"?"</span>
+    <span class="preproc">@abstractmethod</span>
+    <span class="keyword">def</span> <span class="fn">next</span>(self, order): ...
+
+<span class="keyword">class</span> <span class="type">Placed</span>(<span class="type">OrderState</span>):
+    name = <span class="string">"PLACED"</span>
+    <span class="keyword">def</span> <span class="fn">next</span>(self, order): <span class="keyword">return</span> <span class="type">Confirmed</span>()
+<span class="keyword">class</span> <span class="type">Confirmed</span>(<span class="type">OrderState</span>):
+    name = <span class="string">"CONFIRMED"</span>
+    <span class="keyword">def</span> <span class="fn">next</span>(self, order): <span class="keyword">return</span> <span class="type">Preparing</span>()
+<span class="keyword">class</span> <span class="type">Preparing</span>(<span class="type">OrderState</span>):
+    name = <span class="string">"PREPARING"</span>
+    <span class="keyword">def</span> <span class="fn">next</span>(self, order):
+        order.<span class="fn">assign_partner</span>()          <span class="comment"># dispatch on leaving the kitchen</span>
+        <span class="keyword">return</span> <span class="type">OutForDelivery</span>()
+<span class="keyword">class</span> <span class="type">OutForDelivery</span>(<span class="type">OrderState</span>):
+    name = <span class="string">"OUT_FOR_DELIVERY"</span>
+    <span class="keyword">def</span> <span class="fn">next</span>(self, order):
+        <span class="keyword">if</span> order.partner: order.partner.free = <span class="keyword">True</span>   <span class="comment"># release rider</span>
+        <span class="keyword">return</span> <span class="type">Delivered</span>()
+<span class="keyword">class</span> <span class="type">Delivered</span>(<span class="type">OrderState</span>):
+    name = <span class="string">"DELIVERED"</span>
+    <span class="keyword">def</span> <span class="fn">next</span>(self, order):
+        <span class="keyword">raise</span> <span class="type">RuntimeError</span>(<span class="string">"Order already delivered"</span>)
+
+<span class="keyword">class</span> <span class="type">Order</span>:
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, id, rx, ry, items, pool, strategy):
+        self.id, self.rx, self.ry = id, rx, ry
+        self.items, self.pool, self.strategy = items, pool, strategy
+        self.state = <span class="type">Placed</span>()
+        self.partner = <span class="keyword">None</span>
+        self._observers = []
+
+    <span class="keyword">def</span> <span class="fn">subscribe</span>(self, obs): self._observers.<span class="fn">append</span>(obs)
+    <span class="keyword">def</span> <span class="fn">total</span>(self): <span class="keyword">return</span> <span class="fn">sum</span>(i.price <span class="keyword">for</span> i <span class="keyword">in</span> self.items)
+
+    <span class="keyword">def</span> <span class="fn">assign_partner</span>(self):
+        self.partner = self.strategy.<span class="fn">assign</span>(self.pool, self.rx, self.ry)
+        <span class="keyword">if</span> self.partner <span class="keyword">is</span> <span class="keyword">None</span>: <span class="keyword">raise</span> <span class="type">RuntimeError</span>(<span class="string">"No riders free"</span>)
+        <span class="fn">print</span>(<span class="string">f"  -&gt; assigned {self.partner.name}"</span>)
+
+    <span class="keyword">def</span> <span class="fn">advance</span>(self):                  <span class="comment"># delegate to current state</span>
+        self.state = self.state.<span class="fn">next</span>(self)
+        <span class="keyword">for</span> o <span class="keyword">in</span> self._observers:
+            o.<span class="fn">on_status_change</span>(self, self.state.name)
+
+<span class="keyword">if</span> __name__ == <span class="string">"__main__"</span>:
+    pool = [<span class="type">DeliveryPartner</span>(<span class="string">"Asha"</span>, <span class="number">10</span>, <span class="number">10</span>),
+            <span class="type">DeliveryPartner</span>(<span class="string">"Ravi"</span>, <span class="number">2</span>, <span class="number">3</span>)]
+    o = <span class="type">Order</span>(<span class="string">"OD1"</span>, <span class="number">1</span>, <span class="number">1</span>, [<span class="type">MenuItem</span>(<span class="string">"Pizza"</span>, <span class="number">299</span>)],
+              pool, <span class="type">NearestPartnerStrategy</span>())
+    o.<span class="fn">subscribe</span>(<span class="type">CustomerNotifier</span>())
+    <span class="fn">print</span>(<span class="string">"Total:"</span>, o.<span class="fn">total</span>())
+    o.<span class="fn">advance</span>()   <span class="comment"># CONFIRMED</span>
+    o.<span class="fn">advance</span>()   <span class="comment"># PREPARING</span>
+    o.<span class="fn">advance</span>()   <span class="comment"># OUT_FOR_DELIVERY (picks Ravi, nearest to 1,1)</span>
+    o.<span class="fn">advance</span>()   <span class="comment"># DELIVERED</span>
+</pre>
+            </div>
+        </div>
+
+        <div class="note">
+            <strong>Why this design scores well:</strong> the <code>OrderState</code> classes make illegal transitions <em>impossible</em> — there's no way to call <code>next()</code> on a <code>Delivered</code> order without an exception, and the lifecycle logic lives in the states, not a giant switch on the <code>Order</code>. The <code>DeliveryAssignmentStrategy</code> lets you swap "nearest" for "highest-rated" or "load-balanced" without touching <code>Order</code> (Open/Closed). And the Observer list means <code>Order</code> publishes status changes without knowing whether an SMS, push, or restaurant dashboard is listening.
+        </div>
+
+        <h2>Step 6 — Follow-up Extensions</h2>
+        <p>Strong candidates anticipate where the interviewer pushes next:</p>
+        <ul>
+            <li><strong>Restaurant rejection / cancellation:</strong> add a <code>Cancelled</code> state and transitions from <code>Placed</code>/<code>Confirmed</code>.</li>
+            <li><strong>Fast nearest lookup:</strong> index riders in a geo-grid / quadtree instead of scanning the pool — O(1) bucket lookup.</li>
+            <li><strong>Pricing:</strong> add a <code>PricingStrategy</code> (surge, coupons, delivery fee) alongside the assignment strategy.</li>
+            <li><strong>Payment flow:</strong> a <code>PaymentProcessor</code> with card/UPI/wallet via Strategy; block <code>Confirmed</code> until payment succeeds.</li>
+            <li><strong>Reliability:</strong> persist state transitions to an event log so a crash can resume the order; retry rider assignment on rejection.</li>
+        </ul>
+
+        <div class="warn">
+            <strong>Common mistakes:</strong> modeling the lifecycle as a single mutable <code>String status</code> with scattered <code>if</code> checks instead of the State pattern; hardcoding "nearest" so a new rule means editing <code>Order</code>; having <code>Order</code> call the SMS/push services directly instead of publishing to observers; forgetting to lock the partner pool so two orders grab the same rider. Avoid all four and you're in the top tier.
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>Low-Level Design · <span>Food Delivery System</span> · Java &amp; Python · Interactive Learning</p>
+    </div>
+
+    <script>
+        function showCode(btn, id) {
+            const container = btn.closest('.code-container');
+            container.querySelectorAll('.code-tab').forEach(t => t.classList.remove('active'));
+            container.querySelectorAll('.code-content').forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById(id).classList.add('active');
+        }
+    </script>
+</body>
+</html>

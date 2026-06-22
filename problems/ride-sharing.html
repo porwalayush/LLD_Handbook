@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ride-Sharing Service — LLD Problem</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8fafc; min-height: 100vh; color: #1e293b; -webkit-font-smoothing: antialiased; }
+        .container { max-width: 880px; margin: 0 auto; padding: 40px 24px 80px; }
+        .back-link { display: inline-flex; align-items: center; gap: 6px; color: #0d9488; text-decoration: none; font-size: 0.9em; font-weight: 500; margin-bottom: 28px; padding: 6px 12px; border-radius: 8px; transition: background 0.15s ease; }
+        .back-link:hover { background: #f0fdfa; }
+
+        .badges { display: flex; gap: 10px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+        .pattern-badge { display: inline-block; padding: 5px 14px; border-radius: 100px; font-size: 0.72em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; background: #e0e7ff; color: #4338ca; }
+        .diff-badge { display: inline-block; padding: 5px 14px; border-radius: 100px; font-size: 0.72em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+        .diff-easy   { background: #dcfce7; color: #16a34a; }
+        .diff-medium { background: #fef3c7; color: #d97706; }
+        .diff-hard   { background: #fee2e2; color: #dc2626; }
+
+        h1 { font-size: 2.4em; font-weight: 800; color: #0f172a; margin-bottom: 12px; letter-spacing: -0.03em; line-height: 1.2; }
+        .subtitle { font-size: 1.1em; color: #64748b; line-height: 1.7; margin-bottom: 8px; }
+        h2 { font-size: 1.35em; font-weight: 700; color: #0f172a; margin: 40px 0 16px; letter-spacing: -0.02em; }
+        h3 { font-size: 1.1em; font-weight: 600; color: #1e293b; margin: 24px 0 10px; }
+        p, li { line-height: 1.8; color: #475569; margin-bottom: 10px; font-size: 0.95em; }
+        ul, ol { padding-left: 20px; margin-bottom: 15px; }
+        strong { color: #1e293b; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 0.85em; color: #0d9488; }
+
+        .statement { background: linear-gradient(135deg, #eef2ff, #f0fdfa); border: 1px solid #e0e7ff; border-radius: 16px; padding: 24px 28px; margin: 24px 0; }
+        .statement .tag { font-size: 0.78em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #4338ca; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+        .statement p:last-child { margin-bottom: 0; }
+
+        .req-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0; }
+        .req-grid > div { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .req-grid h3 { margin-top: 0; }
+        .req-grid.func h3 { color: #0d9488; } .req-grid.nonfunc h3 { color: #4338ca; }
+        .req-grid ul { margin-bottom: 0; }
+
+        .diagram { background: #0f172a; border-radius: 16px; padding: 24px; margin: 24px 0; overflow-x: auto; }
+        .diagram pre { color: #e2e8f0; font-family: 'JetBrains Mono', monospace; font-size: 0.8em; line-height: 1.6; white-space: pre; }
+        .diagram .cls { color: #5eead4; font-weight: 600; } .diagram .rel { color: #fbbf24; } .diagram .note { color: #94a3b8; font-style: italic; }
+
+        .pattern-pills { display: flex; flex-wrap: wrap; gap: 10px; margin: 16px 0 24px; }
+        .pattern-pill { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; background: white; border: 1px solid #e2e8f0; border-radius: 100px; font-size: 0.82em; font-weight: 500; color: #475569; text-decoration: none; transition: all 0.15s ease; }
+        .pattern-pill:hover { border-color: #0d9488; color: #0d9488; background: #f0fdfa; }
+        .pattern-pill .dot { width: 8px; height: 8px; border-radius: 50%; background: #0d9488; }
+
+        .code-container { margin: 24px 0; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .code-tabs { display: flex; background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0 8px; }
+        .code-tab { padding: 10px 18px; cursor: pointer; border: none; background: transparent; color: #64748b; font-size: 0.85em; font-weight: 500; font-family: 'Inter', sans-serif; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.15s ease; }
+        .code-tab:hover { color: #0d9488; }
+        .code-tab.active { color: #0d9488; border-bottom-color: #0d9488; background: white; }
+        .code-content { display: none; background: white; padding: 24px; overflow-x: auto; }
+        .code-content.active { display: block; }
+        .code-content pre { color: #1e293b; font-family: 'JetBrains Mono', monospace; font-size: 0.82em; line-height: 1.75; white-space: pre; }
+        .keyword { color: #0d9488; } .type { color: #2563eb; } .string { color: #16a34a; }
+        .comment { color: #94a3b8; font-style: italic; } .number { color: #d97706; }
+        .preproc { color: #7c3aed; } .fn { color: #db2777; }
+
+        .note { background: #f0fdfa; border-left: 4px solid #0d9488; padding: 16px 20px; margin: 20px 0; border-radius: 0 12px 12px 0; }
+        .note ul, .note p { margin-bottom: 0; } .note li:last-child { margin-bottom: 0; }
+        .warn { background: #fef2f2; border-left: 4px solid #dc2626; padding: 16px 20px; margin: 20px 0; border-radius: 0 12px 12px 0; }
+        .warn ul, .warn p { margin-bottom: 0; } .warn li:last-child { margin-bottom: 0; }
+
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; }
+        th, td { padding: 12px 16px; border: 1px solid #e2e8f0; text-align: left; font-size: 0.9em; }
+        th { background: #f8fafc; color: #0f172a; font-weight: 600; }
+        tr:hover { background: #f8fafc; }
+
+        .footer { text-align: center; padding: 32px 20px; color: #94a3b8; font-size: 0.85em; border-top: 1px solid #e2e8f0; background: #f8fafc; }
+        .footer span { color: #0d9488; }
+
+        @media (max-width: 600px) { .req-grid { grid-template-columns: 1fr; } h1 { font-size: 1.8em; } .container { padding: 20px 16px 60px; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="../index.html" class="back-link">&larr; Back to LLD Topics</a>
+        <div class="badges">
+            <span class="pattern-badge">LLD Problem</span>
+            <span class="diff-badge diff-medium">Medium</span>
+        </div>
+        <h1>Design a Ride-Sharing Service</h1>
+        <p class="subtitle">The Uber/Ola problem. Match a rider to the nearest available driver, price the trip (with surge), and walk the trip through a clean state machine while keeping everyone notified.</p>
+
+        <div class="statement">
+            <div class="tag">📋 Problem Statement</div>
+            <p>Design a <strong>ride-sharing service</strong> like Uber or Ola. A <strong>rider</strong> requests a ride between two locations. The system finds the <strong>best available driver</strong> nearby, creates a <strong>trip</strong>, and moves it through a lifecycle: <code>REQUESTED → ASSIGNED → ONGOING → COMPLETED</code>. Fares are computed by a pricing engine that can apply <strong>surge</strong>. Riders and drivers receive <strong>notifications</strong> at every step. The two design hot-spots are the <strong>matching algorithm</strong> and the <strong>trip state machine</strong>.</p>
+        </div>
+
+        <h2>Step 1 — Gather Requirements</h2>
+        <p>Always start by pinning down scope. State your assumptions out loud; interviewers want to see you separate the must-haves from the nice-to-haves.</p>
+        <div class="req-grid func">
+            <div>
+                <h3>✓ Functional</h3>
+                <ul>
+                    <li>Rider requests a ride from a pickup to a drop location.</li>
+                    <li>Match the rider to the nearest available driver.</li>
+                    <li>Trip lifecycle: REQUESTED → ASSIGNED → ONGOING → COMPLETED (and CANCELLED).</li>
+                    <li>Compute fare, including surge pricing at peak demand.</li>
+                    <li>Notify rider and driver on every state change.</li>
+                </ul>
+            </div>
+            <div>
+                <h3>◆ Non-Functional</h3>
+                <ul>
+                    <li><strong>Extensibility:</strong> swap matching and pricing algorithms freely.</li>
+                    <li><strong>Valid transitions only:</strong> a trip can't jump from REQUESTED to COMPLETED.</li>
+                    <li><strong>Concurrency:</strong> one driver can't be assigned to two trips.</li>
+                    <li><strong>Decoupled notifications:</strong> adding a channel shouldn't touch trip logic.</li>
+                </ul>
+            </div>
+        </div>
+
+        <h2>Step 2 — Identify the Core Entities</h2>
+        <p>Find the nouns in the problem. These become your classes:</p>
+        <ul>
+            <li><strong>Rider</strong> / <strong>Driver</strong> — users; a driver has a current <code>Location</code> and an availability flag.</li>
+            <li><strong>Location</strong> — latitude/longitude; supports a distance calculation.</li>
+            <li><strong>Trip</strong> — the ride; holds rider, driver, pickup/drop, fare, and a current <strong>state</strong>.</li>
+            <li><strong>TripManager</strong> — orchestrates request → match → state transitions.</li>
+            <li><strong>DriverMatchingStrategy</strong> — pluggable rule to pick a driver (nearest, highest-rated…).</li>
+            <li><strong>PricingStrategy</strong> — pluggable fare calculation, including surge.</li>
+            <li><strong>Notification / Observer</strong> — pushes updates to rider and driver.</li>
+            <li><strong>TripState</strong> — REQUESTED, ASSIGNED, ONGOING, COMPLETED, CANCELLED.</li>
+        </ul>
+
+        <h2>Step 3 — Class Diagram</h2>
+        <p>Sketch the relationships before coding. A "has-a" (composition) line means one class owns instances of another.</p>
+        <div class="diagram">
+<pre><span class="cls">TripManager</span>
+   │ uses                  │ uses                  │ notifies
+   ▼                       ▼                       ▼
+<span class="cls">DriverMatchingStrategy</span>   <span class="cls">PricingStrategy</span>          <span class="cls">Observer</span> (interface)
+   ▲ (interface)            ▲ (interface)              ▲
+   │                        │              ┌───────────┴───────────┐
+<span class="cls">NearestDriverStrategy</span>   <span class="cls">SurgePricingStrategy</span>   <span class="cls">RiderNotifier</span>   <span class="cls">DriverNotifier</span>
+
+<span class="cls">TripManager</span> ──creates/owns──▶ <span class="cls">Trip</span>
+<span class="cls">Trip</span> ──has──▶ rider:<span class="cls">Rider</span>, driver:<span class="cls">Driver</span>, pickup/drop:<span class="cls">Location</span>, fare
+<span class="cls">Trip</span> ──current──▶ <span class="rel">TripState</span> {REQUESTED → ASSIGNED → ONGOING → COMPLETED}
+<span class="note">// State pattern guards transitions; Strategy swaps matching/pricing;</span>
+<span class="note">// Observer fans out notifications without coupling Trip to channels.</span></pre>
+        </div>
+
+        <h2>Step 4 — Patterns in Play</h2>
+        <p>Name the patterns as you design — it signals maturity. This problem naturally uses:</p>
+        <div class="pattern-pills">
+            <a class="pattern-pill" href="../behavioral/strategy.html"><span class="dot"></span> Strategy — matching &amp; surge pricing</a>
+            <a class="pattern-pill" href="../behavioral/state.html"><span class="dot"></span> State — trip lifecycle transitions</a>
+            <a class="pattern-pill" href="../behavioral/observer.html"><span class="dot"></span> Observer — rider/driver notifications</a>
+            <a class="pattern-pill" href="../creational/singleton.html"><span class="dot"></span> Singleton — one TripManager</a>
+        </div>
+
+        <h2>Step 5 — Implementation</h2>
+        <p>A focused skeleton showing request-ride → match a driver → advance the trip state machine, with observers notified along the way. In an interview you'd build this up incrementally; here's a clean, runnable core.</p>
+
+        <div class="code-container">
+            <div class="code-tabs">
+                <button class="code-tab active" onclick="showCode(this, 'javaCode')">Java</button>
+                <button class="code-tab" onclick="showCode(this, 'pyCode')">Python</button>
+            </div>
+            <div id="javaCode" class="code-content active">
+<pre><span class="keyword">enum</span> <span class="type">TripState</span> { REQUESTED, ASSIGNED, ONGOING, COMPLETED, CANCELLED }
+
+<span class="keyword">record</span> <span class="type">Location</span>(<span class="keyword">double</span> lat, <span class="keyword">double</span> lng) {
+    <span class="keyword">double</span> <span class="fn">distanceTo</span>(<span class="type">Location</span> o) {       <span class="comment">// simplified Euclidean</span>
+        <span class="keyword">return</span> <span class="type">Math</span>.<span class="fn">hypot</span>(lat - o.lat, lng - o.lng);
+    }
+}
+<span class="keyword">class</span> <span class="type">Driver</span> { <span class="type">String</span> id; <span class="type">Location</span> loc; <span class="keyword">boolean</span> available = <span class="keyword">true</span>;
+    <span class="type">Driver</span>(<span class="type">String</span> id, <span class="type">Location</span> l) { <span class="keyword">this</span>.id = id; loc = l; } }
+<span class="keyword">class</span> <span class="type">Rider</span>  { <span class="type">String</span> id; <span class="type">Rider</span>(<span class="type">String</span> id) { <span class="keyword">this</span>.id = id; } }
+
+<span class="comment">// Strategy: how to pick a driver</span>
+<span class="keyword">interface</span> <span class="type">DriverMatchingStrategy</span> { <span class="type">Driver</span> <span class="fn">match</span>(<span class="type">List</span>&lt;<span class="type">Driver</span>&gt; drivers, <span class="type">Location</span> pickup); }
+<span class="keyword">class</span> <span class="type">NearestDriverStrategy</span> <span class="keyword">implements</span> <span class="type">DriverMatchingStrategy</span> {
+    <span class="keyword">public</span> <span class="type">Driver</span> <span class="fn">match</span>(<span class="type">List</span>&lt;<span class="type">Driver</span>&gt; drivers, <span class="type">Location</span> pickup) {
+        <span class="keyword">return</span> drivers.<span class="fn">stream</span>().<span class="fn">filter</span>(d -&gt; d.available)
+            .<span class="fn">min</span>(<span class="type">Comparator</span>.<span class="fn">comparingDouble</span>(d -&gt; d.loc.<span class="fn">distanceTo</span>(pickup)))
+            .<span class="fn">orElse</span>(<span class="keyword">null</span>);
+    }
+}
+<span class="comment">// Strategy: pricing with surge multiplier</span>
+<span class="keyword">interface</span> <span class="type">PricingStrategy</span> { <span class="keyword">double</span> <span class="fn">price</span>(<span class="keyword">double</span> distance); }
+<span class="keyword">class</span> <span class="type">SurgePricingStrategy</span> <span class="keyword">implements</span> <span class="type">PricingStrategy</span> {
+    <span class="keyword">final double</span> surge;
+    <span class="type">SurgePricingStrategy</span>(<span class="keyword">double</span> surge) { <span class="keyword">this</span>.surge = surge; }
+    <span class="keyword">public double</span> <span class="fn">price</span>(<span class="keyword">double</span> distance) { <span class="keyword">return</span> (<span class="number">50</span> + distance * <span class="number">12</span>) * surge; }
+}
+
+<span class="comment">// Observer: notify rider + driver without Trip knowing the channels</span>
+<span class="keyword">interface</span> <span class="type">TripObserver</span> { <span class="keyword">void</span> <span class="fn">onUpdate</span>(<span class="type">Trip</span> t); }
+<span class="keyword">class</span> <span class="type">RiderNotifier</span> <span class="keyword">implements</span> <span class="type">TripObserver</span> {
+    <span class="keyword">public void</span> <span class="fn">onUpdate</span>(<span class="type">Trip</span> t) { <span class="type">System</span>.<span class="fn">out</span>.<span class="fn">println</span>(<span class="string">"[Rider] trip is "</span> + t.state); }
+}
+
+<span class="keyword">class</span> <span class="type">Trip</span> {
+    <span class="type">Rider</span> rider; <span class="type">Driver</span> driver; <span class="type">Location</span> pickup, drop;
+    <span class="keyword">double</span> fare; <span class="type">TripState</span> state = <span class="type">TripState</span>.REQUESTED;
+    <span class="keyword">private final</span> <span class="type">List</span>&lt;<span class="type">TripObserver</span>&gt; observers = <span class="keyword">new</span> <span class="type">ArrayList</span>&lt;&gt;();
+    <span class="keyword">void</span> <span class="fn">subscribe</span>(<span class="type">TripObserver</span> o) { observers.<span class="fn">add</span>(o); }
+
+    <span class="comment">// State machine: only allow legal transitions, then fan out to observers</span>
+    <span class="keyword">void</span> <span class="fn">transitionTo</span>(<span class="type">TripState</span> next) {
+        <span class="keyword">boolean</span> ok = <span class="keyword">switch</span> (state) {
+            <span class="keyword">case</span> REQUESTED -&gt; next == <span class="type">TripState</span>.ASSIGNED  || next == <span class="type">TripState</span>.CANCELLED;
+            <span class="keyword">case</span> ASSIGNED  -&gt; next == <span class="type">TripState</span>.ONGOING   || next == <span class="type">TripState</span>.CANCELLED;
+            <span class="keyword">case</span> ONGOING   -&gt; next == <span class="type">TripState</span>.COMPLETED;
+            <span class="keyword">default</span>        -&gt; <span class="keyword">false</span>;
+        };
+        <span class="keyword">if</span> (!ok) <span class="keyword">throw new</span> <span class="type">IllegalStateException</span>(state + <span class="string">" -x-&gt; "</span> + next);
+        state = next;
+        observers.<span class="fn">forEach</span>(o -&gt; o.<span class="fn">onUpdate</span>(<span class="keyword">this</span>));
+    }
+}
+
+<span class="keyword">class</span> <span class="type">TripManager</span> {
+    <span class="keyword">private final</span> <span class="type">List</span>&lt;<span class="type">Driver</span>&gt; drivers;
+    <span class="keyword">private final</span> <span class="type">DriverMatchingStrategy</span> matcher = <span class="keyword">new</span> <span class="type">NearestDriverStrategy</span>();
+    <span class="keyword">private final</span> <span class="type">PricingStrategy</span> pricing = <span class="keyword">new</span> <span class="type">SurgePricingStrategy</span>(<span class="number">1.5</span>);
+    <span class="type">TripManager</span>(<span class="type">List</span>&lt;<span class="type">Driver</span>&gt; drivers) { <span class="keyword">this</span>.drivers = drivers; }
+
+    <span class="comment">// request → match → assign, guarded so no driver is double-booked</span>
+    <span class="keyword">synchronized</span> <span class="type">Trip</span> <span class="fn">requestRide</span>(<span class="type">Rider</span> r, <span class="type">Location</span> pickup, <span class="type">Location</span> drop) {
+        <span class="type">Trip</span> trip = <span class="keyword">new</span> <span class="type">Trip</span>();
+        trip.rider = r; trip.pickup = pickup; trip.drop = drop;
+        trip.<span class="fn">subscribe</span>(<span class="keyword">new</span> <span class="type">RiderNotifier</span>());
+        <span class="type">Driver</span> d = matcher.<span class="fn">match</span>(drivers, pickup);
+        <span class="keyword">if</span> (d == <span class="keyword">null</span>) { trip.<span class="fn">transitionTo</span>(<span class="type">TripState</span>.CANCELLED); <span class="keyword">return</span> trip; }
+        d.available = <span class="keyword">false</span>;
+        trip.driver = d;
+        trip.fare = pricing.<span class="fn">price</span>(pickup.<span class="fn">distanceTo</span>(drop));
+        trip.<span class="fn">transitionTo</span>(<span class="type">TripState</span>.ASSIGNED);
+        <span class="keyword">return</span> trip;
+    }
+}</pre>
+            </div>
+            <div id="pyCode" class="code-content">
+<pre><span class="keyword">from</span> enum <span class="keyword">import</span> Enum
+<span class="keyword">from</span> math <span class="keyword">import</span> hypot
+<span class="keyword">import</span> threading
+
+<span class="keyword">class</span> <span class="type">TripState</span>(Enum):
+    REQUESTED = <span class="number">0</span>; ASSIGNED = <span class="number">1</span>; ONGOING = <span class="number">2</span>; COMPLETED = <span class="number">3</span>; CANCELLED = <span class="number">4</span>
+
+<span class="comment"># Legal transitions for the trip state machine</span>
+TRANSITIONS = {
+    <span class="type">TripState</span>.REQUESTED: {<span class="type">TripState</span>.ASSIGNED, <span class="type">TripState</span>.CANCELLED},
+    <span class="type">TripState</span>.ASSIGNED:  {<span class="type">TripState</span>.ONGOING, <span class="type">TripState</span>.CANCELLED},
+    <span class="type">TripState</span>.ONGOING:   {<span class="type">TripState</span>.COMPLETED},
+}
+
+<span class="keyword">class</span> <span class="type">Location</span>:
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, lat, lng): self.lat, self.lng = lat, lng
+    <span class="keyword">def</span> <span class="fn">distance_to</span>(self, o): <span class="keyword">return</span> <span class="fn">hypot</span>(self.lat - o.lat, self.lng - o.lng)
+
+<span class="keyword">class</span> <span class="type">Driver</span>:
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, id, loc): self.id, self.loc, self.available = id, loc, <span class="keyword">True</span>
+<span class="keyword">class</span> <span class="type">Rider</span>:
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, id): self.id = id
+
+<span class="comment"># Strategy: driver matching</span>
+<span class="keyword">class</span> <span class="type">NearestDriverStrategy</span>:
+    <span class="keyword">def</span> <span class="fn">match</span>(self, drivers, pickup):
+        free = [d <span class="keyword">for</span> d <span class="keyword">in</span> drivers <span class="keyword">if</span> d.available]
+        <span class="keyword">return</span> <span class="fn">min</span>(free, key=<span class="keyword">lambda</span> d: d.loc.<span class="fn">distance_to</span>(pickup), default=<span class="keyword">None</span>)
+
+<span class="comment"># Strategy: pricing with surge multiplier</span>
+<span class="keyword">class</span> <span class="type">SurgePricingStrategy</span>:
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, surge=<span class="number">1.0</span>): self.surge = surge
+    <span class="keyword">def</span> <span class="fn">price</span>(self, distance): <span class="keyword">return</span> (<span class="number">50</span> + distance * <span class="number">12</span>) * self.surge
+
+<span class="comment"># Observer: notifies a party on every trip update</span>
+<span class="keyword">class</span> <span class="type">RiderNotifier</span>:
+    <span class="keyword">def</span> <span class="fn">on_update</span>(self, trip): <span class="fn">print</span>(<span class="string">f"[Rider] trip is {trip.state.name}"</span>)
+<span class="keyword">class</span> <span class="type">DriverNotifier</span>:
+    <span class="keyword">def</span> <span class="fn">on_update</span>(self, trip): <span class="fn">print</span>(<span class="string">f"[Driver] trip is {trip.state.name}"</span>)
+
+<span class="keyword">class</span> <span class="type">Trip</span>:
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, rider, pickup, drop):
+        self.rider, self.pickup, self.drop = rider, pickup, drop
+        self.driver, self.fare = <span class="keyword">None</span>, <span class="number">0.0</span>
+        self.state = <span class="type">TripState</span>.REQUESTED
+        self.observers = []
+    <span class="keyword">def</span> <span class="fn">subscribe</span>(self, obs): self.observers.<span class="fn">append</span>(obs)
+
+    <span class="comment"># State machine: reject illegal jumps, then notify observers</span>
+    <span class="keyword">def</span> <span class="fn">transition_to</span>(self, nxt):
+        <span class="keyword">if</span> nxt <span class="keyword">not</span> <span class="keyword">in</span> TRANSITIONS.<span class="fn">get</span>(self.state, <span class="fn">set</span>()):
+            <span class="keyword">raise</span> <span class="type">ValueError</span>(<span class="string">f"{self.state.name} -x-&gt; {nxt.name}"</span>)
+        self.state = nxt
+        <span class="keyword">for</span> o <span class="keyword">in</span> self.observers:
+            o.<span class="fn">on_update</span>(self)
+
+<span class="keyword">class</span> <span class="type">TripManager</span>:
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, drivers):
+        self.drivers = drivers
+        self.matcher = <span class="type">NearestDriverStrategy</span>()
+        self.pricing = <span class="type">SurgePricingStrategy</span>(surge=<span class="number">1.5</span>)
+        self.lock = threading.<span class="type">Lock</span>()
+
+    <span class="comment"># request → match → assign; locked so a driver isn't double-booked</span>
+    <span class="keyword">def</span> <span class="fn">request_ride</span>(self, rider, pickup, drop):
+        <span class="keyword">with</span> self.lock:
+            trip = <span class="type">Trip</span>(rider, pickup, drop)
+            trip.<span class="fn">subscribe</span>(<span class="type">RiderNotifier</span>())
+            trip.<span class="fn">subscribe</span>(<span class="type">DriverNotifier</span>())
+            d = self.matcher.<span class="fn">match</span>(self.drivers, pickup)
+            <span class="keyword">if</span> d <span class="keyword">is</span> <span class="keyword">None</span>:
+                trip.<span class="fn">transition_to</span>(<span class="type">TripState</span>.CANCELLED)
+                <span class="keyword">return</span> trip
+            d.available = <span class="keyword">False</span>
+            trip.driver = d
+            trip.fare = self.pricing.<span class="fn">price</span>(pickup.<span class="fn">distance_to</span>(drop))
+            trip.<span class="fn">transition_to</span>(<span class="type">TripState</span>.ASSIGNED)
+            <span class="keyword">return</span> trip
+
+<span class="comment"># --- demo ---</span>
+drivers = [<span class="type">Driver</span>(<span class="string">"D1"</span>, <span class="type">Location</span>(<span class="number">0</span>, <span class="number">0</span>)), <span class="type">Driver</span>(<span class="string">"D2"</span>, <span class="type">Location</span>(<span class="number">5</span>, <span class="number">5</span>))]
+mgr = <span class="type">TripManager</span>(drivers)
+trip = mgr.<span class="fn">request_ride</span>(<span class="type">Rider</span>(<span class="string">"R1"</span>), <span class="type">Location</span>(<span class="number">1</span>, <span class="number">1</span>), <span class="type">Location</span>(<span class="number">9</span>, <span class="number">9</span>))
+trip.<span class="fn">transition_to</span>(<span class="type">TripState</span>.ONGOING)
+trip.<span class="fn">transition_to</span>(<span class="type">TripState</span>.COMPLETED)</pre>
+            </div>
+        </div>
+
+        <div class="note">
+            <strong>Why this design scores well:</strong> three patterns map cleanly to three concerns. <code>DriverMatchingStrategy</code> and <code>PricingStrategy</code> let you experiment with matching rules and surge formulas without touching trip logic (Open/Closed). The <code>transitionTo</code> guard is a lightweight <strong>State machine</strong> — a trip can never skip from REQUESTED straight to COMPLETED. And <code>Observer</code> means adding SMS or push notifications is a new subscriber, not an edit to <code>Trip</code>. The lock around matching is the concurrency detail interviewers probe: without it, two riders can grab the same driver.
+        </div>
+
+        <h2>Step 6 — Follow-up Extensions</h2>
+        <p>Strong candidates anticipate where the interviewer pushes next:</p>
+        <ul>
+            <li><strong>Geo-indexing:</strong> replace the linear "nearest driver" scan with a <strong>QuadTree / geohash / S2 cell</strong> index for O(log n) spatial lookup at city scale.</li>
+            <li><strong>Real surge:</strong> compute the multiplier from live supply/demand per region instead of a constant.</li>
+            <li><strong>Driver acceptance:</strong> a matched driver can decline → re-match with a timeout; add a DECLINED path.</li>
+            <li><strong>Ride types &amp; pooling:</strong> Mini/Sedan/XL via a Factory; shared rides that pick up multiple riders.</li>
+            <li><strong>Payments &amp; ratings:</strong> a <code>PaymentProcessor</code> Strategy on completion; bidirectional ratings.</li>
+            <li><strong>Full State objects:</strong> promote each <code>TripState</code> to its own class with <code>onEnter</code>/<code>handle</code> behavior when transitions grow complex.</li>
+        </ul>
+
+        <div class="warn">
+            <strong>Common mistakes:</strong> hardcoding the matching rule with if/else instead of a Strategy; letting a trip transition to any state (no guard); coupling <code>Trip</code> directly to SMS/push code instead of using Observer; forgetting to lock the match step so a driver gets double-booked; and treating fare as a fixed field instead of a pluggable pricing engine. Avoid these and you're in the top tier.
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>Low-Level Design · <span>Ride-Sharing Service</span> · Java &amp; Python · Interactive Learning</p>
+    </div>
+
+    <script>
+        function showCode(btn, id) {
+            const container = btn.closest('.code-container');
+            container.querySelectorAll('.code-tab').forEach(t => t.classList.remove('active'));
+            container.querySelectorAll('.code-content').forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById(id).classList.add('active');
+        }
+    </script>
+</body>
+</html>

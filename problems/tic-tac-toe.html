@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic-Tac-Toe — LLD Problem</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8fafc; min-height: 100vh; color: #1e293b; -webkit-font-smoothing: antialiased; }
+        .container { max-width: 880px; margin: 0 auto; padding: 40px 24px 80px; }
+        .back-link { display: inline-flex; align-items: center; gap: 6px; color: #0d9488; text-decoration: none; font-size: 0.9em; font-weight: 500; margin-bottom: 28px; padding: 6px 12px; border-radius: 8px; transition: background 0.15s ease; }
+        .back-link:hover { background: #f0fdfa; }
+
+        .badges { display: flex; gap: 10px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+        .pattern-badge { display: inline-block; padding: 5px 14px; border-radius: 100px; font-size: 0.72em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; background: #e0e7ff; color: #4338ca; }
+        .diff-badge { display: inline-block; padding: 5px 14px; border-radius: 100px; font-size: 0.72em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+        .diff-easy   { background: #dcfce7; color: #16a34a; }
+        .diff-medium { background: #fef3c7; color: #d97706; }
+        .diff-hard   { background: #fee2e2; color: #dc2626; }
+
+        h1 { font-size: 2.4em; font-weight: 800; color: #0f172a; margin-bottom: 12px; letter-spacing: -0.03em; line-height: 1.2; }
+        .subtitle { font-size: 1.1em; color: #64748b; line-height: 1.7; margin-bottom: 8px; }
+        h2 { font-size: 1.35em; font-weight: 700; color: #0f172a; margin: 40px 0 16px; letter-spacing: -0.02em; }
+        h3 { font-size: 1.1em; font-weight: 600; color: #1e293b; margin: 24px 0 10px; }
+        p, li { line-height: 1.8; color: #475569; margin-bottom: 10px; font-size: 0.95em; }
+        ul, ol { padding-left: 20px; margin-bottom: 15px; }
+        strong { color: #1e293b; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 0.85em; color: #0d9488; }
+
+        .statement { background: linear-gradient(135deg, #eef2ff, #f0fdfa); border: 1px solid #e0e7ff; border-radius: 16px; padding: 24px 28px; margin: 24px 0; }
+        .statement .tag { font-size: 0.78em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #4338ca; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+        .statement p:last-child { margin-bottom: 0; }
+
+        .req-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0; }
+        .req-grid > div { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .req-grid h3 { margin-top: 0; }
+        .req-grid.func h3 { color: #0d9488; } .req-grid.nonfunc h3 { color: #4338ca; }
+        .req-grid ul { margin-bottom: 0; }
+
+        .diagram { background: #0f172a; border-radius: 16px; padding: 24px; margin: 24px 0; overflow-x: auto; }
+        .diagram pre { color: #e2e8f0; font-family: 'JetBrains Mono', monospace; font-size: 0.8em; line-height: 1.6; white-space: pre; }
+        .diagram .cls { color: #5eead4; font-weight: 600; } .diagram .rel { color: #fbbf24; } .diagram .note { color: #94a3b8; font-style: italic; }
+
+        .pattern-pills { display: flex; flex-wrap: wrap; gap: 10px; margin: 16px 0 24px; }
+        .pattern-pill { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; background: white; border: 1px solid #e2e8f0; border-radius: 100px; font-size: 0.82em; font-weight: 500; color: #475569; text-decoration: none; transition: all 0.15s ease; }
+        .pattern-pill:hover { border-color: #0d9488; color: #0d9488; background: #f0fdfa; }
+        .pattern-pill .dot { width: 8px; height: 8px; border-radius: 50%; background: #0d9488; }
+
+        .code-container { margin: 24px 0; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .code-tabs { display: flex; background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0 8px; }
+        .code-tab { padding: 10px 18px; cursor: pointer; border: none; background: transparent; color: #64748b; font-size: 0.85em; font-weight: 500; font-family: 'Inter', sans-serif; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.15s ease; }
+        .code-tab:hover { color: #0d9488; }
+        .code-tab.active { color: #0d9488; border-bottom-color: #0d9488; background: white; }
+        .code-content { display: none; background: white; padding: 24px; overflow-x: auto; }
+        .code-content.active { display: block; }
+        .code-content pre { color: #1e293b; font-family: 'JetBrains Mono', monospace; font-size: 0.82em; line-height: 1.75; white-space: pre; }
+        .keyword { color: #0d9488; } .type { color: #2563eb; } .string { color: #16a34a; }
+        .comment { color: #94a3b8; font-style: italic; } .number { color: #d97706; }
+        .preproc { color: #7c3aed; } .fn { color: #db2777; }
+
+        .note { background: #f0fdfa; border-left: 4px solid #0d9488; padding: 16px 20px; margin: 20px 0; border-radius: 0 12px 12px 0; }
+        .note ul, .note p { margin-bottom: 0; } .note li:last-child { margin-bottom: 0; }
+        .warn { background: #fef2f2; border-left: 4px solid #dc2626; padding: 16px 20px; margin: 20px 0; border-radius: 0 12px 12px 0; }
+        .warn ul, .warn p { margin-bottom: 0; } .warn li:last-child { margin-bottom: 0; }
+
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; }
+        th, td { padding: 12px 16px; border: 1px solid #e2e8f0; text-align: left; font-size: 0.9em; }
+        th { background: #f8fafc; color: #0f172a; font-weight: 600; }
+        tr:hover { background: #f8fafc; }
+
+        .footer { text-align: center; padding: 32px 20px; color: #94a3b8; font-size: 0.85em; border-top: 1px solid #e2e8f0; background: #f8fafc; }
+        .footer span { color: #0d9488; }
+
+        @media (max-width: 600px) { .req-grid { grid-template-columns: 1fr; } h1 { font-size: 1.8em; } .container { padding: 20px 16px 60px; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="../index.html" class="back-link">&larr; Back to LLD Topics</a>
+        <div class="badges">
+            <span class="pattern-badge">LLD Problem</span>
+            <span class="diff-badge diff-easy">Easy</span>
+        </div>
+        <h1>Design Tic-Tac-Toe</h1>
+        <p class="subtitle">A perfect warm-up LLD problem. Model a two-player NxN grid game with clean turn handling and correct win/draw detection — then make the win check fast.</p>
+
+        <div class="statement">
+            <div class="tag">📋 Problem Statement</div>
+            <p>Design a <strong>Tic-Tac-Toe</strong> game for two players on an <strong>N×N board</strong> (classic is 3×3). Players alternate placing their <strong>symbol</strong> (X or O) in an empty cell. The first player to fill an entire <strong>row, column, or diagonal</strong> with their symbol wins. If the board fills with no winner, the game is a <strong>draw</strong>. The system must reject moves on occupied or out-of-bounds cells.</p>
+        </div>
+
+        <h2>Step 1 — Gather Requirements</h2>
+        <p>Even for a "simple" game, pin the scope down first. Calling out the NxN generalization and the win-check cost shows the interviewer you think beyond the toy case.</p>
+        <div class="req-grid func">
+            <div>
+                <h3>✓ Functional</h3>
+                <ul>
+                    <li>Configurable N×N board (default 3×3).</li>
+                    <li>Two players, each owning a symbol (X / O).</li>
+                    <li>Place a symbol at (row, col); reject if occupied or off-board.</li>
+                    <li>Alternate turns automatically.</li>
+                    <li>Detect a win (row / column / either diagonal) and a draw.</li>
+                </ul>
+            </div>
+            <div>
+                <h3>◆ Non-Functional</h3>
+                <ul>
+                    <li><strong>Efficient win check:</strong> avoid rescanning the whole board every move.</li>
+                    <li><strong>Extensibility:</strong> easy to vary N or add players/symbols.</li>
+                    <li><strong>Clear state:</strong> a single source of truth for whose turn it is and game status.</li>
+                    <li><strong>Validation:</strong> illegal moves never corrupt state.</li>
+                </ul>
+            </div>
+        </div>
+
+        <h2>Step 2 — Identify the Core Entities</h2>
+        <p>Pull the nouns out of the statement — they become your classes:</p>
+        <ul>
+            <li><strong>Game</strong> — orchestrates the match: holds players, the board, whose turn it is, and the status.</li>
+            <li><strong>Board</strong> — the N×N grid of cells; exposes <code>place()</code> and win/draw checks.</li>
+            <li><strong>Cell</strong> — one square; holds a <code>Symbol</code> or is empty (model as an enum value).</li>
+            <li><strong>Player</strong> — a participant bound to one <code>Symbol</code>.</li>
+            <li><strong>Symbol</strong> (enum) — <code>X</code>, <code>O</code>, or <code>EMPTY</code> — the cell state.</li>
+            <li><strong>Move</strong> — a (player, row, col) action; useful for history/undo later.</li>
+            <li><strong>GameStatus</strong> (enum) — <code>IN_PROGRESS</code>, <code>WIN</code>, <code>DRAW</code>.</li>
+        </ul>
+
+        <h2>Step 3 — Class Diagram</h2>
+        <p>Sketch the relationships first. A "has-a" (composition) line means one class owns instances of another.</p>
+        <div class="diagram">
+<pre><span class="cls">Game</span>
+   │ has-a
+   ├──────────▶ <span class="cls">Board</span> ──has-many──▶ <span class="cls">Cell</span> ──holds──▶ <span class="rel">Symbol</span> {X, O, EMPTY}
+   │
+   ├──has-2───▶ <span class="cls">Player</span> ──owns──▶ <span class="rel">Symbol</span>
+   │
+   ├──tracks──▶ <span class="rel">GameStatus</span> {IN_PROGRESS, WIN, DRAW}
+   │
+   └──produces▶ <span class="cls">Move</span> (player, row, col)
+
+<span class="cls">Board</span>.place(symbol, r, c)  ──▶  checkWinner(r, c)
+                              only re-scans the affected
+                              row, column &amp; diagonals
+<span class="note">// A WinStrategy can encapsulate the line-checking rule (Strategy pattern)</span></pre>
+        </div>
+
+        <h2>Step 4 — Patterns in Play</h2>
+        <p>Name the patterns as you design — it signals maturity. This problem naturally uses:</p>
+        <div class="pattern-pills">
+            <a class="pattern-pill" href="../behavioral/strategy.html"><span class="dot"></span> Strategy — pluggable win-check rule</a>
+            <a class="pattern-pill" href="../behavioral/state.html"><span class="dot"></span> State — game status transitions</a>
+            <a class="pattern-pill" href="../creational/factory-method.html"><span class="dot"></span> Factory — build the board / players</a>
+        </div>
+
+        <h2>Step 5 — Implementation</h2>
+        <p>A clean, runnable core: a <code>Symbol</code> enum, a <code>Board</code> that validates and places, and a <code>Game</code> loop that alternates turns and checks for a result after each move.</p>
+
+        <div class="code-container">
+            <div class="code-tabs">
+                <button class="code-tab active" onclick="showCode(this, 'javaCode')">Java</button>
+                <button class="code-tab" onclick="showCode(this, 'pyCode')">Python</button>
+            </div>
+            <div id="javaCode" class="code-content active">
+<pre><span class="keyword">enum</span> <span class="type">Symbol</span> { X, O, EMPTY }
+<span class="keyword">enum</span> <span class="type">GameStatus</span> { IN_PROGRESS, WIN, DRAW }
+
+<span class="keyword">class</span> <span class="type">Player</span> {
+    <span class="keyword">final</span> <span class="type">String</span> name; <span class="keyword">final</span> <span class="type">Symbol</span> symbol;
+    <span class="type">Player</span>(<span class="type">String</span> name, <span class="type">Symbol</span> symbol) { <span class="keyword">this</span>.name = name; <span class="keyword">this</span>.symbol = symbol; }
+}
+
+<span class="keyword">class</span> <span class="type">Board</span> {
+    <span class="keyword">final</span> <span class="keyword">int</span> n;
+    <span class="keyword">private final</span> <span class="type">Symbol</span>[][] grid;
+    <span class="keyword">private</span> <span class="keyword">int</span> filled = <span class="number">0</span>;
+
+    <span class="type">Board</span>(<span class="keyword">int</span> n) {
+        <span class="keyword">this</span>.n = n;
+        grid = <span class="keyword">new</span> <span class="type">Symbol</span>[n][n];
+        <span class="keyword">for</span> (<span class="type">Symbol</span>[] row : grid) <span class="type">Arrays</span>.<span class="fn">fill</span>(row, <span class="type">Symbol</span>.EMPTY);
+    }
+
+    <span class="comment">// places the symbol; throws on an illegal move</span>
+    <span class="keyword">void</span> <span class="fn">place</span>(<span class="type">Symbol</span> s, <span class="keyword">int</span> r, <span class="keyword">int</span> c) {
+        <span class="keyword">if</span> (r &lt; <span class="number">0</span> || r &gt;= n || c &lt; <span class="number">0</span> || c &gt;= n)
+            <span class="keyword">throw new</span> <span class="type">IllegalArgumentException</span>(<span class="string">"Off board"</span>);
+        <span class="keyword">if</span> (grid[r][c] != <span class="type">Symbol</span>.EMPTY)
+            <span class="keyword">throw new</span> <span class="type">IllegalStateException</span>(<span class="string">"Cell taken"</span>);
+        grid[r][c] = s;
+        filled++;
+    }
+
+    <span class="keyword">boolean</span> <span class="fn">isFull</span>() { <span class="keyword">return</span> filled == n * n; }
+
+    <span class="comment">// only re-scan the row, column &amp; diagonals touched by (r, c)</span>
+    <span class="keyword">boolean</span> <span class="fn">checkWinner</span>(<span class="type">Symbol</span> s, <span class="keyword">int</span> r, <span class="keyword">int</span> c) {
+        <span class="keyword">boolean</span> row = <span class="keyword">true</span>, col = <span class="keyword">true</span>, diag = (r == c), anti = (r + c == n - <span class="number">1</span>);
+        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; n; i++) {
+            <span class="keyword">if</span> (grid[r][i] != s) row = <span class="keyword">false</span>;
+            <span class="keyword">if</span> (grid[i][c] != s) col = <span class="keyword">false</span>;
+            <span class="keyword">if</span> (diag &amp;&amp; grid[i][i] != s) diag = <span class="keyword">false</span>;
+            <span class="keyword">if</span> (anti &amp;&amp; grid[i][n - <span class="number">1</span> - i] != s) anti = <span class="keyword">false</span>;
+        }
+        <span class="keyword">return</span> row || col || diag || anti;
+    }
+}
+
+<span class="keyword">class</span> <span class="type">Game</span> {
+    <span class="keyword">private final</span> <span class="type">Board</span> board;
+    <span class="keyword">private final</span> <span class="type">Player</span>[] players;
+    <span class="keyword">private</span> <span class="keyword">int</span> turn = <span class="number">0</span>;                       <span class="comment">// index into players</span>
+    <span class="keyword">private</span> <span class="type">GameStatus</span> status = <span class="type">GameStatus</span>.IN_PROGRESS;
+
+    <span class="type">Game</span>(<span class="keyword">int</span> n, <span class="type">Player</span> p1, <span class="type">Player</span> p2) {
+        board = <span class="keyword">new</span> <span class="type">Board</span>(n);
+        players = <span class="keyword">new</span> <span class="type">Player</span>[]{ p1, p2 };
+    }
+
+    <span class="comment">// one turn: validate, place, then test for win/draw</span>
+    <span class="keyword">public</span> <span class="type">GameStatus</span> <span class="fn">move</span>(<span class="type">Player</span> p, <span class="keyword">int</span> r, <span class="keyword">int</span> c) {
+        <span class="keyword">if</span> (status != <span class="type">GameStatus</span>.IN_PROGRESS)
+            <span class="keyword">throw new</span> <span class="type">IllegalStateException</span>(<span class="string">"Game over"</span>);
+        <span class="keyword">if</span> (p != players[turn])
+            <span class="keyword">throw new</span> <span class="type">IllegalStateException</span>(<span class="string">"Not your turn"</span>);
+
+        board.<span class="fn">place</span>(p.symbol, r, c);
+        <span class="keyword">if</span> (board.<span class="fn">checkWinner</span>(p.symbol, r, c)) status = <span class="type">GameStatus</span>.WIN;
+        <span class="keyword">else if</span> (board.<span class="fn">isFull</span>())          status = <span class="type">GameStatus</span>.DRAW;
+        <span class="keyword">else</span>                                turn = (turn + <span class="number">1</span>) % <span class="number">2</span>;  <span class="comment">// alternate</span>
+        <span class="keyword">return</span> status;
+    }
+}
+</pre>
+            </div>
+            <div id="pyCode" class="code-content">
+<pre><span class="keyword">from</span> enum <span class="keyword">import</span> Enum
+
+<span class="keyword">class</span> <span class="type">Symbol</span>(Enum):
+    X = <span class="string">"X"</span>; O = <span class="string">"O"</span>; EMPTY = <span class="string">"."</span>
+
+<span class="keyword">class</span> <span class="type">GameStatus</span>(Enum):
+    IN_PROGRESS = <span class="number">1</span>; WIN = <span class="number">2</span>; DRAW = <span class="number">3</span>
+
+<span class="keyword">class</span> <span class="type">Player</span>:
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, name, symbol):
+        self.name, self.symbol = name, symbol
+
+<span class="keyword">class</span> <span class="type">Board</span>:
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, n):
+        self.n = n
+        self.grid = [[<span class="type">Symbol</span>.EMPTY] * n <span class="keyword">for</span> _ <span class="keyword">in</span> <span class="fn">range</span>(n)]
+        self.filled = <span class="number">0</span>
+
+    <span class="comment"># places the symbol; raises on an illegal move</span>
+    <span class="keyword">def</span> <span class="fn">place</span>(self, s, r, c):
+        <span class="keyword">if</span> <span class="keyword">not</span> (<span class="number">0</span> &lt;= r &lt; self.n <span class="keyword">and</span> <span class="number">0</span> &lt;= c &lt; self.n):
+            <span class="keyword">raise</span> <span class="type">ValueError</span>(<span class="string">"Off board"</span>)
+        <span class="keyword">if</span> self.grid[r][c] != <span class="type">Symbol</span>.EMPTY:
+            <span class="keyword">raise</span> <span class="type">ValueError</span>(<span class="string">"Cell taken"</span>)
+        self.grid[r][c] = s
+        self.filled += <span class="number">1</span>
+
+    <span class="keyword">def</span> <span class="fn">is_full</span>(self):
+        <span class="keyword">return</span> self.filled == self.n * self.n
+
+    <span class="comment"># only re-scan the row, column & diagonals touched by (r, c)</span>
+    <span class="keyword">def</span> <span class="fn">check_winner</span>(self, s, r, c):
+        n = self.n
+        row = <span class="fn">all</span>(self.grid[r][i] == s <span class="keyword">for</span> i <span class="keyword">in</span> <span class="fn">range</span>(n))
+        col = <span class="fn">all</span>(self.grid[i][c] == s <span class="keyword">for</span> i <span class="keyword">in</span> <span class="fn">range</span>(n))
+        diag = r == c <span class="keyword">and</span> <span class="fn">all</span>(self.grid[i][i] == s <span class="keyword">for</span> i <span class="keyword">in</span> <span class="fn">range</span>(n))
+        anti = r + c == n - <span class="number">1</span> <span class="keyword">and</span> <span class="fn">all</span>(self.grid[i][n - <span class="number">1</span> - i] == s <span class="keyword">for</span> i <span class="keyword">in</span> <span class="fn">range</span>(n))
+        <span class="keyword">return</span> row <span class="keyword">or</span> col <span class="keyword">or</span> diag <span class="keyword">or</span> anti
+
+<span class="keyword">class</span> <span class="type">Game</span>:
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, n, p1, p2):
+        self.board = <span class="type">Board</span>(n)
+        self.players = [p1, p2]
+        self.turn = <span class="number">0</span>
+        self.status = <span class="type">GameStatus</span>.IN_PROGRESS
+
+    <span class="comment"># one turn: validate, place, then test for win/draw</span>
+    <span class="keyword">def</span> <span class="fn">move</span>(self, player, r, c):
+        <span class="keyword">if</span> self.status != <span class="type">GameStatus</span>.IN_PROGRESS:
+            <span class="keyword">raise</span> <span class="type">RuntimeError</span>(<span class="string">"Game over"</span>)
+        <span class="keyword">if</span> player <span class="keyword">is</span> <span class="keyword">not</span> self.players[self.turn]:
+            <span class="keyword">raise</span> <span class="type">RuntimeError</span>(<span class="string">"Not your turn"</span>)
+
+        self.board.<span class="fn">place</span>(player.symbol, r, c)
+        <span class="keyword">if</span> self.board.<span class="fn">check_winner</span>(player.symbol, r, c):
+            self.status = <span class="type">GameStatus</span>.WIN
+        <span class="keyword">elif</span> self.board.<span class="fn">is_full</span>():
+            self.status = <span class="type">GameStatus</span>.DRAW
+        <span class="keyword">else</span>:
+            self.turn = (self.turn + <span class="number">1</span>) % <span class="number">2</span>   <span class="comment"># alternate</span>
+        <span class="keyword">return</span> self.status
+</pre>
+            </div>
+        </div>
+
+        <div class="note">
+            <strong>Why this design scores well:</strong> <code>checkWinner</code> only inspects the line through the just-played cell, so it's O(N) per move instead of O(N²) for a full board scan. Modeling the cell as a <code>Symbol</code> enum (not a string or magic int) makes illegal states unrepresentable, and the explicit <code>GameStatus</code> plus turn index gives one unambiguous source of truth for "whose move is it and is the game over?"
+        </div>
+
+        <h2>Step 6 — Follow-up Extensions</h2>
+        <p>Strong candidates anticipate where the interviewer pushes next:</p>
+        <ul>
+            <li><strong>O(1) win check:</strong> keep per-row, per-column, and two diagonal running counters. On each move increment the relevant counters (+1 for X, −1 for O); a magnitude of N means a win — no scanning at all.</li>
+            <li><strong>Undo / replay:</strong> record each <code>Move</code> in a history list (Command/Memento) and pop to undo.</li>
+            <li><strong>More players / bigger boards:</strong> generalize to K-in-a-row on an N×N board with M players.</li>
+            <li><strong>AI opponent:</strong> plug in a <code>MovePlayer</code> strategy (random, minimax) behind the same interface.</li>
+            <li><strong>Pluggable win rule:</strong> extract a <code>WinStrategy</code> so variants (Connect-style, gravity) drop in without touching <code>Game</code>.</li>
+        </ul>
+
+        <div class="warn">
+            <strong>Common mistakes:</strong> rescanning the entire board after every move (wasteful and signals you didn't think about cost); representing cells as raw strings or ints instead of an enum; forgetting to validate occupied/out-of-bounds cells; mutating the board <em>before</em> checking it's the right player's turn; and hardcoding 3×3 so the design can't generalize to N×N.
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>Low-Level Design · <span>Tic-Tac-Toe</span> · Java &amp; Python · Interactive Learning</p>
+    </div>
+
+    <script>
+        function showCode(btn, id) {
+            const container = btn.closest('.code-container');
+            container.querySelectorAll('.code-tab').forEach(t => t.classList.remove('active'));
+            container.querySelectorAll('.code-content').forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById(id).classList.add('active');
+        }
+    </script>
+</body>
+</html>

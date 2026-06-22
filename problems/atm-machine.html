@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ATM Machine — LLD Problem</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8fafc; min-height: 100vh; color: #1e293b; -webkit-font-smoothing: antialiased; }
+        .container { max-width: 880px; margin: 0 auto; padding: 40px 24px 80px; }
+        .back-link { display: inline-flex; align-items: center; gap: 6px; color: #0d9488; text-decoration: none; font-size: 0.9em; font-weight: 500; margin-bottom: 28px; padding: 6px 12px; border-radius: 8px; transition: background 0.15s ease; }
+        .back-link:hover { background: #f0fdfa; }
+
+        .badges { display: flex; gap: 10px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+        .pattern-badge { display: inline-block; padding: 5px 14px; border-radius: 100px; font-size: 0.72em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; background: #e0e7ff; color: #4338ca; }
+        .diff-badge { display: inline-block; padding: 5px 14px; border-radius: 100px; font-size: 0.72em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+        .diff-easy   { background: #dcfce7; color: #16a34a; }
+        .diff-medium { background: #fef3c7; color: #d97706; }
+        .diff-hard   { background: #fee2e2; color: #dc2626; }
+
+        h1 { font-size: 2.4em; font-weight: 800; color: #0f172a; margin-bottom: 12px; letter-spacing: -0.03em; line-height: 1.2; }
+        .subtitle { font-size: 1.1em; color: #64748b; line-height: 1.7; margin-bottom: 8px; }
+        h2 { font-size: 1.35em; font-weight: 700; color: #0f172a; margin: 40px 0 16px; letter-spacing: -0.02em; }
+        h3 { font-size: 1.1em; font-weight: 600; color: #1e293b; margin: 24px 0 10px; }
+        p, li { line-height: 1.8; color: #475569; margin-bottom: 10px; font-size: 0.95em; }
+        ul, ol { padding-left: 20px; margin-bottom: 15px; }
+        strong { color: #1e293b; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 0.85em; color: #0d9488; }
+
+        .statement { background: linear-gradient(135deg, #eef2ff, #f0fdfa); border: 1px solid #e0e7ff; border-radius: 16px; padding: 24px 28px; margin: 24px 0; }
+        .statement .tag { font-size: 0.78em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #4338ca; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+        .statement p:last-child { margin-bottom: 0; }
+
+        .req-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0; }
+        .req-grid > div { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .req-grid h3 { margin-top: 0; }
+        .req-grid.func h3 { color: #0d9488; } .req-grid.nonfunc h3 { color: #4338ca; }
+        .req-grid ul { margin-bottom: 0; }
+
+        .diagram { background: #0f172a; border-radius: 16px; padding: 24px; margin: 24px 0; overflow-x: auto; }
+        .diagram pre { color: #e2e8f0; font-family: 'JetBrains Mono', monospace; font-size: 0.8em; line-height: 1.6; white-space: pre; }
+        .diagram .cls { color: #5eead4; font-weight: 600; } .diagram .rel { color: #fbbf24; } .diagram .note { color: #94a3b8; font-style: italic; }
+
+        .pattern-pills { display: flex; flex-wrap: wrap; gap: 10px; margin: 16px 0 24px; }
+        .pattern-pill { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; background: white; border: 1px solid #e2e8f0; border-radius: 100px; font-size: 0.82em; font-weight: 500; color: #475569; text-decoration: none; transition: all 0.15s ease; }
+        .pattern-pill:hover { border-color: #0d9488; color: #0d9488; background: #f0fdfa; }
+        .pattern-pill .dot { width: 8px; height: 8px; border-radius: 50%; background: #0d9488; }
+
+        .code-container { margin: 24px 0; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .code-tabs { display: flex; background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0 8px; }
+        .code-tab { padding: 10px 18px; cursor: pointer; border: none; background: transparent; color: #64748b; font-size: 0.85em; font-weight: 500; font-family: 'Inter', sans-serif; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.15s ease; }
+        .code-tab:hover { color: #0d9488; }
+        .code-tab.active { color: #0d9488; border-bottom-color: #0d9488; background: white; }
+        .code-content { display: none; background: white; padding: 24px; overflow-x: auto; }
+        .code-content.active { display: block; }
+        .code-content pre { color: #1e293b; font-family: 'JetBrains Mono', monospace; font-size: 0.82em; line-height: 1.75; white-space: pre; }
+        .keyword { color: #0d9488; } .type { color: #2563eb; } .string { color: #16a34a; }
+        .comment { color: #94a3b8; font-style: italic; } .number { color: #d97706; }
+        .preproc { color: #7c3aed; } .fn { color: #db2777; }
+
+        .note { background: #f0fdfa; border-left: 4px solid #0d9488; padding: 16px 20px; margin: 20px 0; border-radius: 0 12px 12px 0; }
+        .note ul, .note p { margin-bottom: 0; } .note li:last-child { margin-bottom: 0; }
+        .warn { background: #fef2f2; border-left: 4px solid #dc2626; padding: 16px 20px; margin: 20px 0; border-radius: 0 12px 12px 0; }
+        .warn ul, .warn p { margin-bottom: 0; } .warn li:last-child { margin-bottom: 0; }
+
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; }
+        th, td { padding: 12px 16px; border: 1px solid #e2e8f0; text-align: left; font-size: 0.9em; }
+        th { background: #f8fafc; color: #0f172a; font-weight: 600; }
+        tr:hover { background: #f8fafc; }
+
+        .footer { text-align: center; padding: 32px 20px; color: #94a3b8; font-size: 0.85em; border-top: 1px solid #e2e8f0; background: #f8fafc; }
+        .footer span { color: #0d9488; }
+
+        @media (max-width: 600px) { .req-grid { grid-template-columns: 1fr; } h1 { font-size: 1.8em; } .container { padding: 20px 16px 60px; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="../index.html" class="back-link">&larr; Back to LLD Topics</a>
+        <div class="badges">
+            <span class="pattern-badge">LLD Problem</span>
+            <span class="diff-badge diff-easy">Easy</span>
+        </div>
+        <h1>Design an ATM Machine</h1>
+        <p class="subtitle">A close cousin of the vending machine — driven by a State machine. The card moves through clear stages (inserted, PIN entered, transaction chosen, dispensing), and each stage only permits certain actions.</p>
+
+        <div class="statement">
+            <div class="tag">📋 Problem Statement</div>
+            <p>Design an ATM. A customer <strong>inserts a card</strong>, <strong>enters a PIN</strong>, picks a <strong>transaction</strong> (withdraw, balance, deposit), and the machine <strong>dispenses cash</strong> using the fewest notes, then <strong>ejects the card</strong>. Each step is only valid in the right stage — you can't withdraw before authenticating — and the cash dispenser must hand out an exact amount from its note inventory.</p>
+        </div>
+
+        <h2>Step 1 — Gather Requirements</h2>
+        <p>Start by pinning down scope. Say your assumptions out loud — interviewers want to see you separate the must-haves from the nice-to-haves.</p>
+        <div class="req-grid func">
+            <div>
+                <h3>✓ Functional</h3>
+                <ul>
+                    <li>Insert card → enter PIN → select transaction.</li>
+                    <li>Withdraw, check balance, deposit.</li>
+                    <li>Dispense cash using the <strong>fewest notes</strong>.</li>
+                    <li>Eject card and reset at the end (or on cancel).</li>
+                    <li>Reject withdrawals over balance or over machine cash.</li>
+                </ul>
+            </div>
+            <div>
+                <h3>◆ Non-Functional</h3>
+                <ul>
+                    <li><strong>Safety:</strong> no action allowed out of sequence.</li>
+                    <li><strong>Extensibility:</strong> add a transaction type or state without rewrites.</li>
+                    <li><strong>Atomicity:</strong> debit account only if cash actually dispenses.</li>
+                    <li>Clear prompts and graceful cancellation.</li>
+                </ul>
+            </div>
+        </div>
+
+        <h2>Step 2 — Identify the Core Entities</h2>
+        <p>Find the nouns in the problem. These become your classes:</p>
+        <ul>
+            <li><strong>ATM</strong> — the <em>context</em>; holds the current state, the active card/account, and the dispenser.</li>
+            <li><strong>ATMState</strong> (interface) — <code>insertCard</code>, <code>enterPin</code>, <code>selectTransaction</code>, <code>ejectCard</code>.</li>
+            <li><strong>IdleState, CardInsertedState, PinEnteredState, TransactionSelectedState, DispensingState</strong>.</li>
+            <li><strong>Card</strong> — card number + linked account; <strong>Account</strong> — balance + PIN.</li>
+            <li><strong>CashDispenser</strong> — note inventory + the fewest-notes algorithm.</li>
+            <li><strong>Transaction</strong> (Strategy) — <strong>WithdrawTransaction, BalanceTransaction, DepositTransaction</strong>.</li>
+        </ul>
+
+        <h2>Step 3 — Class Diagram</h2>
+        <p>Two patterns combine here: <strong>State</strong> drives the workflow stages, while <strong>Strategy</strong> models the interchangeable transaction types.</p>
+        <div class="diagram">
+<pre><span class="cls">ATM</span> (context) ──holds──▶ <span class="cls">ATMState</span>, <span class="cls">Card</span>, <span class="cls">CashDispenser</span>
+   │ delegates
+   ▼
+<span class="cls">ATMState</span> (interface) { insertCard · enterPin · selectTransaction · ejectCard }
+   ▲ implements
+   ├── <span class="cls">IdleState</span> ─▶ <span class="cls">CardInsertedState</span> ─▶ <span class="cls">PinEnteredState</span> ─▶ <span class="cls">TransactionSelectedState</span> ─▶ <span class="cls">DispensingState</span>
+
+<span class="cls">ATM</span> ──runs──▶ <span class="cls">Transaction</span> (Strategy interface) { execute(atm) }
+                          ▲
+              ┌───────────┼───────────────┐
+       <span class="cls">WithdrawTxn</span>      <span class="cls">BalanceTxn</span>        <span class="cls">DepositTxn</span>
+
+<span class="cls">CashDispenser</span> ──has──▶ note inventory {2000:n, 500:n, 100:n}
+              fewest-notes: greedy from largest denomination
+
+<span class="note">// State transitions:</span>
+  Idle --insertCard--> CardInserted --enterPin(ok)--> PinEntered
+  PinEntered --select--> TransactionSelected --withdraw--> Dispensing
+  Dispensing --done/ejectCard--> Idle</pre>
+        </div>
+
+        <h2>Step 4 — Patterns in Play</h2>
+        <p>Name the patterns as you design — it signals maturity. The ATM is a classic State + Strategy combination:</p>
+        <div class="pattern-pills">
+            <a class="pattern-pill" href="../behavioral/state.html"><span class="dot"></span> State — workflow stages</a>
+            <a class="pattern-pill" href="../behavioral/strategy.html"><span class="dot"></span> Strategy — transaction types</a>
+            <a class="pattern-pill" href="../creational/singleton.html"><span class="dot"></span> Singleton — one ATM controller</a>
+            <a class="pattern-pill" href="../concurrency/locks-synchronization.html"><span class="dot"></span> Locking — atomic dispense</a>
+        </div>
+
+        <h2>Step 5 — Implementation</h2>
+        <p>The State machine enforces the order of operations; the <code>CashDispenser</code> shows the fewest-notes greedy algorithm; and <code>Transaction</code> is a Strategy so withdraw/balance/deposit are interchangeable.</p>
+
+        <div class="code-container">
+            <div class="code-tabs">
+                <button class="code-tab active" onclick="showCode(this, 'javaCode')">Java</button>
+                <button class="code-tab" onclick="showCode(this, 'pyCode')">Python</button>
+            </div>
+            <div id="javaCode" class="code-content active">
+<pre><span class="keyword">import</span> java.util.*;
+
+<span class="keyword">class</span> <span class="type">Account</span> {
+    <span class="keyword">final</span> <span class="type">String</span> pin; <span class="keyword">int</span> balance;
+    <span class="type">Account</span>(<span class="type">String</span> pin, <span class="keyword">int</span> balance) { <span class="keyword">this</span>.pin = pin; <span class="keyword">this</span>.balance = balance; }
+}
+<span class="keyword">class</span> <span class="type">Card</span> {
+    <span class="keyword">final</span> <span class="type">String</span> number; <span class="keyword">final</span> <span class="type">Account</span> account;
+    <span class="type">Card</span>(<span class="type">String</span> number, <span class="type">Account</span> account) { <span class="keyword">this</span>.number = number; <span class="keyword">this</span>.account = account; }
+}
+
+<span class="comment">// Dispenses an amount with the FEWEST notes (greedy, largest first)</span>
+<span class="keyword">class</span> <span class="type">CashDispenser</span> {
+    <span class="keyword">private final</span> <span class="type">TreeMap</span>&lt;<span class="type">Integer</span>, <span class="type">Integer</span>&gt; notes = <span class="keyword">new</span> <span class="type">TreeMap</span>&lt;&gt;(<span class="type">Collections</span>.<span class="fn">reverseOrder</span>());
+    <span class="type">CashDispenser</span>() { notes.<span class="fn">put</span>(<span class="number">2000</span>, <span class="number">5</span>); notes.<span class="fn">put</span>(<span class="number">500</span>, <span class="number">10</span>); notes.<span class="fn">put</span>(<span class="number">100</span>, <span class="number">20</span>); }
+
+    <span class="keyword">synchronized</span> <span class="type">Map</span>&lt;<span class="type">Integer</span>, <span class="type">Integer</span>&gt; <span class="fn">dispense</span>(<span class="keyword">int</span> amount) {
+        <span class="type">Map</span>&lt;<span class="type">Integer</span>, <span class="type">Integer</span>&gt; plan = <span class="keyword">new</span> <span class="type">LinkedHashMap</span>&lt;&gt;();
+        <span class="keyword">int</span> remaining = amount;
+        <span class="keyword">for</span> (<span class="type">Map</span>.Entry&lt;<span class="type">Integer</span>, <span class="type">Integer</span>&gt; e : notes.<span class="fn">entrySet</span>()) {
+            <span class="keyword">int</span> denom = e.<span class="fn">getKey</span>(), available = e.<span class="fn">getValue</span>();
+            <span class="keyword">int</span> use = <span class="type">Math</span>.<span class="fn">min</span>(remaining / denom, available);
+            <span class="keyword">if</span> (use &gt; <span class="number">0</span>) { plan.<span class="fn">put</span>(denom, use); remaining -= use * denom; }
+        }
+        <span class="keyword">if</span> (remaining != <span class="number">0</span>) <span class="keyword">throw new</span> <span class="type">IllegalStateException</span>(<span class="string">"Cannot dispense exact amount"</span>);
+        plan.<span class="fn">forEach</span>((d, c) -&gt; notes.<span class="fn">put</span>(d, notes.<span class="fn">get</span>(d) - c));   <span class="comment">// commit</span>
+        <span class="keyword">return</span> plan;
+    }
+}
+
+<span class="comment">// Strategy: interchangeable transaction types</span>
+<span class="keyword">interface</span> <span class="type">Transaction</span> { <span class="keyword">void</span> <span class="fn">execute</span>(<span class="type">ATM</span> atm); }
+<span class="keyword">class</span> <span class="type">WithdrawTransaction</span> <span class="keyword">implements</span> <span class="type">Transaction</span> {
+    <span class="keyword">final</span> <span class="keyword">int</span> amount;
+    <span class="type">WithdrawTransaction</span>(<span class="keyword">int</span> amount) { <span class="keyword">this</span>.amount = amount; }
+    <span class="keyword">public</span> <span class="keyword">void</span> <span class="fn">execute</span>(<span class="type">ATM</span> atm) {
+        <span class="type">Account</span> acc = atm.card.account;
+        <span class="keyword">if</span> (amount &gt; acc.balance) { <span class="type">System</span>.out.<span class="fn">println</span>(<span class="string">"Insufficient funds"</span>); <span class="keyword">return</span>; }
+        atm.<span class="fn">setState</span>(<span class="keyword">new</span> <span class="type">DispensingState</span>());            <span class="comment">// -> Dispensing</span>
+        <span class="type">Map</span>&lt;<span class="type">Integer</span>, <span class="type">Integer</span>&gt; notes = atm.dispenser.<span class="fn">dispense</span>(amount);
+        acc.balance -= amount;                                <span class="comment">// debit only after cash leaves</span>
+        <span class="type">System</span>.out.<span class="fn">println</span>(<span class="string">"Dispensed "</span> + amount + <span class="string">" as "</span> + notes);
+    }
+}
+<span class="keyword">class</span> <span class="type">BalanceTransaction</span> <span class="keyword">implements</span> <span class="type">Transaction</span> {
+    <span class="keyword">public</span> <span class="keyword">void</span> <span class="fn">execute</span>(<span class="type">ATM</span> atm) { <span class="type">System</span>.out.<span class="fn">println</span>(<span class="string">"Balance: "</span> + atm.card.account.balance); }
+}
+
+<span class="comment">// State: each stage only permits certain actions</span>
+<span class="keyword">interface</span> <span class="type">ATMState</span> {
+    <span class="keyword">default</span> <span class="keyword">void</span> <span class="fn">insertCard</span>(<span class="type">ATM</span> a, <span class="type">Card</span> c) { <span class="type">System</span>.out.<span class="fn">println</span>(<span class="string">"Invalid here"</span>); }
+    <span class="keyword">default</span> <span class="keyword">void</span> <span class="fn">enterPin</span>(<span class="type">ATM</span> a, <span class="type">String</span> pin) { <span class="type">System</span>.out.<span class="fn">println</span>(<span class="string">"Invalid here"</span>); }
+    <span class="keyword">default</span> <span class="keyword">void</span> <span class="fn">selectTransaction</span>(<span class="type">ATM</span> a, <span class="type">Transaction</span> t) { <span class="type">System</span>.out.<span class="fn">println</span>(<span class="string">"Invalid here"</span>); }
+    <span class="keyword">default</span> <span class="keyword">void</span> <span class="fn">ejectCard</span>(<span class="type">ATM</span> a) { a.card = <span class="keyword">null</span>; a.<span class="fn">setState</span>(<span class="keyword">new</span> <span class="type">IdleState</span>()); <span class="type">System</span>.out.<span class="fn">println</span>(<span class="string">"Card ejected"</span>); }
+}
+<span class="keyword">class</span> <span class="type">IdleState</span> <span class="keyword">implements</span> <span class="type">ATMState</span> {
+    <span class="keyword">public</span> <span class="keyword">void</span> <span class="fn">insertCard</span>(<span class="type">ATM</span> a, <span class="type">Card</span> c) { a.card = c; a.<span class="fn">setState</span>(<span class="keyword">new</span> <span class="type">CardInsertedState</span>()); }
+}
+<span class="keyword">class</span> <span class="type">CardInsertedState</span> <span class="keyword">implements</span> <span class="type">ATMState</span> {
+    <span class="keyword">public</span> <span class="keyword">void</span> <span class="fn">enterPin</span>(<span class="type">ATM</span> a, <span class="type">String</span> pin) {
+        <span class="keyword">if</span> (pin.<span class="fn">equals</span>(a.card.account.pin)) a.<span class="fn">setState</span>(<span class="keyword">new</span> <span class="type">PinEnteredState</span>());
+        <span class="keyword">else</span> <span class="type">System</span>.out.<span class="fn">println</span>(<span class="string">"Wrong PIN"</span>);
+    }
+}
+<span class="keyword">class</span> <span class="type">PinEnteredState</span> <span class="keyword">implements</span> <span class="type">ATMState</span> {
+    <span class="keyword">public</span> <span class="keyword">void</span> <span class="fn">selectTransaction</span>(<span class="type">ATM</span> a, <span class="type">Transaction</span> t) {
+        a.<span class="fn">setState</span>(<span class="keyword">new</span> <span class="type">TransactionSelectedState</span>());
+        t.<span class="fn">execute</span>(a);
+        a.<span class="fn">ejectCard</span>();                                     <span class="comment">// finish -> Idle</span>
+    }
+}
+<span class="keyword">class</span> <span class="type">TransactionSelectedState</span> <span class="keyword">implements</span> <span class="type">ATMState</span> {}
+<span class="keyword">class</span> <span class="type">DispensingState</span> <span class="keyword">implements</span> <span class="type">ATMState</span> {}
+
+<span class="keyword">class</span> <span class="type">ATM</span> {                                          <span class="comment">// context</span>
+    <span class="type">ATMState</span> state = <span class="keyword">new</span> <span class="type">IdleState</span>();
+    <span class="type">Card</span> card;
+    <span class="keyword">final</span> <span class="type">CashDispenser</span> dispenser = <span class="keyword">new</span> <span class="type">CashDispenser</span>();
+    <span class="keyword">void</span> <span class="fn">setState</span>(<span class="type">ATMState</span> s) { state = s; }
+    <span class="keyword">void</span> <span class="fn">insertCard</span>(<span class="type">Card</span> c) { state.<span class="fn">insertCard</span>(<span class="keyword">this</span>, c); }
+    <span class="keyword">void</span> <span class="fn">enterPin</span>(<span class="type">String</span> p) { state.<span class="fn">enterPin</span>(<span class="keyword">this</span>, p); }
+    <span class="keyword">void</span> <span class="fn">selectTransaction</span>(<span class="type">Transaction</span> t) { state.<span class="fn">selectTransaction</span>(<span class="keyword">this</span>, t); }
+    <span class="keyword">void</span> <span class="fn">ejectCard</span>() { state.<span class="fn">ejectCard</span>(<span class="keyword">this</span>); }
+}
+</pre>
+            </div>
+            <div id="pyCode" class="code-content">
+<pre><span class="keyword">from</span> abc <span class="keyword">import</span> ABC, abstractmethod
+<span class="keyword">import</span> threading
+
+<span class="keyword">class</span> <span class="type">Account</span>:
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, pin, balance):
+        self.pin, self.balance = pin, balance
+
+<span class="keyword">class</span> <span class="type">Card</span>:
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, number, account):
+        self.number, self.account = number, account
+
+<span class="comment"># Dispenses an amount with the FEWEST notes (greedy, largest first)</span>
+<span class="keyword">class</span> <span class="type">CashDispenser</span>:
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self):
+        self.notes = {<span class="number">2000</span>: <span class="number">5</span>, <span class="number">500</span>: <span class="number">10</span>, <span class="number">100</span>: <span class="number">20</span>}
+        self.lock = threading.<span class="type">Lock</span>()
+    <span class="keyword">def</span> <span class="fn">dispense</span>(self, amount):
+        <span class="keyword">with</span> self.lock:                                  <span class="comment"># atomic</span>
+            plan, remaining = {}, amount
+            <span class="keyword">for</span> denom <span class="keyword">in</span> <span class="fn">sorted</span>(self.notes, reverse=<span class="keyword">True</span>):
+                use = <span class="fn">min</span>(remaining // denom, self.notes[denom])
+                <span class="keyword">if</span> use:
+                    plan[denom] = use; remaining -= use * denom
+            <span class="keyword">if</span> remaining != <span class="number">0</span>:
+                <span class="keyword">raise</span> <span class="type">RuntimeError</span>(<span class="string">"Cannot dispense exact amount"</span>)
+            <span class="keyword">for</span> denom, cnt <span class="keyword">in</span> plan.<span class="fn">items</span>():
+                self.notes[denom] -= cnt                  <span class="comment"># commit</span>
+            <span class="keyword">return</span> plan
+
+<span class="comment"># Strategy: interchangeable transaction types</span>
+<span class="keyword">class</span> <span class="type">Transaction</span>(ABC):
+    <span class="meta">@abstractmethod</span>
+    <span class="keyword">def</span> <span class="fn">execute</span>(self, atm): ...
+
+<span class="keyword">class</span> <span class="type">WithdrawTransaction</span>(<span class="type">Transaction</span>):
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, amount): self.amount = amount
+    <span class="keyword">def</span> <span class="fn">execute</span>(self, atm):
+        acc = atm.card.account
+        <span class="keyword">if</span> self.amount &gt; acc.balance:
+            <span class="fn">print</span>(<span class="string">"Insufficient funds"</span>); <span class="keyword">return</span>
+        atm.state = <span class="type">DispensingState</span>()                    <span class="comment"># -> Dispensing</span>
+        notes = atm.dispenser.<span class="fn">dispense</span>(self.amount)
+        acc.balance -= self.amount                        <span class="comment"># debit after cash leaves</span>
+        <span class="fn">print</span>(<span class="string">f"Dispensed {self.amount} as {notes}"</span>)
+
+<span class="keyword">class</span> <span class="type">BalanceTransaction</span>(<span class="type">Transaction</span>):
+    <span class="keyword">def</span> <span class="fn">execute</span>(self, atm): <span class="fn">print</span>(<span class="string">f"Balance: {atm.card.account.balance}"</span>)
+
+<span class="comment"># State: each stage only permits certain actions</span>
+<span class="keyword">class</span> <span class="type">ATMState</span>(ABC):
+    <span class="keyword">def</span> <span class="fn">insert_card</span>(self, a, c): <span class="fn">print</span>(<span class="string">"Invalid here"</span>)
+    <span class="keyword">def</span> <span class="fn">enter_pin</span>(self, a, pin): <span class="fn">print</span>(<span class="string">"Invalid here"</span>)
+    <span class="keyword">def</span> <span class="fn">select_transaction</span>(self, a, t): <span class="fn">print</span>(<span class="string">"Invalid here"</span>)
+    <span class="keyword">def</span> <span class="fn">eject_card</span>(self, a):
+        a.card = <span class="keyword">None</span>; a.state = <span class="type">IdleState</span>(); <span class="fn">print</span>(<span class="string">"Card ejected"</span>)
+
+<span class="keyword">class</span> <span class="type">IdleState</span>(<span class="type">ATMState</span>):
+    <span class="keyword">def</span> <span class="fn">insert_card</span>(self, a, c):
+        a.card = c; a.state = <span class="type">CardInsertedState</span>()
+
+<span class="keyword">class</span> <span class="type">CardInsertedState</span>(<span class="type">ATMState</span>):
+    <span class="keyword">def</span> <span class="fn">enter_pin</span>(self, a, pin):
+        <span class="keyword">if</span> pin == a.card.account.pin: a.state = <span class="type">PinEnteredState</span>()
+        <span class="keyword">else</span>: <span class="fn">print</span>(<span class="string">"Wrong PIN"</span>)
+
+<span class="keyword">class</span> <span class="type">PinEnteredState</span>(<span class="type">ATMState</span>):
+    <span class="keyword">def</span> <span class="fn">select_transaction</span>(self, a, t):
+        a.state = <span class="type">TransactionSelectedState</span>()
+        t.<span class="fn">execute</span>(a)
+        a.<span class="fn">eject_card</span>()                                   <span class="comment"># finish -> Idle</span>
+
+<span class="keyword">class</span> <span class="type">TransactionSelectedState</span>(<span class="type">ATMState</span>): <span class="keyword">pass</span>
+<span class="keyword">class</span> <span class="type">DispensingState</span>(<span class="type">ATMState</span>): <span class="keyword">pass</span>
+
+<span class="keyword">class</span> <span class="type">ATM</span>:                                          <span class="comment"># context</span>
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self):
+        self.state = <span class="type">IdleState</span>()
+        self.card = <span class="keyword">None</span>
+        self.dispenser = <span class="type">CashDispenser</span>()
+    <span class="keyword">def</span> <span class="fn">insert_card</span>(self, c): self.state.<span class="fn">insert_card</span>(self, c)
+    <span class="keyword">def</span> <span class="fn">enter_pin</span>(self, p): self.state.<span class="fn">enter_pin</span>(self, p)
+    <span class="keyword">def</span> <span class="fn">select_transaction</span>(self, t): self.state.<span class="fn">select_transaction</span>(self, t)
+    <span class="keyword">def</span> <span class="fn">eject_card</span>(self): self.state.<span class="fn">eject_card</span>(self)
+
+<span class="comment"># --- demo ---</span>
+atm = <span class="type">ATM</span>()
+card = <span class="type">Card</span>(<span class="string">"1234"</span>, <span class="type">Account</span>(<span class="string">"4321"</span>, <span class="number">5000</span>))
+atm.<span class="fn">insert_card</span>(card)              <span class="comment"># Idle -> CardInserted</span>
+atm.<span class="fn">enter_pin</span>(<span class="string">"4321"</span>)            <span class="comment"># -> PinEntered</span>
+atm.<span class="fn">select_transaction</span>(<span class="type">WithdrawTransaction</span>(<span class="number">2600</span>))  <span class="comment"># 1x2000 + 1x500 + 1x100</span>
+</pre>
+            </div>
+        </div>
+
+        <div class="note">
+            <strong>Why this design scores well:</strong> the State machine makes illegal flows impossible — calling <code>enterPin</code> while Idle just prints "Invalid here", because only <code>CardInsertedState</code> implements it. The fewest-notes dispenser is a greedy walk from the largest denomination, and it commits the inventory <em>only after</em> a full plan is found, so a failed dispense leaves the drawer untouched. Debiting the account <em>after</em> cash leaves keeps money and balance consistent. <code>Transaction</code> as a Strategy means a new transaction type is a new class, never an edit to the states.
+        </div>
+
+        <h2>Step 6 — Follow-up Extensions</h2>
+        <p>Strong candidates anticipate where the interviewer pushes next:</p>
+        <ul>
+            <li><strong>PIN retry limit:</strong> track attempts in <code>CardInsertedState</code> and capture the card after 3 failures.</li>
+            <li><strong>Atomic withdraw:</strong> wrap "check balance → reserve cash → debit" in one lock so two sessions can't overdraw a shared account.</li>
+            <li><strong>Bank network:</strong> route authentication/debit to a <code>BankService</code> instead of a local account.</li>
+            <li><strong>Greedy isn't always optimal:</strong> with odd denominations, fall back to a DP coin-change to guarantee a valid combination.</li>
+            <li><strong>Receipt &amp; deposit:</strong> add a cash-acceptor and a printer; model deposit as another Strategy.</li>
+        </ul>
+
+        <div class="warn">
+            <strong>Common mistakes:</strong> using a single enum + <code>switch</code> instead of State objects (lets illegal transitions slip through); debiting the account before confirming the cash dispensed; mutating the note inventory mid-loop before knowing the full plan succeeds; and hardcoding the three transaction types with <code>if/else</code> rather than a Strategy. Separate "what stage am I in" (State) from "what am I doing" (Strategy) and the design stays clean.
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>Low-Level Design · <span>ATM Machine</span> · Java &amp; Python · Interactive Learning</p>
+    </div>
+
+    <script>
+        function showCode(btn, id) {
+            const container = btn.closest('.code-container');
+            container.querySelectorAll('.code-tab').forEach(t => t.classList.remove('active'));
+            container.querySelectorAll('.code-content').forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById(id).classList.add('active');
+        }
+    </script>
+</body>
+</html>

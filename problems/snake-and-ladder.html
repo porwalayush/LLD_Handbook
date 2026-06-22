@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snake &amp; Ladder — LLD Problem</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8fafc; min-height: 100vh; color: #1e293b; -webkit-font-smoothing: antialiased; }
+        .container { max-width: 880px; margin: 0 auto; padding: 40px 24px 80px; }
+        .back-link { display: inline-flex; align-items: center; gap: 6px; color: #0d9488; text-decoration: none; font-size: 0.9em; font-weight: 500; margin-bottom: 28px; padding: 6px 12px; border-radius: 8px; transition: background 0.15s ease; }
+        .back-link:hover { background: #f0fdfa; }
+
+        .badges { display: flex; gap: 10px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+        .pattern-badge { display: inline-block; padding: 5px 14px; border-radius: 100px; font-size: 0.72em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; background: #e0e7ff; color: #4338ca; }
+        .diff-badge { display: inline-block; padding: 5px 14px; border-radius: 100px; font-size: 0.72em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+        .diff-easy   { background: #dcfce7; color: #16a34a; }
+        .diff-medium { background: #fef3c7; color: #d97706; }
+        .diff-hard   { background: #fee2e2; color: #dc2626; }
+
+        h1 { font-size: 2.4em; font-weight: 800; color: #0f172a; margin-bottom: 12px; letter-spacing: -0.03em; line-height: 1.2; }
+        .subtitle { font-size: 1.1em; color: #64748b; line-height: 1.7; margin-bottom: 8px; }
+        h2 { font-size: 1.35em; font-weight: 700; color: #0f172a; margin: 40px 0 16px; letter-spacing: -0.02em; }
+        h3 { font-size: 1.1em; font-weight: 600; color: #1e293b; margin: 24px 0 10px; }
+        p, li { line-height: 1.8; color: #475569; margin-bottom: 10px; font-size: 0.95em; }
+        ul, ol { padding-left: 20px; margin-bottom: 15px; }
+        strong { color: #1e293b; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 0.85em; color: #0d9488; }
+
+        .statement { background: linear-gradient(135deg, #eef2ff, #f0fdfa); border: 1px solid #e0e7ff; border-radius: 16px; padding: 24px 28px; margin: 24px 0; }
+        .statement .tag { font-size: 0.78em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #4338ca; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+        .statement p:last-child { margin-bottom: 0; }
+
+        .req-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0; }
+        .req-grid > div { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .req-grid h3 { margin-top: 0; }
+        .req-grid.func h3 { color: #0d9488; } .req-grid.nonfunc h3 { color: #4338ca; }
+        .req-grid ul { margin-bottom: 0; }
+
+        .diagram { background: #0f172a; border-radius: 16px; padding: 24px; margin: 24px 0; overflow-x: auto; }
+        .diagram pre { color: #e2e8f0; font-family: 'JetBrains Mono', monospace; font-size: 0.8em; line-height: 1.6; white-space: pre; }
+        .diagram .cls { color: #5eead4; font-weight: 600; } .diagram .rel { color: #fbbf24; } .diagram .note { color: #94a3b8; font-style: italic; }
+
+        .pattern-pills { display: flex; flex-wrap: wrap; gap: 10px; margin: 16px 0 24px; }
+        .pattern-pill { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; background: white; border: 1px solid #e2e8f0; border-radius: 100px; font-size: 0.82em; font-weight: 500; color: #475569; text-decoration: none; transition: all 0.15s ease; }
+        .pattern-pill:hover { border-color: #0d9488; color: #0d9488; background: #f0fdfa; }
+        .pattern-pill .dot { width: 8px; height: 8px; border-radius: 50%; background: #0d9488; }
+
+        .code-container { margin: 24px 0; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .code-tabs { display: flex; background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0 8px; }
+        .code-tab { padding: 10px 18px; cursor: pointer; border: none; background: transparent; color: #64748b; font-size: 0.85em; font-weight: 500; font-family: 'Inter', sans-serif; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.15s ease; }
+        .code-tab:hover { color: #0d9488; }
+        .code-tab.active { color: #0d9488; border-bottom-color: #0d9488; background: white; }
+        .code-content { display: none; background: white; padding: 24px; overflow-x: auto; }
+        .code-content.active { display: block; }
+        .code-content pre { color: #1e293b; font-family: 'JetBrains Mono', monospace; font-size: 0.82em; line-height: 1.75; white-space: pre; }
+        .keyword { color: #0d9488; } .type { color: #2563eb; } .string { color: #16a34a; }
+        .comment { color: #94a3b8; font-style: italic; } .number { color: #d97706; }
+        .preproc { color: #7c3aed; } .fn { color: #db2777; }
+
+        .note { background: #f0fdfa; border-left: 4px solid #0d9488; padding: 16px 20px; margin: 20px 0; border-radius: 0 12px 12px 0; }
+        .note ul, .note p { margin-bottom: 0; } .note li:last-child { margin-bottom: 0; }
+        .warn { background: #fef2f2; border-left: 4px solid #dc2626; padding: 16px 20px; margin: 20px 0; border-radius: 0 12px 12px 0; }
+        .warn ul, .warn p { margin-bottom: 0; } .warn li:last-child { margin-bottom: 0; }
+
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; }
+        th, td { padding: 12px 16px; border: 1px solid #e2e8f0; text-align: left; font-size: 0.9em; }
+        th { background: #f8fafc; color: #0f172a; font-weight: 600; }
+        tr:hover { background: #f8fafc; }
+
+        .footer { text-align: center; padding: 32px 20px; color: #94a3b8; font-size: 0.85em; border-top: 1px solid #e2e8f0; background: #f8fafc; }
+        .footer span { color: #0d9488; }
+
+        @media (max-width: 600px) { .req-grid { grid-template-columns: 1fr; } h1 { font-size: 1.8em; } .container { padding: 20px 16px 60px; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="../index.html" class="back-link">&larr; Back to LLD Topics</a>
+        <div class="badges">
+            <span class="pattern-badge">LLD Problem</span>
+            <span class="diff-badge diff-easy">Easy</span>
+        </div>
+        <h1>Design Snake &amp; Ladder</h1>
+        <p class="subtitle">A classic board-game LLD. Players roll a die, advance along a numbered board, ride ladders up and slide down snakes — first to the last cell wins. Great for showing a clean game loop and a turn queue.</p>
+
+        <div class="statement">
+            <div class="tag">📋 Problem Statement</div>
+            <p>Design a <strong>Snake &amp; Ladder</strong> game. The board has cells numbered <strong>1 to 100</strong>. Each turn the current player <strong>rolls a die</strong> and advances by that amount. If they land on the <strong>head of a snake</strong> they slide down to its tail; if they land on the <strong>bottom of a ladder</strong> they climb to its top. The first player to reach cell <strong>100 wins</strong>. Multiple players take turns in a fixed rotation.</p>
+        </div>
+
+        <h2>Step 1 — Gather Requirements</h2>
+        <p>Pin scope down first. Two details earn points here: how the board is configured (snakes/ladders as data, not hardcoded) and the turn rotation.</p>
+        <div class="req-grid func">
+            <div>
+                <h3>✓ Functional</h3>
+                <ul>
+                    <li>Configurable board size (default 100) with a list of snakes and ladders.</li>
+                    <li>2+ players, taking turns in a fixed rotation (a queue).</li>
+                    <li>Roll a die, advance, then apply any jump on the landing cell.</li>
+                    <li>First player to land exactly on the final cell wins.</li>
+                    <li>Snakes move you down; ladders move you up.</li>
+                </ul>
+            </div>
+            <div>
+                <h3>◆ Non-Functional</h3>
+                <ul>
+                    <li><strong>Extensibility:</strong> swap a single die for multiple dice or a loaded die.</li>
+                    <li><strong>Configurable setup:</strong> build any board without touching game logic.</li>
+                    <li><strong>O(1) jump lookup</strong> from a cell to its destination.</li>
+                    <li><strong>Validation:</strong> reject overlapping or off-board snakes/ladders.</li>
+                </ul>
+            </div>
+        </div>
+
+        <h2>Step 2 — Identify the Core Entities</h2>
+        <p>Pull the nouns from the statement — they become your classes:</p>
+        <ul>
+            <li><strong>Game</strong> — runs the loop: holds the board, the dice, and the player queue.</li>
+            <li><strong>Board</strong> — knows its size and stores the jumps keyed by their start cell.</li>
+            <li><strong>Jump</strong> — a <code>start → end</code> pair; a snake if <code>end &lt; start</code>, a ladder if <code>end &gt; start</code>. (Snake/Ladder collapse into one entity.)</li>
+            <li><strong>Dice</strong> — produces a roll; a strategy so single vs. multiple dice is swappable.</li>
+            <li><strong>Player</strong> — has a name and a current <code>position</code>.</li>
+        </ul>
+
+        <h2>Step 3 — Class Diagram</h2>
+        <p>Sketch the relationships first. A "has-a" (composition) line means one class owns instances of another.</p>
+        <div class="diagram">
+<pre><span class="cls">Game</span>
+   │ has-a
+   ├──────────▶ <span class="cls">Board</span> ──has-map──▶ <span class="cls">Jump</span> {start, end}
+   │                              <span class="note">// end&lt;start = snake, end&gt;start = ladder</span>
+   ├──uses────▶ <span class="cls">Dice</span> (interface) ──▶ roll() : int
+   │                  ▲
+   │      ┌───────────┴───────────┐
+   │  <span class="cls">SingleDice</span>            <span class="cls">MultiDice</span>      <span class="note">// Strategy: how many dice</span>
+   │
+   └──has-queue▶ <span class="cls">Player</span> {name, position}
+
+<span class="cls">Game</span> loop:  roll ──▶ advance ──▶ board.destination(cell)
+                                       │ applies any Jump
+                                       ▼
+                                  win if pos == size
+<span class="note">// A BoardBuilder / factory assembles snakes & ladders without touching Game</span></pre>
+        </div>
+
+        <h2>Step 4 — Patterns in Play</h2>
+        <p>Name the patterns as you design — it signals maturity. This problem naturally uses:</p>
+        <div class="pattern-pills">
+            <a class="pattern-pill" href="../behavioral/strategy.html"><span class="dot"></span> Strategy — single vs. multiple dice</a>
+            <a class="pattern-pill" href="../creational/builder.html"><span class="dot"></span> Builder — assemble the board</a>
+            <a class="pattern-pill" href="../creational/factory-method.html"><span class="dot"></span> Factory — create jumps</a>
+        </div>
+
+        <h2>Step 5 — Implementation</h2>
+        <p>A clean, runnable core: a <code>Dice</code> strategy, a <code>Board</code> with a jump map and an O(1) <code>destination()</code>, and a <code>Game</code> loop that cycles players through a queue until someone wins.</p>
+
+        <div class="code-container">
+            <div class="code-tabs">
+                <button class="code-tab active" onclick="showCode(this, 'javaCode')">Java</button>
+                <button class="code-tab" onclick="showCode(this, 'pyCode')">Python</button>
+            </div>
+            <div id="javaCode" class="code-content active">
+<pre><span class="keyword">import</span> java.util.*;
+
+<span class="comment">// Strategy: how the dice are rolled is swappable</span>
+<span class="keyword">interface</span> <span class="type">Dice</span> { <span class="keyword">int</span> <span class="fn">roll</span>(); }
+<span class="keyword">class</span> <span class="type">SingleDice</span> <span class="keyword">implements</span> <span class="type">Dice</span> {
+    <span class="keyword">private final</span> <span class="type">Random</span> rng = <span class="keyword">new</span> <span class="type">Random</span>();
+    <span class="keyword">public int</span> <span class="fn">roll</span>() { <span class="keyword">return</span> <span class="number">1</span> + rng.<span class="fn">nextInt</span>(<span class="number">6</span>); }
+}
+<span class="keyword">class</span> <span class="type">MultiDice</span> <span class="keyword">implements</span> <span class="type">Dice</span> {
+    <span class="keyword">private final</span> <span class="type">Random</span> rng = <span class="keyword">new</span> <span class="type">Random</span>();
+    <span class="keyword">private final</span> <span class="keyword">int</span> count;
+    <span class="type">MultiDice</span>(<span class="keyword">int</span> count) { <span class="keyword">this</span>.count = count; }
+    <span class="keyword">public int</span> <span class="fn">roll</span>() {
+        <span class="keyword">int</span> sum = <span class="number">0</span>;
+        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; count; i++) sum += <span class="number">1</span> + rng.<span class="fn">nextInt</span>(<span class="number">6</span>);
+        <span class="keyword">return</span> sum;
+    }
+}
+
+<span class="keyword">class</span> <span class="type">Player</span> {
+    <span class="keyword">final</span> <span class="type">String</span> name;
+    <span class="keyword">int</span> position = <span class="number">0</span>;
+    <span class="type">Player</span>(<span class="type">String</span> name) { <span class="keyword">this</span>.name = name; }
+}
+
+<span class="keyword">class</span> <span class="type">Board</span> {
+    <span class="keyword">final</span> <span class="keyword">int</span> size;
+    <span class="keyword">private final</span> <span class="type">Map</span>&lt;<span class="type">Integer</span>, <span class="type">Integer</span>&gt; jumps = <span class="keyword">new</span> <span class="type">HashMap</span>&lt;&gt;();  <span class="comment">// start -&gt; end</span>
+
+    <span class="type">Board</span>(<span class="keyword">int</span> size) { <span class="keyword">this</span>.size = size; }
+
+    <span class="comment">// a snake (end &lt; start) or ladder (end &gt; start)</span>
+    <span class="keyword">void</span> <span class="fn">addJump</span>(<span class="keyword">int</span> start, <span class="keyword">int</span> end) {
+        <span class="keyword">if</span> (start &lt;= <span class="number">0</span> || start &gt;= size || end &lt;= <span class="number">0</span> || end &gt; size || start == end)
+            <span class="keyword">throw new</span> <span class="type">IllegalArgumentException</span>(<span class="string">"Invalid jump"</span>);
+        jumps.<span class="fn">put</span>(start, end);
+    }
+
+    <span class="comment">// O(1): resolve where a landing cell actually sends the player</span>
+    <span class="keyword">int</span> <span class="fn">destination</span>(<span class="keyword">int</span> cell) { <span class="keyword">return</span> jumps.<span class="fn">getOrDefault</span>(cell, cell); }
+}
+
+<span class="keyword">class</span> <span class="type">Game</span> {
+    <span class="keyword">private final</span> <span class="type">Board</span> board;
+    <span class="keyword">private final</span> <span class="type">Dice</span> dice;
+    <span class="keyword">private final</span> <span class="type">Queue</span>&lt;<span class="type">Player</span>&gt; turns = <span class="keyword">new</span> <span class="type">LinkedList</span>&lt;&gt;();
+
+    <span class="type">Game</span>(<span class="type">Board</span> board, <span class="type">Dice</span> dice, <span class="type">List</span>&lt;<span class="type">Player</span>&gt; players) {
+        <span class="keyword">this</span>.board = board; <span class="keyword">this</span>.dice = dice;
+        turns.<span class="fn">addAll</span>(players);
+    }
+
+    <span class="comment">// the game loop: rotate players until one reaches the final cell</span>
+    <span class="type">Player</span> <span class="fn">play</span>() {
+        <span class="keyword">while</span> (<span class="keyword">true</span>) {
+            <span class="type">Player</span> p = turns.<span class="fn">poll</span>();          <span class="comment">// dequeue current player</span>
+            <span class="keyword">int</span> roll = dice.<span class="fn">roll</span>();
+            <span class="keyword">int</span> next = p.position + roll;
+
+            <span class="keyword">if</span> (next &lt;= board.size) {          <span class="comment">// must land exactly; overshoot = stay</span>
+                p.position = board.<span class="fn">destination</span>(next);  <span class="comment">// apply snake/ladder</span>
+            }
+            <span class="keyword">if</span> (p.position == board.size) <span class="keyword">return</span> p;  <span class="comment">// winner</span>
+
+            turns.<span class="fn">offer</span>(p);                  <span class="comment">// re-enqueue at the back</span>
+        }
+    }
+}
+</pre>
+            </div>
+            <div id="pyCode" class="code-content">
+<pre><span class="keyword">import</span> random
+<span class="keyword">from</span> collections <span class="keyword">import</span> deque
+
+<span class="comment"># Strategy: how the dice are rolled is swappable</span>
+<span class="keyword">class</span> <span class="type">SingleDice</span>:
+    <span class="keyword">def</span> <span class="fn">roll</span>(self): <span class="keyword">return</span> random.<span class="fn">randint</span>(<span class="number">1</span>, <span class="number">6</span>)
+
+<span class="keyword">class</span> <span class="type">MultiDice</span>:
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, count): self.count = count
+    <span class="keyword">def</span> <span class="fn">roll</span>(self):
+        <span class="keyword">return</span> <span class="fn">sum</span>(random.<span class="fn">randint</span>(<span class="number">1</span>, <span class="number">6</span>) <span class="keyword">for</span> _ <span class="keyword">in</span> <span class="fn">range</span>(self.count))
+
+<span class="keyword">class</span> <span class="type">Player</span>:
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, name):
+        self.name, self.position = name, <span class="number">0</span>
+
+<span class="keyword">class</span> <span class="type">Board</span>:
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, size):
+        self.size = size
+        self.jumps = {}                       <span class="comment"># start -> end</span>
+
+    <span class="comment"># a snake (end < start) or ladder (end > start)</span>
+    <span class="keyword">def</span> <span class="fn">add_jump</span>(self, start, end):
+        <span class="keyword">if</span> <span class="keyword">not</span> (<span class="number">0</span> &lt; start &lt; self.size <span class="keyword">and</span> <span class="number">0</span> &lt; end &lt;= self.size) <span class="keyword">or</span> start == end:
+            <span class="keyword">raise</span> <span class="type">ValueError</span>(<span class="string">"Invalid jump"</span>)
+        self.jumps[start] = end
+
+    <span class="comment"># O(1): resolve where a landing cell actually sends the player</span>
+    <span class="keyword">def</span> <span class="fn">destination</span>(self, cell):
+        <span class="keyword">return</span> self.jumps.<span class="fn">get</span>(cell, cell)
+
+<span class="keyword">class</span> <span class="type">Game</span>:
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, board, dice, players):
+        self.board, self.dice = board, dice
+        self.turns = deque(players)
+
+    <span class="comment"># the game loop: rotate players until one reaches the final cell</span>
+    <span class="keyword">def</span> <span class="fn">play</span>(self):
+        <span class="keyword">while</span> <span class="keyword">True</span>:
+            p = self.turns.<span class="fn">popleft</span>()          <span class="comment"># current player</span>
+            nxt = p.position + self.dice.<span class="fn">roll</span>()
+
+            <span class="keyword">if</span> nxt &lt;= self.board.size:        <span class="comment"># must land exactly; overshoot = stay</span>
+                p.position = self.board.<span class="fn">destination</span>(nxt)  <span class="comment"># apply snake/ladder</span>
+            <span class="keyword">if</span> p.position == self.board.size:
+                <span class="keyword">return</span> p                      <span class="comment"># winner</span>
+
+            self.turns.<span class="fn">append</span>(p)             <span class="comment"># re-enqueue at the back</span>
+</pre>
+            </div>
+        </div>
+
+        <div class="note">
+            <strong>Why this design scores well:</strong> snakes and ladders collapse into a single <code>Jump</code> concept (a <code>start → end</code> map), so there's no duplicated logic — the sign of <code>end - start</code> tells you which it is. The board stores them as <strong>data</strong>, so any board configuration is built without touching <code>Game</code>. The <code>Dice</code> interface makes single/multiple/loaded dice a swap-in (Strategy), and a <code>Queue</code> of players gives clean, fair turn rotation with O(1) enqueue/dequeue.
+        </div>
+
+        <h2>Step 6 — Follow-up Extensions</h2>
+        <p>Strong candidates anticipate where the interviewer pushes next:</p>
+        <ul>
+            <li><strong>Roll-a-six-again rule:</strong> have <code>play()</code> grant an extra turn before re-enqueuing when the roll is a 6.</li>
+            <li><strong>Exact-finish variants:</strong> bounce back on overshoot instead of staying put — a small tweak to the advance step.</li>
+            <li><strong>Observer for events:</strong> notify a UI/logger when a player hits a snake, climbs a ladder, or wins (Observer).</li>
+            <li><strong>Builder for setup:</strong> a <code>BoardBuilder</code> validating that no two jumps share a start cell and none overlap a final/start cell.</li>
+            <li><strong>Multiplayer scaling:</strong> support N players and persist game state so a match can resume.</li>
+        </ul>
+
+        <div class="warn">
+            <strong>Common mistakes:</strong> modeling Snake and Ladder as two separate classes with copy-pasted logic instead of one <code>Jump</code>; hardcoding the 100 cells and the snake/ladder positions into the game logic; coupling the dice roll directly into <code>Game</code> so you can't vary it; forgetting the "land exactly on the last cell" rule (allowing overshoot to win); and using a list with O(n) removals for turns instead of a queue.
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>Low-Level Design · <span>Snake &amp; Ladder</span> · Java &amp; Python · Interactive Learning</p>
+    </div>
+
+    <script>
+        function showCode(btn, id) {
+            const container = btn.closest('.code-container');
+            container.querySelectorAll('.code-tab').forEach(t => t.classList.remove('active'));
+            container.querySelectorAll('.code-content').forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById(id).classList.add('active');
+        }
+    </script>
+</body>
+</html>

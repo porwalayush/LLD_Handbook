@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Splitwise — LLD Problem</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8fafc; min-height: 100vh; color: #1e293b; -webkit-font-smoothing: antialiased; }
+        .container { max-width: 880px; margin: 0 auto; padding: 40px 24px 80px; }
+        .back-link { display: inline-flex; align-items: center; gap: 6px; color: #0d9488; text-decoration: none; font-size: 0.9em; font-weight: 500; margin-bottom: 28px; padding: 6px 12px; border-radius: 8px; transition: background 0.15s ease; }
+        .back-link:hover { background: #f0fdfa; }
+
+        .badges { display: flex; gap: 10px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+        .pattern-badge { display: inline-block; padding: 5px 14px; border-radius: 100px; font-size: 0.72em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; background: #e0e7ff; color: #4338ca; }
+        .diff-badge { display: inline-block; padding: 5px 14px; border-radius: 100px; font-size: 0.72em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+        .diff-easy   { background: #dcfce7; color: #16a34a; }
+        .diff-medium { background: #fef3c7; color: #d97706; }
+        .diff-hard   { background: #fee2e2; color: #dc2626; }
+
+        h1 { font-size: 2.4em; font-weight: 800; color: #0f172a; margin-bottom: 12px; letter-spacing: -0.03em; line-height: 1.2; }
+        .subtitle { font-size: 1.1em; color: #64748b; line-height: 1.7; margin-bottom: 8px; }
+        h2 { font-size: 1.35em; font-weight: 700; color: #0f172a; margin: 40px 0 16px; letter-spacing: -0.02em; }
+        h3 { font-size: 1.1em; font-weight: 600; color: #1e293b; margin: 24px 0 10px; }
+        p, li { line-height: 1.8; color: #475569; margin-bottom: 10px; font-size: 0.95em; }
+        ul, ol { padding-left: 20px; margin-bottom: 15px; }
+        strong { color: #1e293b; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 0.85em; color: #0d9488; }
+
+        .statement { background: linear-gradient(135deg, #eef2ff, #f0fdfa); border: 1px solid #e0e7ff; border-radius: 16px; padding: 24px 28px; margin: 24px 0; }
+        .statement .tag { font-size: 0.78em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #4338ca; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+        .statement p:last-child { margin-bottom: 0; }
+
+        .req-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0; }
+        .req-grid > div { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .req-grid h3 { margin-top: 0; }
+        .req-grid.func h3 { color: #0d9488; } .req-grid.nonfunc h3 { color: #4338ca; }
+        .req-grid ul { margin-bottom: 0; }
+
+        .diagram { background: #0f172a; border-radius: 16px; padding: 24px; margin: 24px 0; overflow-x: auto; }
+        .diagram pre { color: #e2e8f0; font-family: 'JetBrains Mono', monospace; font-size: 0.8em; line-height: 1.6; white-space: pre; }
+        .diagram .cls { color: #5eead4; font-weight: 600; } .diagram .rel { color: #fbbf24; } .diagram .note { color: #94a3b8; font-style: italic; }
+
+        .pattern-pills { display: flex; flex-wrap: wrap; gap: 10px; margin: 16px 0 24px; }
+        .pattern-pill { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; background: white; border: 1px solid #e2e8f0; border-radius: 100px; font-size: 0.82em; font-weight: 500; color: #475569; text-decoration: none; transition: all 0.15s ease; }
+        .pattern-pill:hover { border-color: #0d9488; color: #0d9488; background: #f0fdfa; }
+        .pattern-pill .dot { width: 8px; height: 8px; border-radius: 50%; background: #0d9488; }
+
+        .code-container { margin: 24px 0; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .code-tabs { display: flex; background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0 8px; }
+        .code-tab { padding: 10px 18px; cursor: pointer; border: none; background: transparent; color: #64748b; font-size: 0.85em; font-weight: 500; font-family: 'Inter', sans-serif; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.15s ease; }
+        .code-tab:hover { color: #0d9488; }
+        .code-tab.active { color: #0d9488; border-bottom-color: #0d9488; background: white; }
+        .code-content { display: none; background: white; padding: 24px; overflow-x: auto; }
+        .code-content.active { display: block; }
+        .code-content pre { color: #1e293b; font-family: 'JetBrains Mono', monospace; font-size: 0.82em; line-height: 1.75; white-space: pre; }
+        .keyword { color: #0d9488; } .type { color: #2563eb; } .string { color: #16a34a; }
+        .comment { color: #94a3b8; font-style: italic; } .number { color: #d97706; }
+        .preproc { color: #7c3aed; } .fn { color: #db2777; }
+
+        .note { background: #f0fdfa; border-left: 4px solid #0d9488; padding: 16px 20px; margin: 20px 0; border-radius: 0 12px 12px 0; }
+        .note ul, .note p { margin-bottom: 0; } .note li:last-child { margin-bottom: 0; }
+        .warn { background: #fef2f2; border-left: 4px solid #dc2626; padding: 16px 20px; margin: 20px 0; border-radius: 0 12px 12px 0; }
+        .warn ul, .warn p { margin-bottom: 0; } .warn li:last-child { margin-bottom: 0; }
+
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; }
+        th, td { padding: 12px 16px; border: 1px solid #e2e8f0; text-align: left; font-size: 0.9em; }
+        th { background: #f8fafc; color: #0f172a; font-weight: 600; }
+        tr:hover { background: #f8fafc; }
+
+        .footer { text-align: center; padding: 32px 20px; color: #94a3b8; font-size: 0.85em; border-top: 1px solid #e2e8f0; background: #f8fafc; }
+        .footer span { color: #0d9488; }
+
+        @media (max-width: 600px) { .req-grid { grid-template-columns: 1fr; } h1 { font-size: 1.8em; } .container { padding: 20px 16px 60px; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="../index.html" class="back-link">&larr; Back to LLD Topics</a>
+        <div class="badges">
+            <span class="pattern-badge">LLD Problem</span>
+            <span class="diff-badge diff-medium">Medium</span>
+        </div>
+        <h1>Design Splitwise</h1>
+        <p class="subtitle">A classic expense-sharing problem. Model how a group splits a bill — equally, by exact amounts, or by percentages — and keep a running ledger of who owes whom.</p>
+
+        <div class="statement">
+            <div class="tag">📋 Problem Statement</div>
+            <p>Design a system like <strong>Splitwise</strong>. Users belong to <strong>groups</strong>. Any member can add an <strong>expense</strong> (e.g. "Dinner, $120, paid by Alice") and choose how it's <strong>split</strong> among participants — equally, by exact amounts, or by percentage. The system updates a <strong>balance sheet</strong> that records pairwise debts (who owes whom how much), and can show each user their net balance. A bonus is <strong>simplifying debts</strong> so the group settles with the fewest transactions.</p>
+        </div>
+
+        <h2>Step 1 — Gather Requirements</h2>
+        <p>Always start by pinning down scope. State your assumptions out loud; interviewers want to see you separate the must-haves from the nice-to-haves.</p>
+        <div class="req-grid func">
+            <div>
+                <h3>✓ Functional</h3>
+                <ul>
+                    <li>Create users and groups; add members to a group.</li>
+                    <li>Add an expense: amount, who paid, and how it's split.</li>
+                    <li>Support split types: <strong>equal</strong>, <strong>exact</strong>, <strong>percentage</strong>.</li>
+                    <li>Update pairwise balances after each expense.</li>
+                    <li>Show a user's balances (who owes them / whom they owe).</li>
+                    <li>Settle up between two users.</li>
+                </ul>
+            </div>
+            <div>
+                <h3>◆ Non-Functional</h3>
+                <ul>
+                    <li><strong>Correctness:</strong> split amounts must sum exactly to the total.</li>
+                    <li><strong>Extensibility:</strong> new split types without touching existing code.</li>
+                    <li><strong>Precision:</strong> avoid floating-point drift on money.</li>
+                    <li><strong>Fast lookups</strong> of any pair's balance.</li>
+                    <li>Optional: minimize the number of settle transactions.</li>
+                </ul>
+            </div>
+        </div>
+
+        <h2>Step 2 — Identify the Core Entities</h2>
+        <p>Find the nouns in the problem. These become your classes:</p>
+        <ul>
+            <li><strong>User</strong> — a person with an id and name.</li>
+            <li><strong>Group</strong> — a named set of users that share expenses.</li>
+            <li><strong>Expense</strong> — a total amount, the payer, and a list of splits.</li>
+            <li><strong>Split</strong> (abstract) — one participant's share of an expense.</li>
+            <li><strong>EqualSplit / ExactSplit / PercentSplit</strong> — concrete share rules (Strategy / polymorphism).</li>
+            <li><strong>BalanceSheet</strong> — the ledger of pairwise balances (who owes whom).</li>
+            <li><strong>ExpenseManager</strong> — orchestrates adding an expense and updating balances.</li>
+        </ul>
+
+        <h2>Step 3 — Class Diagram</h2>
+        <p>Sketch the relationships before coding. A "has-a" (composition) line means one class owns instances of another.</p>
+        <div class="diagram">
+<pre><span class="cls">ExpenseManager</span>
+   │ owns
+   ├──▶ <span class="cls">BalanceSheet</span>  <span class="note">// map: (debtor,creditor) -&gt; amount</span>
+   └──▶ <span class="cls">Group</span> ──has-many──▶ <span class="cls">User</span>
+
+<span class="cls">Expense</span> ──refers──▶ <span class="cls">User</span> paidBy
+   │ has-many
+   ▼
+<span class="cls">Split</span> (abstract)  {user, amount}
+   ▲
+   │  varies how a total is divided  <span class="note">(Strategy)</span>
+   ┌──────────────┼──────────────────┐
+<span class="cls">EqualSplit</span>      <span class="cls">ExactSplit</span>         <span class="cls">PercentSplit</span>
+                                  └─ has <span class="rel">percent</span>
+
+<span class="note">// Add expense: validate splits sum to total,</span>
+<span class="note">// then for each split adjust BalanceSheet[user][paidBy].</span></pre>
+        </div>
+
+        <h2>Step 4 — Patterns in Play</h2>
+        <p>Name the patterns as you design — it signals maturity. This problem naturally uses:</p>
+        <div class="pattern-pills">
+            <a class="pattern-pill" href="../behavioral/strategy.html"><span class="dot"></span> Strategy — split-type polymorphism</a>
+            <a class="pattern-pill" href="../creational/factory-method.html"><span class="dot"></span> Factory — build the right Split</a>
+            <a class="pattern-pill" href="../creational/singleton.html"><span class="dot"></span> Singleton — one ExpenseManager</a>
+        </div>
+
+        <h2>Step 5 — Implementation</h2>
+        <p>A focused skeleton showing the <code>Split</code> hierarchy, adding an expense with different split types, and updating pairwise balances. The validation that splits sum to the total is the detail interviewers love.</p>
+
+        <div class="code-container">
+            <div class="code-tabs">
+                <button class="code-tab active" onclick="showCode(this, 'javaCode')">Java</button>
+                <button class="code-tab" onclick="showCode(this, 'pyCode')">Python</button>
+            </div>
+            <div id="javaCode" class="code-content active">
+<pre><span class="keyword">class</span> <span class="type">User</span> {
+    <span class="keyword">final</span> <span class="type">String</span> id, name;
+    <span class="type">User</span>(<span class="type">String</span> id, <span class="type">String</span> name) { <span class="keyword">this</span>.id = id; <span class="keyword">this</span>.name = name; }
+}
+
+<span class="comment">// Strategy: each split type knows its own share amount</span>
+<span class="keyword">abstract class</span> <span class="type">Split</span> {
+    <span class="keyword">final</span> <span class="type">User</span> user;
+    <span class="keyword">double</span> amount;                       <span class="comment">// resolved share</span>
+    <span class="type">Split</span>(<span class="type">User</span> user) { <span class="keyword">this</span>.user = user; }
+}
+<span class="keyword">class</span> <span class="type">EqualSplit</span> <span class="keyword">extends</span> <span class="type">Split</span> { <span class="type">EqualSplit</span>(<span class="type">User</span> u) { <span class="keyword">super</span>(u); } }
+<span class="keyword">class</span> <span class="type">ExactSplit</span> <span class="keyword">extends</span> <span class="type">Split</span> {
+    <span class="type">ExactSplit</span>(<span class="type">User</span> u, <span class="keyword">double</span> amt) { <span class="keyword">super</span>(u); <span class="keyword">this</span>.amount = amt; }
+}
+<span class="keyword">class</span> <span class="type">PercentSplit</span> <span class="keyword">extends</span> <span class="type">Split</span> {
+    <span class="keyword">final</span> <span class="keyword">double</span> percent;
+    <span class="type">PercentSplit</span>(<span class="type">User</span> u, <span class="keyword">double</span> pct) { <span class="keyword">super</span>(u); <span class="keyword">this</span>.percent = pct; }
+}
+
+<span class="keyword">class</span> <span class="type">Expense</span> {
+    <span class="keyword">final</span> <span class="keyword">double</span> total; <span class="keyword">final</span> <span class="type">User</span> paidBy; <span class="keyword">final</span> <span class="type">List</span>&lt;<span class="type">Split</span>&gt; splits;
+    <span class="type">Expense</span>(<span class="keyword">double</span> total, <span class="type">User</span> paidBy, <span class="type">List</span>&lt;<span class="type">Split</span>&gt; splits) {
+        <span class="keyword">this</span>.total = total; <span class="keyword">this</span>.paidBy = paidBy; <span class="keyword">this</span>.splits = splits;
+    }
+}
+
+<span class="comment">// BalanceSheet: balances.get(a).get(b) = how much a owes b</span>
+<span class="keyword">class</span> <span class="type">BalanceSheet</span> {
+    <span class="keyword">final</span> <span class="type">Map</span>&lt;<span class="type">String</span>, <span class="type">Map</span>&lt;<span class="type">String</span>, <span class="type">Double</span>&gt;&gt; bal = <span class="keyword">new</span> <span class="type">HashMap</span>&lt;&gt;();
+
+    <span class="comment">// debtor owes creditor `amt` more</span>
+    <span class="keyword">void</span> <span class="fn">adjust</span>(<span class="type">String</span> debtor, <span class="type">String</span> creditor, <span class="keyword">double</span> amt) {
+        bal.<span class="fn">computeIfAbsent</span>(debtor, k -&gt; <span class="keyword">new</span> <span class="type">HashMap</span>&lt;&gt;())
+           .<span class="fn">merge</span>(creditor, amt, <span class="type">Double</span>::sum);
+        bal.<span class="fn">computeIfAbsent</span>(creditor, k -&gt; <span class="keyword">new</span> <span class="type">HashMap</span>&lt;&gt;())
+           .<span class="fn">merge</span>(debtor, -amt, <span class="type">Double</span>::sum);   <span class="comment">// mirror</span>
+    }
+    <span class="keyword">double</span> <span class="fn">owes</span>(<span class="type">String</span> a, <span class="type">String</span> b) {
+        <span class="keyword">return</span> bal.<span class="fn">getOrDefault</span>(a, <span class="type">Map</span>.<span class="fn">of</span>()).<span class="fn">getOrDefault</span>(b, <span class="number">0.0</span>);
+    }
+}
+
+<span class="keyword">class</span> <span class="type">ExpenseManager</span> {
+    <span class="keyword">final</span> <span class="type">BalanceSheet</span> sheet = <span class="keyword">new</span> <span class="type">BalanceSheet</span>();
+
+    <span class="keyword">void</span> <span class="fn">addExpense</span>(<span class="type">Expense</span> e) {
+        <span class="fn">resolveShares</span>(e);                     <span class="comment">// fill each split.amount</span>
+        <span class="keyword">double</span> sum = <span class="number">0</span>;
+        <span class="keyword">for</span> (<span class="type">Split</span> s : e.splits) sum += s.amount;
+        <span class="keyword">if</span> (<span class="type">Math</span>.<span class="fn">abs</span>(sum - e.total) &gt; <span class="number">0.01</span>)
+            <span class="keyword">throw new</span> <span class="type">IllegalArgumentException</span>(<span class="string">"Splits must sum to total"</span>);
+
+        <span class="keyword">for</span> (<span class="type">Split</span> s : e.splits) {
+            <span class="keyword">if</span> (s.user == e.paidBy) <span class="keyword">continue</span>;     <span class="comment">// payer doesn't owe self</span>
+            sheet.<span class="fn">adjust</span>(s.user.id, e.paidBy.id, s.amount);
+        }
+    }
+
+    <span class="comment">// Strategy dispatch: each type computes its share differently</span>
+    <span class="keyword">private void</span> <span class="fn">resolveShares</span>(<span class="type">Expense</span> e) {
+        <span class="keyword">for</span> (<span class="type">Split</span> s : e.splits) {
+            <span class="keyword">if</span> (s <span class="keyword">instanceof</span> <span class="type">EqualSplit</span>)
+                s.amount = e.total / e.splits.<span class="fn">size</span>();
+            <span class="keyword">else if</span> (s <span class="keyword">instanceof</span> <span class="type">PercentSplit</span> p)
+                s.amount = e.total * p.percent / <span class="number">100.0</span>;
+            <span class="comment">// ExactSplit already carries its amount</span>
+        }
+    }
+}
+
+<span class="comment">// --- usage ---</span>
+<span class="comment">// Dinner $120 paid by Alice, split equally among 3:</span>
+<span class="comment">// addExpense(new Expense(120, alice,</span>
+<span class="comment">//     List.of(new EqualSplit(alice), new EqualSplit(bob), new EqualSplit(cara))));</span>
+<span class="comment">// => bob owes alice 40, cara owes alice 40</span>
+</pre>
+            </div>
+            <div id="pyCode" class="code-content">
+<pre><span class="keyword">from</span> abc <span class="keyword">import</span> ABC
+<span class="keyword">from</span> collections <span class="keyword">import</span> defaultdict
+
+<span class="keyword">class</span> <span class="type">User</span>:
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, id, name):
+        self.id, self.name = id, name
+
+<span class="comment"># Strategy: each split type resolves its own share</span>
+<span class="keyword">class</span> <span class="type">Split</span>(ABC):
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, user, amount=<span class="number">0.0</span>):
+        self.user, self.amount = user, amount
+
+<span class="keyword">class</span> <span class="type">EqualSplit</span>(<span class="type">Split</span>): <span class="keyword">pass</span>
+
+<span class="keyword">class</span> <span class="type">ExactSplit</span>(<span class="type">Split</span>):
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, user, amount):
+        <span class="fn">super</span>().<span class="fn">__init__</span>(user, amount)
+
+<span class="keyword">class</span> <span class="type">PercentSplit</span>(<span class="type">Split</span>):
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, user, percent):
+        <span class="fn">super</span>().<span class="fn">__init__</span>(user)
+        self.percent = percent
+
+<span class="keyword">class</span> <span class="type">Expense</span>:
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, total, paid_by, splits):
+        self.total, self.paid_by, self.splits = total, paid_by, splits
+
+<span class="comment"># bal[a][b] = how much a owes b</span>
+<span class="keyword">class</span> <span class="type">BalanceSheet</span>:
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self):
+        self.bal = defaultdict(<span class="keyword">lambda</span>: defaultdict(<span class="fn">float</span>))
+
+    <span class="keyword">def</span> <span class="fn">adjust</span>(self, debtor, creditor, amt):
+        self.bal[debtor][creditor] += amt
+        self.bal[creditor][debtor] -= amt          <span class="comment"># mirror</span>
+
+    <span class="keyword">def</span> <span class="fn">owes</span>(self, a, b):
+        <span class="keyword">return</span> self.bal[a][b]
+
+<span class="keyword">class</span> <span class="type">ExpenseManager</span>:
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self):
+        self.sheet = <span class="type">BalanceSheet</span>()
+
+    <span class="keyword">def</span> <span class="fn">add_expense</span>(self, e):
+        self.<span class="fn">_resolve_shares</span>(e)                  <span class="comment"># fill split.amount</span>
+        <span class="keyword">if</span> <span class="fn">abs</span>(<span class="fn">sum</span>(s.amount <span class="keyword">for</span> s <span class="keyword">in</span> e.splits) - e.total) &gt; <span class="number">0.01</span>:
+            <span class="keyword">raise</span> <span class="type">ValueError</span>(<span class="string">"Splits must sum to total"</span>)
+        <span class="keyword">for</span> s <span class="keyword">in</span> e.splits:
+            <span class="keyword">if</span> s.user <span class="keyword">is</span> e.paid_by:               <span class="comment"># payer owes nothing</span>
+                <span class="keyword">continue</span>
+            self.sheet.<span class="fn">adjust</span>(s.user.id, e.paid_by.id, s.amount)
+
+    <span class="comment"># Strategy dispatch by type</span>
+    <span class="keyword">def</span> <span class="fn">_resolve_shares</span>(self, e):
+        <span class="keyword">for</span> s <span class="keyword">in</span> e.splits:
+            <span class="keyword">if</span> <span class="fn">isinstance</span>(s, <span class="type">EqualSplit</span>):
+                s.amount = e.total / <span class="fn">len</span>(e.splits)
+            <span class="keyword">elif</span> <span class="fn">isinstance</span>(s, <span class="type">PercentSplit</span>):
+                s.amount = e.total * s.percent / <span class="number">100.0</span>
+            <span class="comment"># ExactSplit already carries its amount</span>
+
+<span class="comment"># --- usage ---</span>
+<span class="comment"># alice, bob, cara = User("a","Alice"), User("b","Bob"), User("c","Cara")</span>
+<span class="comment"># mgr = ExpenseManager()</span>
+<span class="comment"># mgr.add_expense(Expense(120, alice,</span>
+<span class="comment">#     [EqualSplit(alice), EqualSplit(bob), EqualSplit(cara)]))</span>
+<span class="comment"># mgr.sheet.owes("b", "a")  # => 40.0</span>
+</pre>
+            </div>
+        </div>
+
+        <div class="note">
+            <strong>Why this design scores well:</strong> the <code>Split</code> hierarchy is textbook <strong>Strategy</strong> — adding a "split by shares" rule is a new subclass, never an edit to <code>ExpenseManager</code> (Open/Closed). The <code>BalanceSheet</code> stores balances as a mirrored map so <code>owes(a,b) == -owes(b,a)</code> always holds, and any pair lookup is O(1). The validation that splits sum to the total catches the most common real-world bug before it corrupts the ledger.
+        </div>
+
+        <h2>Step 6 — Follow-up Extensions</h2>
+        <p>Strong candidates anticipate where the interviewer pushes next:</p>
+        <ul>
+            <li><strong>Debt simplification (minimize transactions):</strong> compute each person's <em>net</em> balance (paid − owed), then greedily match the biggest creditor with the biggest debtor until everyone is at zero. This reduces a tangle of pairwise debts to the fewest settle-up payments. With n people you can always settle in at most n−1 transactions.</li>
+            <li><strong>Multiple payers:</strong> let an expense have several payers, each with a paid amount.</li>
+            <li><strong>Money precision:</strong> store amounts in integer cents (or <code>BigDecimal</code>) to avoid float drift.</li>
+            <li><strong>Currencies:</strong> attach a currency to each expense and convert on display.</li>
+            <li><strong>Persistence &amp; notifications:</strong> back the ledger with a DB; notify members on new expenses.</li>
+        </ul>
+
+        <div class="note">
+            <strong>Greedy debt-simplification sketch:</strong> build <code>net[user]</code> by adding what each user paid and subtracting their shares. Push users with positive net into a max-heap (creditors) and negative net into another (debtors). Repeatedly pop the largest of each, transfer <code>min(credit, debt)</code>, and re-push any leftover. Each transfer zeroes out at least one person, so it terminates fast.
+        </div>
+
+        <div class="warn">
+            <strong>Common mistakes:</strong> using a chain of <code>if/else</code> on a split-type string instead of polymorphic <code>Split</code> subclasses; forgetting to validate that splits sum to the total (off-by-a-cent percentage rounding); storing money as <code>double</code> and accumulating rounding errors; making the payer owe themselves; and forgetting to mirror the balance so <code>owes(a,b)</code> and <code>owes(b,a)</code> disagree.
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>Low-Level Design · <span>Splitwise</span> · Java &amp; Python · Interactive Learning</p>
+    </div>
+
+    <script>
+        function showCode(btn, id) {
+            const container = btn.closest('.code-container');
+            container.querySelectorAll('.code-tab').forEach(t => t.classList.remove('active'));
+            container.querySelectorAll('.code-content').forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById(id).classList.add('active');
+        }
+    </script>
+</body>
+</html>

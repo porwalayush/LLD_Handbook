@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Movie Ticket Booking — LLD Problem</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8fafc; min-height: 100vh; color: #1e293b; -webkit-font-smoothing: antialiased; }
+        .container { max-width: 880px; margin: 0 auto; padding: 40px 24px 80px; }
+        .back-link { display: inline-flex; align-items: center; gap: 6px; color: #0d9488; text-decoration: none; font-size: 0.9em; font-weight: 500; margin-bottom: 28px; padding: 6px 12px; border-radius: 8px; transition: background 0.15s ease; }
+        .back-link:hover { background: #f0fdfa; }
+
+        .badges { display: flex; gap: 10px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+        .pattern-badge { display: inline-block; padding: 5px 14px; border-radius: 100px; font-size: 0.72em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; background: #e0e7ff; color: #4338ca; }
+        .diff-badge { display: inline-block; padding: 5px 14px; border-radius: 100px; font-size: 0.72em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+        .diff-easy   { background: #dcfce7; color: #16a34a; }
+        .diff-medium { background: #fef3c7; color: #d97706; }
+        .diff-hard   { background: #fee2e2; color: #dc2626; }
+
+        h1 { font-size: 2.4em; font-weight: 800; color: #0f172a; margin-bottom: 12px; letter-spacing: -0.03em; line-height: 1.2; }
+        .subtitle { font-size: 1.1em; color: #64748b; line-height: 1.7; margin-bottom: 8px; }
+        h2 { font-size: 1.35em; font-weight: 700; color: #0f172a; margin: 40px 0 16px; letter-spacing: -0.02em; }
+        h3 { font-size: 1.1em; font-weight: 600; color: #1e293b; margin: 24px 0 10px; }
+        p, li { line-height: 1.8; color: #475569; margin-bottom: 10px; font-size: 0.95em; }
+        ul, ol { padding-left: 20px; margin-bottom: 15px; }
+        strong { color: #1e293b; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 0.85em; color: #0d9488; }
+
+        .statement { background: linear-gradient(135deg, #eef2ff, #f0fdfa); border: 1px solid #e0e7ff; border-radius: 16px; padding: 24px 28px; margin: 24px 0; }
+        .statement .tag { font-size: 0.78em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #4338ca; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+        .statement p:last-child { margin-bottom: 0; }
+
+        .req-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0; }
+        .req-grid > div { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .req-grid h3 { margin-top: 0; }
+        .req-grid.func h3 { color: #0d9488; } .req-grid.nonfunc h3 { color: #4338ca; }
+        .req-grid ul { margin-bottom: 0; }
+
+        .diagram { background: #0f172a; border-radius: 16px; padding: 24px; margin: 24px 0; overflow-x: auto; }
+        .diagram pre { color: #e2e8f0; font-family: 'JetBrains Mono', monospace; font-size: 0.8em; line-height: 1.6; white-space: pre; }
+        .diagram .cls { color: #5eead4; font-weight: 600; } .diagram .rel { color: #fbbf24; } .diagram .note { color: #94a3b8; font-style: italic; }
+
+        .pattern-pills { display: flex; flex-wrap: wrap; gap: 10px; margin: 16px 0 24px; }
+        .pattern-pill { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; background: white; border: 1px solid #e2e8f0; border-radius: 100px; font-size: 0.82em; font-weight: 500; color: #475569; text-decoration: none; transition: all 0.15s ease; }
+        .pattern-pill:hover { border-color: #0d9488; color: #0d9488; background: #f0fdfa; }
+        .pattern-pill .dot { width: 8px; height: 8px; border-radius: 50%; background: #0d9488; }
+
+        .code-container { margin: 24px 0; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .code-tabs { display: flex; background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0 8px; }
+        .code-tab { padding: 10px 18px; cursor: pointer; border: none; background: transparent; color: #64748b; font-size: 0.85em; font-weight: 500; font-family: 'Inter', sans-serif; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.15s ease; }
+        .code-tab:hover { color: #0d9488; }
+        .code-tab.active { color: #0d9488; border-bottom-color: #0d9488; background: white; }
+        .code-content { display: none; background: white; padding: 24px; overflow-x: auto; }
+        .code-content.active { display: block; }
+        .code-content pre { color: #1e293b; font-family: 'JetBrains Mono', monospace; font-size: 0.82em; line-height: 1.75; white-space: pre; }
+        .keyword { color: #0d9488; } .type { color: #2563eb; } .string { color: #16a34a; }
+        .comment { color: #94a3b8; font-style: italic; } .number { color: #d97706; }
+        .preproc { color: #7c3aed; } .fn { color: #db2777; }
+
+        .note { background: #f0fdfa; border-left: 4px solid #0d9488; padding: 16px 20px; margin: 20px 0; border-radius: 0 12px 12px 0; }
+        .note ul, .note p { margin-bottom: 0; } .note li:last-child { margin-bottom: 0; }
+        .warn { background: #fef2f2; border-left: 4px solid #dc2626; padding: 16px 20px; margin: 20px 0; border-radius: 0 12px 12px 0; }
+        .warn ul, .warn p { margin-bottom: 0; } .warn li:last-child { margin-bottom: 0; }
+
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; }
+        th, td { padding: 12px 16px; border: 1px solid #e2e8f0; text-align: left; font-size: 0.9em; }
+        th { background: #f8fafc; color: #0f172a; font-weight: 600; }
+        tr:hover { background: #f8fafc; }
+
+        .footer { text-align: center; padding: 32px 20px; color: #94a3b8; font-size: 0.85em; border-top: 1px solid #e2e8f0; background: #f8fafc; }
+        .footer span { color: #0d9488; }
+
+        @media (max-width: 600px) { .req-grid { grid-template-columns: 1fr; } h1 { font-size: 1.8em; } .container { padding: 20px 16px 60px; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="../index.html" class="back-link">&larr; Back to LLD Topics</a>
+        <div class="badges">
+            <span class="pattern-badge">LLD Problem</span>
+            <span class="diff-badge diff-medium">Medium</span>
+        </div>
+        <h1>Design Movie Ticket Booking</h1>
+        <p class="subtitle">The quintessential concurrency LLD problem. Two users tap the same seat at the same instant — your design must guarantee only one of them gets it. The answer is seat locking with a timeout.</p>
+
+        <div class="statement">
+            <div class="tag">📋 Problem Statement</div>
+            <p>Design the seat-booking core of a movie ticketing system. A <strong>theater</strong> has <strong>screens</strong>; each screen runs <strong>shows</strong> of a <strong>movie</strong> at given times. A show has a grid of <strong>seats</strong>, each <strong>AVAILABLE</strong>, <strong>LOCKED</strong>, or <strong>BOOKED</strong>. A user selects seats, the system <strong>locks</strong> them for a short window, the user <strong>pays</strong>, and on success the seats are <strong>confirmed</strong> into a <strong>booking</strong>. The hard part: <strong>many users booking the same seat concurrently</strong> must never double-book — and abandoned locks must auto-expire.</p>
+        </div>
+
+        <h2>Step 1 — Gather Requirements</h2>
+        <p>Always start by pinning down scope. State your assumptions out loud; interviewers want to see you separate the must-haves from the nice-to-haves.</p>
+        <div class="req-grid func">
+            <div>
+                <h3>✓ Functional</h3>
+                <ul>
+                    <li>Browse movies, theaters, and shows.</li>
+                    <li>View seat map for a show with live status.</li>
+                    <li>Lock selected seats temporarily on selection.</li>
+                    <li>Pay within a timeout to confirm the booking.</li>
+                    <li>Auto-release seats if payment doesn't happen in time.</li>
+                    <li>Cancel a booking and free the seats.</li>
+                </ul>
+            </div>
+            <div>
+                <h3>◆ Non-Functional</h3>
+                <ul>
+                    <li><strong>No double-booking</strong> under heavy concurrency.</li>
+                    <li><strong>Lock timeout</strong> so abandoned carts free seats.</li>
+                    <li><strong>Low contention:</strong> lock per show, not globally.</li>
+                    <li><strong>Consistency:</strong> a seat is in exactly one state.</li>
+                    <li>Fast seat-map reads for popular shows.</li>
+                </ul>
+            </div>
+        </div>
+
+        <h2>Step 2 — Identify the Core Entities</h2>
+        <p>Find the nouns in the problem. These become your classes:</p>
+        <ul>
+            <li><strong>Movie</strong> — title, duration, language.</li>
+            <li><strong>Theater</strong> — a venue with multiple screens.</li>
+            <li><strong>Screen</strong> — a physical auditorium; hosts shows.</li>
+            <li><strong>Show</strong> — a movie on a screen at a time; owns the seat map.</li>
+            <li><strong>Seat</strong> — a position with a <strong>status</strong>: AVAILABLE / LOCKED / BOOKED.</li>
+            <li><strong>Booking</strong> — confirmed seats for a user and show.</li>
+            <li><strong>Payment</strong> — charges the user; success drives confirmation.</li>
+            <li><strong>User</strong> — the person booking.</li>
+            <li><strong>SeatLockManager</strong> — the concurrency heart: locks seats with a timeout.</li>
+        </ul>
+
+        <h2>Step 3 — Class Diagram</h2>
+        <p>Sketch the relationships before coding. A "has-a" (composition) line means one class owns instances of another.</p>
+        <div class="diagram">
+<pre><span class="cls">Theater</span> ──has-many──▶ <span class="cls">Screen</span> ──has-many──▶ <span class="cls">Show</span> ──refers──▶ <span class="cls">Movie</span>
+                                       │ owns
+                                       ▼
+                                    <span class="cls">Seat</span> {row,col, <span class="rel">status</span>}
+                                       │
+                                       ▼
+                          <span class="rel">SeatStatus</span> {AVAILABLE, LOCKED, BOOKED}
+
+<span class="cls">BookingService</span>
+   ├──uses──▶ <span class="cls">SeatLockManager</span>  <span class="note">// per-show lock + expiry</span>
+   └──creates──▶ <span class="cls">Booking</span> ──after──▶ <span class="cls">Payment</span> success
+
+<span class="note">// Flow:  select → lock(timeout) → pay → confirm</span>
+<span class="note">//        the lock() + confirm() are the critical sections.</span></pre>
+        </div>
+
+        <h2>Step 4 — Patterns in Play</h2>
+        <p>Name the patterns as you design — it signals maturity. This problem is dominated by concurrency control:</p>
+        <div class="pattern-pills">
+            <a class="pattern-pill" href="../concurrency/locks-synchronization.html"><span class="dot"></span> Locking — no double-booking</a>
+            <a class="pattern-pill" href="../behavioral/state.html"><span class="dot"></span> State — seat status transitions</a>
+            <a class="pattern-pill" href="../creational/singleton.html"><span class="dot"></span> Singleton — one lock manager</a>
+        </div>
+
+        <h2>Step 5 — Implementation</h2>
+        <p>The whole problem lives in the <strong>critical section</strong>: locking a seat must be atomic. Below, a per-show lock guards a check-then-act so two threads cannot both see a seat as AVAILABLE and grab it. Locks carry an expiry so abandoned selections free up.</p>
+
+        <div class="code-container">
+            <div class="code-tabs">
+                <button class="code-tab active" onclick="showCode(this, 'javaCode')">Java</button>
+                <button class="code-tab" onclick="showCode(this, 'pyCode')">Python</button>
+            </div>
+            <div id="javaCode" class="code-content active">
+<pre><span class="keyword">enum</span> <span class="type">SeatStatus</span> { AVAILABLE, LOCKED, BOOKED }
+
+<span class="keyword">class</span> <span class="type">Seat</span> {
+    <span class="keyword">final</span> <span class="type">String</span> id;
+    <span class="keyword">volatile</span> <span class="type">SeatStatus</span> status = <span class="type">SeatStatus</span>.AVAILABLE;
+    <span class="type">String</span> lockedBy;            <span class="comment">// user holding the lock</span>
+    <span class="keyword">long</span> lockExpiresAt;          <span class="comment">// epoch ms; 0 = not locked</span>
+    <span class="type">Seat</span>(<span class="type">String</span> id) { <span class="keyword">this</span>.id = id; }
+}
+
+<span class="keyword">class</span> <span class="type">Show</span> {
+    <span class="keyword">final</span> <span class="type">String</span> id;
+    <span class="keyword">final</span> <span class="type">Map</span>&lt;<span class="type">String</span>, <span class="type">Seat</span>&gt; seats = <span class="keyword">new</span> <span class="type">ConcurrentHashMap</span>&lt;&gt;();
+    <span class="comment">// One lock per show keeps contention low (not one global lock)</span>
+    <span class="keyword">final</span> <span class="type">ReentrantLock</span> lock = <span class="keyword">new</span> <span class="type">ReentrantLock</span>();
+    <span class="type">Show</span>(<span class="type">String</span> id) { <span class="keyword">this</span>.id = id; }
+}
+
+<span class="keyword">class</span> <span class="type">SeatLockManager</span> {
+    <span class="keyword">private final</span> <span class="keyword">long</span> lockTtlMs;
+    <span class="type">SeatLockManager</span>(<span class="keyword">long</span> lockTtlMs) { <span class="keyword">this</span>.lockTtlMs = lockTtlMs; }
+
+    <span class="comment">// THE critical section: atomically lock all requested seats.</span>
+    <span class="comment">// All-or-nothing — if any seat is taken, lock none.</span>
+    <span class="keyword">boolean</span> <span class="fn">lockSeats</span>(<span class="type">Show</span> show, <span class="type">List</span>&lt;<span class="type">String</span>&gt; seatIds, <span class="type">String</span> userId) {
+        show.lock.<span class="fn">lock</span>();                       <span class="comment">// enter critical section</span>
+        <span class="keyword">try</span> {
+            <span class="keyword">long</span> now = <span class="type">System</span>.<span class="fn">currentTimeMillis</span>();
+            <span class="keyword">for</span> (<span class="type">String</span> id : seatIds) {           <span class="comment">// check phase</span>
+                <span class="type">Seat</span> s = show.seats.<span class="fn">get</span>(id);
+                <span class="keyword">if</span> (!<span class="fn">isFree</span>(s, now)) <span class="keyword">return false</span>;     <span class="comment">// someone else has it</span>
+            }
+            <span class="keyword">for</span> (<span class="type">String</span> id : seatIds) {           <span class="comment">// act phase</span>
+                <span class="type">Seat</span> s = show.seats.<span class="fn">get</span>(id);
+                s.status = <span class="type">SeatStatus</span>.LOCKED;
+                s.lockedBy = userId;
+                s.lockExpiresAt = now + lockTtlMs;
+            }
+            <span class="keyword">return true</span>;
+        } <span class="keyword">finally</span> {
+            show.lock.<span class="fn">unlock</span>();                   <span class="comment">// always release</span>
+        }
+    }
+
+    <span class="comment">// A seat is free if AVAILABLE, or its lock has expired</span>
+    <span class="keyword">private boolean</span> <span class="fn">isFree</span>(<span class="type">Seat</span> s, <span class="keyword">long</span> now) {
+        <span class="keyword">if</span> (s.status == <span class="type">SeatStatus</span>.BOOKED) <span class="keyword">return false</span>;
+        <span class="keyword">if</span> (s.status == <span class="type">SeatStatus</span>.LOCKED &amp;&amp; now &lt; s.lockExpiresAt) <span class="keyword">return false</span>;
+        <span class="keyword">return true</span>;                          <span class="comment">// AVAILABLE or stale lock</span>
+    }
+
+    <span class="comment">// Confirm only the seats this user actually locked</span>
+    <span class="keyword">boolean</span> <span class="fn">confirm</span>(<span class="type">Show</span> show, <span class="type">List</span>&lt;<span class="type">String</span>&gt; seatIds, <span class="type">String</span> userId) {
+        show.lock.<span class="fn">lock</span>();
+        <span class="keyword">try</span> {
+            <span class="keyword">long</span> now = <span class="type">System</span>.<span class="fn">currentTimeMillis</span>();
+            <span class="keyword">for</span> (<span class="type">String</span> id : seatIds) {
+                <span class="type">Seat</span> s = show.seats.<span class="fn">get</span>(id);
+                <span class="keyword">if</span> (s.status != <span class="type">SeatStatus</span>.LOCKED
+                        || !userId.<span class="fn">equals</span>(s.lockedBy)
+                        || now &gt;= s.lockExpiresAt) <span class="keyword">return false</span>;  <span class="comment">// lock lost/expired</span>
+            }
+            <span class="keyword">for</span> (<span class="type">String</span> id : seatIds)
+                show.seats.<span class="fn">get</span>(id).status = <span class="type">SeatStatus</span>.BOOKED;
+            <span class="keyword">return true</span>;
+        } <span class="keyword">finally</span> { show.lock.<span class="fn">unlock</span>(); }
+    }
+}
+
+<span class="keyword">class</span> <span class="type">BookingService</span> {
+    <span class="keyword">final</span> <span class="type">SeatLockManager</span> locks = <span class="keyword">new</span> <span class="type">SeatLockManager</span>(<span class="number">300_000</span>); <span class="comment">// 5-min hold</span>
+    <span class="keyword">final</span> <span class="type">PaymentGateway</span> gateway;
+    <span class="type">BookingService</span>(<span class="type">PaymentGateway</span> g) { gateway = g; }
+
+    <span class="comment">// select → lock → pay → confirm</span>
+    <span class="type">Booking</span> <span class="fn">book</span>(<span class="type">Show</span> show, <span class="type">List</span>&lt;<span class="type">String</span>&gt; seatIds, <span class="type">String</span> userId) {
+        <span class="keyword">if</span> (!locks.<span class="fn">lockSeats</span>(show, seatIds, userId))
+            <span class="keyword">throw new</span> <span class="type">IllegalStateException</span>(<span class="string">"Seats no longer available"</span>);
+        <span class="keyword">if</span> (!gateway.<span class="fn">charge</span>(userId, seatIds.<span class="fn">size</span>() * <span class="number">250</span>))
+            <span class="keyword">throw new</span> <span class="type">IllegalStateException</span>(<span class="string">"Payment failed"</span>);   <span class="comment">// lock expires on its own</span>
+        <span class="keyword">if</span> (!locks.<span class="fn">confirm</span>(show, seatIds, userId))
+            <span class="keyword">throw new</span> <span class="type">IllegalStateException</span>(<span class="string">"Lock expired before confirm"</span>);
+        <span class="keyword">return</span> <span class="keyword">new</span> <span class="type">Booking</span>(userId, show.id, seatIds);
+    }
+}
+</pre>
+            </div>
+            <div id="pyCode" class="code-content">
+<pre><span class="keyword">import</span> threading, time
+<span class="keyword">from</span> enum <span class="keyword">import</span> Enum
+
+<span class="keyword">class</span> <span class="type">SeatStatus</span>(Enum):
+    AVAILABLE = <span class="number">1</span>; LOCKED = <span class="number">2</span>; BOOKED = <span class="number">3</span>
+
+<span class="keyword">class</span> <span class="type">Seat</span>:
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, id):
+        self.id = id
+        self.status = <span class="type">SeatStatus</span>.AVAILABLE
+        self.locked_by = <span class="keyword">None</span>
+        self.lock_expires_at = <span class="number">0.0</span>      <span class="comment"># epoch seconds</span>
+
+<span class="keyword">class</span> <span class="type">Show</span>:
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, id):
+        self.id = id
+        self.seats = {}                  <span class="comment"># seat_id -&gt; Seat</span>
+        self.lock = threading.<span class="type">Lock</span>()    <span class="comment"># one lock per show</span>
+
+<span class="keyword">class</span> <span class="type">SeatLockManager</span>:
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, ttl_s):
+        self.ttl_s = ttl_s
+
+    <span class="comment"># THE critical section: lock all seats atomically (all-or-nothing)</span>
+    <span class="keyword">def</span> <span class="fn">lock_seats</span>(self, show, seat_ids, user_id):
+        <span class="keyword">with</span> show.lock:                  <span class="comment"># enter critical section</span>
+            now = time.<span class="fn">time</span>()
+            <span class="keyword">for</span> sid <span class="keyword">in</span> seat_ids:           <span class="comment"># check phase</span>
+                <span class="keyword">if</span> <span class="keyword">not</span> self.<span class="fn">_is_free</span>(show.seats[sid], now):
+                    <span class="keyword">return</span> <span class="keyword">False</span>           <span class="comment"># someone else has it</span>
+            <span class="keyword">for</span> sid <span class="keyword">in</span> seat_ids:           <span class="comment"># act phase</span>
+                s = show.seats[sid]
+                s.status = <span class="type">SeatStatus</span>.LOCKED
+                s.locked_by = user_id
+                s.lock_expires_at = now + self.ttl_s
+            <span class="keyword">return</span> <span class="keyword">True</span>
+
+    <span class="keyword">def</span> <span class="fn">_is_free</span>(self, s, now):
+        <span class="keyword">if</span> s.status == <span class="type">SeatStatus</span>.BOOKED:
+            <span class="keyword">return</span> <span class="keyword">False</span>
+        <span class="keyword">if</span> s.status == <span class="type">SeatStatus</span>.LOCKED <span class="keyword">and</span> now &lt; s.lock_expires_at:
+            <span class="keyword">return</span> <span class="keyword">False</span>
+        <span class="keyword">return</span> <span class="keyword">True</span>                     <span class="comment"># AVAILABLE or stale lock</span>
+
+    <span class="keyword">def</span> <span class="fn">confirm</span>(self, show, seat_ids, user_id):
+        <span class="keyword">with</span> show.lock:
+            now = time.<span class="fn">time</span>()
+            <span class="keyword">for</span> sid <span class="keyword">in</span> seat_ids:
+                s = show.seats[sid]
+                <span class="keyword">if</span> (s.status != <span class="type">SeatStatus</span>.LOCKED
+                        <span class="keyword">or</span> s.locked_by != user_id
+                        <span class="keyword">or</span> now &gt;= s.lock_expires_at):
+                    <span class="keyword">return</span> <span class="keyword">False</span>           <span class="comment"># lock lost/expired</span>
+            <span class="keyword">for</span> sid <span class="keyword">in</span> seat_ids:
+                show.seats[sid].status = <span class="type">SeatStatus</span>.BOOKED
+            <span class="keyword">return</span> <span class="keyword">True</span>
+
+<span class="keyword">class</span> <span class="type">BookingService</span>:
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, gateway):
+        self.locks = <span class="type">SeatLockManager</span>(ttl_s=<span class="number">300</span>)   <span class="comment"># 5-min hold</span>
+        self.gateway = gateway
+
+    <span class="comment"># select → lock → pay → confirm</span>
+    <span class="keyword">def</span> <span class="fn">book</span>(self, show, seat_ids, user_id):
+        <span class="keyword">if</span> <span class="keyword">not</span> self.locks.<span class="fn">lock_seats</span>(show, seat_ids, user_id):
+            <span class="keyword">raise</span> <span class="type">RuntimeError</span>(<span class="string">"Seats no longer available"</span>)
+        <span class="keyword">if</span> <span class="keyword">not</span> self.gateway.<span class="fn">charge</span>(user_id, <span class="fn">len</span>(seat_ids) * <span class="number">250</span>):
+            <span class="keyword">raise</span> <span class="type">RuntimeError</span>(<span class="string">"Payment failed"</span>)     <span class="comment"># lock expires on its own</span>
+        <span class="keyword">if</span> <span class="keyword">not</span> self.locks.<span class="fn">confirm</span>(show, seat_ids, user_id):
+            <span class="keyword">raise</span> <span class="type">RuntimeError</span>(<span class="string">"Lock expired before confirm"</span>)
+        <span class="keyword">return</span> {<span class="string">"user"</span>: user_id, <span class="string">"show"</span>: show.id, <span class="string">"seats"</span>: seat_ids}
+</pre>
+            </div>
+        </div>
+
+        <div class="note">
+            <strong>Why this design scores well:</strong> the entire correctness argument rests on the <strong>critical section</strong>. By holding <code>show.lock</code> while doing the <em>check-then-act</em> (verify every seat is free, then mark them LOCKED), two concurrent <code>book()</code> calls for the same seat are serialized — the second one finds the seat LOCKED and bails. The lock is held <strong>per show</strong>, not globally, so unrelated shows never contend. And the <code>lockExpiresAt</code> timeout means a user who walks away after locking seats doesn't freeze them forever — <code>isFree</code> treats a stale lock as available.
+        </div>
+
+        <h2>Step 6 — Follow-up Extensions</h2>
+        <p>Strong candidates anticipate where the interviewer pushes next:</p>
+        <ul>
+            <li><strong>Distributed locking:</strong> with many app servers, an in-process <code>ReentrantLock</code> isn't enough. Move to a shared store — Redis <code>SET NX PX</code> with the user as the value and a TTL, or a DB row with optimistic <code>UPDATE ... WHERE status='AVAILABLE'</code> (compare-and-swap).</li>
+            <li><strong>DB-level guarantee:</strong> a unique constraint on <code>(show_id, seat_id)</code> in a bookings table makes double-booking impossible even if app logic slips.</li>
+            <li><strong>Lock reaper:</strong> a background sweeper actively resets expired LOCKED seats to AVAILABLE for accurate seat-map reads (instead of only lazy expiry).</li>
+            <li><strong>Idempotent payments:</strong> use a payment token so a retried charge doesn't double-bill.</li>
+            <li><strong>Seat-map performance:</strong> cache the read-mostly map and invalidate on state change.</li>
+        </ul>
+
+        <div class="warn">
+            <strong>Common mistakes:</strong> doing the seat check and the seat update outside one lock, leaving a check-then-act race that double-books; using one global lock so the whole site serializes on a single popular show; locking seats with no timeout so abandoned carts freeze inventory forever; confirming seats without verifying the caller actually holds the lock; and forgetting to release the lock in a <code>finally</code> block so an exception strands it.
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>Low-Level Design · <span>Movie Ticket Booking</span> · Java &amp; Python · Interactive Learning</p>
+    </div>
+
+    <script>
+        function showCode(btn, id) {
+            const container = btn.closest('.code-container');
+            container.querySelectorAll('.code-tab').forEach(t => t.classList.remove('active'));
+            container.querySelectorAll('.code-content').forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById(id).classList.add('active');
+        }
+    </script>
+</body>
+</html>

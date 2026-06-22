@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vending Machine — LLD Problem</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8fafc; min-height: 100vh; color: #1e293b; -webkit-font-smoothing: antialiased; }
+        .container { max-width: 880px; margin: 0 auto; padding: 40px 24px 80px; }
+        .back-link { display: inline-flex; align-items: center; gap: 6px; color: #0d9488; text-decoration: none; font-size: 0.9em; font-weight: 500; margin-bottom: 28px; padding: 6px 12px; border-radius: 8px; transition: background 0.15s ease; }
+        .back-link:hover { background: #f0fdfa; }
+
+        .badges { display: flex; gap: 10px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+        .pattern-badge { display: inline-block; padding: 5px 14px; border-radius: 100px; font-size: 0.72em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; background: #e0e7ff; color: #4338ca; }
+        .diff-badge { display: inline-block; padding: 5px 14px; border-radius: 100px; font-size: 0.72em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+        .diff-easy   { background: #dcfce7; color: #16a34a; }
+        .diff-medium { background: #fef3c7; color: #d97706; }
+        .diff-hard   { background: #fee2e2; color: #dc2626; }
+
+        h1 { font-size: 2.4em; font-weight: 800; color: #0f172a; margin-bottom: 12px; letter-spacing: -0.03em; line-height: 1.2; }
+        .subtitle { font-size: 1.1em; color: #64748b; line-height: 1.7; margin-bottom: 8px; }
+        h2 { font-size: 1.35em; font-weight: 700; color: #0f172a; margin: 40px 0 16px; letter-spacing: -0.02em; }
+        h3 { font-size: 1.1em; font-weight: 600; color: #1e293b; margin: 24px 0 10px; }
+        p, li { line-height: 1.8; color: #475569; margin-bottom: 10px; font-size: 0.95em; }
+        ul, ol { padding-left: 20px; margin-bottom: 15px; }
+        strong { color: #1e293b; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 0.85em; color: #0d9488; }
+
+        .statement { background: linear-gradient(135deg, #eef2ff, #f0fdfa); border: 1px solid #e0e7ff; border-radius: 16px; padding: 24px 28px; margin: 24px 0; }
+        .statement .tag { font-size: 0.78em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #4338ca; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+        .statement p:last-child { margin-bottom: 0; }
+
+        .req-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0; }
+        .req-grid > div { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .req-grid h3 { margin-top: 0; }
+        .req-grid.func h3 { color: #0d9488; } .req-grid.nonfunc h3 { color: #4338ca; }
+        .req-grid ul { margin-bottom: 0; }
+
+        .diagram { background: #0f172a; border-radius: 16px; padding: 24px; margin: 24px 0; overflow-x: auto; }
+        .diagram pre { color: #e2e8f0; font-family: 'JetBrains Mono', monospace; font-size: 0.8em; line-height: 1.6; white-space: pre; }
+        .diagram .cls { color: #5eead4; font-weight: 600; } .diagram .rel { color: #fbbf24; } .diagram .note { color: #94a3b8; font-style: italic; }
+
+        .pattern-pills { display: flex; flex-wrap: wrap; gap: 10px; margin: 16px 0 24px; }
+        .pattern-pill { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; background: white; border: 1px solid #e2e8f0; border-radius: 100px; font-size: 0.82em; font-weight: 500; color: #475569; text-decoration: none; transition: all 0.15s ease; }
+        .pattern-pill:hover { border-color: #0d9488; color: #0d9488; background: #f0fdfa; }
+        .pattern-pill .dot { width: 8px; height: 8px; border-radius: 50%; background: #0d9488; }
+
+        .code-container { margin: 24px 0; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .code-tabs { display: flex; background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0 8px; }
+        .code-tab { padding: 10px 18px; cursor: pointer; border: none; background: transparent; color: #64748b; font-size: 0.85em; font-weight: 500; font-family: 'Inter', sans-serif; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.15s ease; }
+        .code-tab:hover { color: #0d9488; }
+        .code-tab.active { color: #0d9488; border-bottom-color: #0d9488; background: white; }
+        .code-content { display: none; background: white; padding: 24px; overflow-x: auto; }
+        .code-content.active { display: block; }
+        .code-content pre { color: #1e293b; font-family: 'JetBrains Mono', monospace; font-size: 0.82em; line-height: 1.75; white-space: pre; }
+        .keyword { color: #0d9488; } .type { color: #2563eb; } .string { color: #16a34a; }
+        .comment { color: #94a3b8; font-style: italic; } .number { color: #d97706; }
+        .preproc { color: #7c3aed; } .fn { color: #db2777; }
+
+        .note { background: #f0fdfa; border-left: 4px solid #0d9488; padding: 16px 20px; margin: 20px 0; border-radius: 0 12px 12px 0; }
+        .note ul, .note p { margin-bottom: 0; } .note li:last-child { margin-bottom: 0; }
+        .warn { background: #fef2f2; border-left: 4px solid #dc2626; padding: 16px 20px; margin: 20px 0; border-radius: 0 12px 12px 0; }
+        .warn ul, .warn p { margin-bottom: 0; } .warn li:last-child { margin-bottom: 0; }
+
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; }
+        th, td { padding: 12px 16px; border: 1px solid #e2e8f0; text-align: left; font-size: 0.9em; }
+        th { background: #f8fafc; color: #0f172a; font-weight: 600; }
+        tr:hover { background: #f8fafc; }
+
+        .footer { text-align: center; padding: 32px 20px; color: #94a3b8; font-size: 0.85em; border-top: 1px solid #e2e8f0; background: #f8fafc; }
+        .footer span { color: #0d9488; }
+
+        @media (max-width: 600px) { .req-grid { grid-template-columns: 1fr; } h1 { font-size: 1.8em; } .container { padding: 20px 16px 60px; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="../index.html" class="back-link">&larr; Back to LLD Topics</a>
+        <div class="badges">
+            <span class="pattern-badge">LLD Problem</span>
+            <span class="diff-badge diff-easy">Easy</span>
+        </div>
+        <h1>Design a Vending Machine</h1>
+        <p class="subtitle">The textbook State-pattern problem. A machine takes money, lets you pick a product, dispenses it, and returns change — but the <em>same</em> button means different things depending on what the machine is currently doing.</p>
+
+        <div class="statement">
+            <div class="tag">📋 Problem Statement</div>
+            <p>Design a vending machine that holds several <strong>products</strong> in numbered slots. A customer <strong>inserts coins/notes</strong>, <strong>selects a product</strong>, and the machine <strong>dispenses</strong> it along with any <strong>change</strong>. It must <strong>refund</strong> on demand, reject selections when out of stock, and behave correctly no matter what order the buttons are pressed.</p>
+        </div>
+
+        <h2>Step 1 — Gather Requirements</h2>
+        <p>Start by pinning down scope. Say your assumptions out loud — interviewers want to see you separate the must-haves from the nice-to-haves.</p>
+        <div class="req-grid func">
+            <div>
+                <h3>✓ Functional</h3>
+                <ul>
+                    <li>Insert coins/notes; machine tracks the running balance.</li>
+                    <li>Select a product by slot code.</li>
+                    <li>Dispense the product and return change.</li>
+                    <li>Refund all inserted money on request.</li>
+                    <li>Reject selection if out of stock or balance is too low.</li>
+                </ul>
+            </div>
+            <div>
+                <h3>◆ Non-Functional</h3>
+                <ul>
+                    <li><strong>Correctness:</strong> actions are only legal in certain states.</li>
+                    <li><strong>Extensibility:</strong> adding a new state (e.g. Maintenance) shouldn't rewrite existing logic.</li>
+                    <li><strong>No invalid transitions</strong> — can't dispense before paying.</li>
+                    <li>Clear feedback to the user on every action.</li>
+                </ul>
+            </div>
+        </div>
+
+        <h2>Step 2 — Identify the Core Entities</h2>
+        <p>Find the nouns in the problem. These become your classes:</p>
+        <ul>
+            <li><strong>VendingMachine</strong> — the <em>context</em>; holds the current state, balance, and inventory.</li>
+            <li><strong>State</strong> (interface) — declares the four actions: <code>insertMoney</code>, <code>selectProduct</code>, <code>dispense</code>, <code>refund</code>.</li>
+            <li><strong>IdleState, HasMoneyState, DispensingState, OutOfStockState</strong> — concrete states; each implements the actions differently.</li>
+            <li><strong>Inventory</strong> — maps slot codes to (Product, count).</li>
+            <li><strong>Product</strong> — name + price.</li>
+            <li><strong>Coin / Note</strong> — accepted denominations.</li>
+        </ul>
+
+        <h2>Step 3 — Class Diagram</h2>
+        <p>The key idea: the machine <em>delegates</em> every action to its current State object. Changing behavior = swapping the state.</p>
+        <div class="diagram">
+<pre><span class="cls">VendingMachine</span> (context)
+   │ holds current
+   ▼
+<span class="cls">State</span> (interface)  { insertMoney(amt) · selectProduct(code) · dispense() · refund() }
+   ▲
+   │ implements
+   ├──────────────┬──────────────────┬─────────────────┐
+<span class="cls">IdleState</span>     <span class="cls">HasMoneyState</span>      <span class="cls">DispensingState</span>     <span class="cls">OutOfStockState</span>
+
+<span class="cls">VendingMachine</span> ──has──▶ <span class="cls">Inventory</span> ──maps code──▶ (<span class="cls">Product</span>, count)
+<span class="cls">VendingMachine</span> ──has──▶ balance, selectedCode
+
+<span class="note">// State transitions (the heart of the design):</span>
+  Idle      --insertMoney-->  HasMoney
+  HasMoney  --selectProduct(in stock)--> Dispensing
+  HasMoney  --selectProduct(empty)-->    OutOfStock
+  Dispensing--dispense-->     Idle  (returns change)
+  *         --refund-->       Idle  (returns balance)</pre>
+        </div>
+
+        <h2>Step 4 — Patterns in Play</h2>
+        <p>Name the patterns as you design — it signals maturity. This problem is the canonical home of the State pattern:</p>
+        <div class="pattern-pills">
+            <a class="pattern-pill" href="../behavioral/state.html"><span class="dot"></span> State — behavior changes with the machine's mode</a>
+            <a class="pattern-pill" href="../creational/singleton.html"><span class="dot"></span> Singleton — one machine instance</a>
+            <a class="pattern-pill" href="../creational/factory-method.html"><span class="dot"></span> Factory — create state objects</a>
+        </div>
+
+        <h2>Step 5 — Implementation</h2>
+        <p>The same four methods live on every state, but each state responds differently. Notice how <code>HasMoneyState.selectProduct</code> moves the machine into <code>DispensingState</code>, while <code>IdleState.selectProduct</code> simply refuses.</p>
+
+        <div class="code-container">
+            <div class="code-tabs">
+                <button class="code-tab active" onclick="showCode(this, 'javaCode')">Java</button>
+                <button class="code-tab" onclick="showCode(this, 'pyCode')">Python</button>
+            </div>
+            <div id="javaCode" class="code-content active">
+<pre><span class="keyword">import</span> java.util.*;
+
+<span class="keyword">class</span> <span class="type">Product</span> {
+    <span class="keyword">final</span> <span class="type">String</span> name; <span class="keyword">final</span> <span class="keyword">int</span> price;
+    <span class="type">Product</span>(<span class="type">String</span> name, <span class="keyword">int</span> price) { <span class="keyword">this</span>.name = name; <span class="keyword">this</span>.price = price; }
+}
+
+<span class="comment">// The State interface: every state must answer all four actions</span>
+<span class="keyword">interface</span> <span class="type">State</span> {
+    <span class="keyword">void</span> <span class="fn">insertMoney</span>(<span class="type">VendingMachine</span> m, <span class="keyword">int</span> amount);
+    <span class="keyword">void</span> <span class="fn">selectProduct</span>(<span class="type">VendingMachine</span> m, <span class="type">String</span> code);
+    <span class="keyword">void</span> <span class="fn">dispense</span>(<span class="type">VendingMachine</span> m);
+    <span class="keyword">void</span> <span class="fn">refund</span>(<span class="type">VendingMachine</span> m);
+}
+
+<span class="keyword">class</span> <span class="type">VendingMachine</span> {                          <span class="comment">// the context</span>
+    <span class="keyword">final</span> <span class="type">Map</span>&lt;<span class="type">String</span>, <span class="type">Product</span>&gt; products = <span class="keyword">new</span> <span class="type">HashMap</span>&lt;&gt;();
+    <span class="keyword">final</span> <span class="type">Map</span>&lt;<span class="type">String</span>, <span class="type">Integer</span>&gt; stock = <span class="keyword">new</span> <span class="type">HashMap</span>&lt;&gt;();
+    <span class="type">State</span> state = <span class="keyword">new</span> <span class="type">IdleState</span>();
+    <span class="keyword">int</span> balance = <span class="number">0</span>;
+    <span class="type">String</span> selected = <span class="keyword">null</span>;
+
+    <span class="keyword">void</span> <span class="fn">addSlot</span>(<span class="type">String</span> code, <span class="type">Product</span> p, <span class="keyword">int</span> qty) { products.<span class="fn">put</span>(code, p); stock.<span class="fn">put</span>(code, qty); }
+
+    <span class="comment">// Context delegates every action to the current state</span>
+    <span class="keyword">void</span> <span class="fn">insertMoney</span>(<span class="keyword">int</span> a) { state.<span class="fn">insertMoney</span>(<span class="keyword">this</span>, a); }
+    <span class="keyword">void</span> <span class="fn">selectProduct</span>(<span class="type">String</span> c) { state.<span class="fn">selectProduct</span>(<span class="keyword">this</span>, c); }
+    <span class="keyword">void</span> <span class="fn">dispense</span>() { state.<span class="fn">dispense</span>(<span class="keyword">this</span>); }
+    <span class="keyword">void</span> <span class="fn">refund</span>() { state.<span class="fn">refund</span>(<span class="keyword">this</span>); }
+    <span class="keyword">void</span> <span class="fn">setState</span>(<span class="type">State</span> s) { <span class="keyword">this</span>.state = s; }
+}
+
+<span class="keyword">class</span> <span class="type">IdleState</span> <span class="keyword">implements</span> <span class="type">State</span> {
+    <span class="keyword">public</span> <span class="keyword">void</span> <span class="fn">insertMoney</span>(<span class="type">VendingMachine</span> m, <span class="keyword">int</span> a) {
+        m.balance += a;
+        <span class="type">System</span>.out.<span class="fn">println</span>(<span class="string">"Balance: "</span> + m.balance);
+        m.<span class="fn">setState</span>(<span class="keyword">new</span> <span class="type">HasMoneyState</span>());      <span class="comment">// Idle -> HasMoney</span>
+    }
+    <span class="keyword">public</span> <span class="keyword">void</span> <span class="fn">selectProduct</span>(<span class="type">VendingMachine</span> m, <span class="type">String</span> c) { <span class="type">System</span>.out.<span class="fn">println</span>(<span class="string">"Insert money first"</span>); }
+    <span class="keyword">public</span> <span class="keyword">void</span> <span class="fn">dispense</span>(<span class="type">VendingMachine</span> m) { <span class="type">System</span>.out.<span class="fn">println</span>(<span class="string">"Nothing selected"</span>); }
+    <span class="keyword">public</span> <span class="keyword">void</span> <span class="fn">refund</span>(<span class="type">VendingMachine</span> m) { <span class="type">System</span>.out.<span class="fn">println</span>(<span class="string">"No money to refund"</span>); }
+}
+
+<span class="keyword">class</span> <span class="type">HasMoneyState</span> <span class="keyword">implements</span> <span class="type">State</span> {
+    <span class="keyword">public</span> <span class="keyword">void</span> <span class="fn">insertMoney</span>(<span class="type">VendingMachine</span> m, <span class="keyword">int</span> a) { m.balance += a; <span class="type">System</span>.out.<span class="fn">println</span>(<span class="string">"Balance: "</span> + m.balance); }
+    <span class="keyword">public</span> <span class="keyword">void</span> <span class="fn">selectProduct</span>(<span class="type">VendingMachine</span> m, <span class="type">String</span> c) {
+        <span class="type">Product</span> p = m.products.<span class="fn">get</span>(c);
+        <span class="keyword">if</span> (p == <span class="keyword">null</span> || m.stock.<span class="fn">getOrDefault</span>(c, <span class="number">0</span>) == <span class="number">0</span>) {
+            <span class="type">System</span>.out.<span class="fn">println</span>(<span class="string">"Out of stock"</span>);
+            m.<span class="fn">setState</span>(<span class="keyword">new</span> <span class="type">OutOfStockState</span>());     <span class="comment">// HasMoney -> OutOfStock</span>
+        } <span class="keyword">else</span> <span class="keyword">if</span> (m.balance &lt; p.price) {
+            <span class="type">System</span>.out.<span class="fn">println</span>(<span class="string">"Insufficient balance"</span>);
+        } <span class="keyword">else</span> {
+            m.selected = c;
+            m.<span class="fn">setState</span>(<span class="keyword">new</span> <span class="type">DispensingState</span>());     <span class="comment">// HasMoney -> Dispensing</span>
+            m.<span class="fn">dispense</span>();
+        }
+    }
+    <span class="keyword">public</span> <span class="keyword">void</span> <span class="fn">dispense</span>(<span class="type">VendingMachine</span> m) { <span class="type">System</span>.out.<span class="fn">println</span>(<span class="string">"Select a product first"</span>); }
+    <span class="keyword">public</span> <span class="keyword">void</span> <span class="fn">refund</span>(<span class="type">VendingMachine</span> m) {
+        <span class="type">System</span>.out.<span class="fn">println</span>(<span class="string">"Refunding "</span> + m.balance);
+        m.balance = <span class="number">0</span>; m.<span class="fn">setState</span>(<span class="keyword">new</span> <span class="type">IdleState</span>());
+    }
+}
+
+<span class="keyword">class</span> <span class="type">DispensingState</span> <span class="keyword">implements</span> <span class="type">State</span> {
+    <span class="keyword">public</span> <span class="keyword">void</span> <span class="fn">insertMoney</span>(<span class="type">VendingMachine</span> m, <span class="keyword">int</span> a) { <span class="type">System</span>.out.<span class="fn">println</span>(<span class="string">"Please wait, dispensing"</span>); }
+    <span class="keyword">public</span> <span class="keyword">void</span> <span class="fn">selectProduct</span>(<span class="type">VendingMachine</span> m, <span class="type">String</span> c) { <span class="type">System</span>.out.<span class="fn">println</span>(<span class="string">"Please wait, dispensing"</span>); }
+    <span class="keyword">public</span> <span class="keyword">void</span> <span class="fn">dispense</span>(<span class="type">VendingMachine</span> m) {
+        <span class="type">Product</span> p = m.products.<span class="fn">get</span>(m.selected);
+        m.stock.<span class="fn">put</span>(m.selected, m.stock.<span class="fn">get</span>(m.selected) - <span class="number">1</span>);
+        <span class="keyword">int</span> change = m.balance - p.price;
+        <span class="type">System</span>.out.<span class="fn">println</span>(<span class="string">"Dispensed "</span> + p.name + <span class="string">", change "</span> + change);
+        m.balance = <span class="number">0</span>; m.selected = <span class="keyword">null</span>;
+        m.<span class="fn">setState</span>(<span class="keyword">new</span> <span class="type">IdleState</span>());            <span class="comment">// Dispensing -> Idle</span>
+    }
+    <span class="keyword">public</span> <span class="keyword">void</span> <span class="fn">refund</span>(<span class="type">VendingMachine</span> m) { <span class="type">System</span>.out.<span class="fn">println</span>(<span class="string">"Cannot refund mid-dispense"</span>); }
+}
+
+<span class="keyword">class</span> <span class="type">OutOfStockState</span> <span class="keyword">implements</span> <span class="type">State</span> {
+    <span class="keyword">public</span> <span class="keyword">void</span> <span class="fn">insertMoney</span>(<span class="type">VendingMachine</span> m, <span class="keyword">int</span> a) { <span class="type">System</span>.out.<span class="fn">println</span>(<span class="string">"Item unavailable, refunding soon"</span>); }
+    <span class="keyword">public</span> <span class="keyword">void</span> <span class="fn">selectProduct</span>(<span class="type">VendingMachine</span> m, <span class="type">String</span> c) { <span class="type">System</span>.out.<span class="fn">println</span>(<span class="string">"Item unavailable"</span>); }
+    <span class="keyword">public</span> <span class="keyword">void</span> <span class="fn">dispense</span>(<span class="type">VendingMachine</span> m) { <span class="type">System</span>.out.<span class="fn">println</span>(<span class="string">"Nothing to dispense"</span>); }
+    <span class="keyword">public</span> <span class="keyword">void</span> <span class="fn">refund</span>(<span class="type">VendingMachine</span> m) {
+        <span class="type">System</span>.out.<span class="fn">println</span>(<span class="string">"Refunding "</span> + m.balance);
+        m.balance = <span class="number">0</span>; m.<span class="fn">setState</span>(<span class="keyword">new</span> <span class="type">IdleState</span>());      <span class="comment">// OutOfStock -> Idle</span>
+    }
+}
+</pre>
+            </div>
+            <div id="pyCode" class="code-content">
+<pre><span class="keyword">from</span> abc <span class="keyword">import</span> ABC, abstractmethod
+
+<span class="keyword">class</span> <span class="type">Product</span>:
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, name, price):
+        self.name, self.price = name, price
+
+<span class="comment"># The State interface: every state must answer all four actions</span>
+<span class="keyword">class</span> <span class="type">State</span>(ABC):
+    <span class="meta">@abstractmethod</span>
+    <span class="keyword">def</span> <span class="fn">insert_money</span>(self, m, amount): ...
+    <span class="meta">@abstractmethod</span>
+    <span class="keyword">def</span> <span class="fn">select_product</span>(self, m, code): ...
+    <span class="meta">@abstractmethod</span>
+    <span class="keyword">def</span> <span class="fn">dispense</span>(self, m): ...
+    <span class="meta">@abstractmethod</span>
+    <span class="keyword">def</span> <span class="fn">refund</span>(self, m): ...
+
+<span class="keyword">class</span> <span class="type">VendingMachine</span>:                      <span class="comment"># the context</span>
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self):
+        self.products, self.stock = {}, {}
+        self.state = <span class="type">IdleState</span>()
+        self.balance, self.selected = <span class="number">0</span>, <span class="keyword">None</span>
+
+    <span class="keyword">def</span> <span class="fn">add_slot</span>(self, code, product, qty):
+        self.products[code] = product; self.stock[code] = qty
+
+    <span class="comment"># Context delegates every action to the current state</span>
+    <span class="keyword">def</span> <span class="fn">insert_money</span>(self, a): self.state.<span class="fn">insert_money</span>(self, a)
+    <span class="keyword">def</span> <span class="fn">select_product</span>(self, c): self.state.<span class="fn">select_product</span>(self, c)
+    <span class="keyword">def</span> <span class="fn">dispense</span>(self): self.state.<span class="fn">dispense</span>(self)
+    <span class="keyword">def</span> <span class="fn">refund</span>(self): self.state.<span class="fn">refund</span>(self)
+
+<span class="keyword">class</span> <span class="type">IdleState</span>(<span class="type">State</span>):
+    <span class="keyword">def</span> <span class="fn">insert_money</span>(self, m, a):
+        m.balance += a
+        <span class="fn">print</span>(<span class="string">f"Balance: {m.balance}"</span>)
+        m.state = <span class="type">HasMoneyState</span>()              <span class="comment"># Idle -> HasMoney</span>
+    <span class="keyword">def</span> <span class="fn">select_product</span>(self, m, c): <span class="fn">print</span>(<span class="string">"Insert money first"</span>)
+    <span class="keyword">def</span> <span class="fn">dispense</span>(self, m): <span class="fn">print</span>(<span class="string">"Nothing selected"</span>)
+    <span class="keyword">def</span> <span class="fn">refund</span>(self, m): <span class="fn">print</span>(<span class="string">"No money to refund"</span>)
+
+<span class="keyword">class</span> <span class="type">HasMoneyState</span>(<span class="type">State</span>):
+    <span class="keyword">def</span> <span class="fn">insert_money</span>(self, m, a):
+        m.balance += a; <span class="fn">print</span>(<span class="string">f"Balance: {m.balance}"</span>)
+    <span class="keyword">def</span> <span class="fn">select_product</span>(self, m, c):
+        p = m.products.<span class="fn">get</span>(c)
+        <span class="keyword">if</span> p <span class="keyword">is</span> <span class="keyword">None</span> <span class="keyword">or</span> m.stock.<span class="fn">get</span>(c, <span class="number">0</span>) == <span class="number">0</span>:
+            <span class="fn">print</span>(<span class="string">"Out of stock"</span>)
+            m.state = <span class="type">OutOfStockState</span>()         <span class="comment"># HasMoney -> OutOfStock</span>
+        <span class="keyword">elif</span> m.balance &lt; p.price:
+            <span class="fn">print</span>(<span class="string">"Insufficient balance"</span>)
+        <span class="keyword">else</span>:
+            m.selected = c
+            m.state = <span class="type">DispensingState</span>()         <span class="comment"># HasMoney -> Dispensing</span>
+            m.<span class="fn">dispense</span>()
+    <span class="keyword">def</span> <span class="fn">dispense</span>(self, m): <span class="fn">print</span>(<span class="string">"Select a product first"</span>)
+    <span class="keyword">def</span> <span class="fn">refund</span>(self, m):
+        <span class="fn">print</span>(<span class="string">f"Refunding {m.balance}"</span>)
+        m.balance = <span class="number">0</span>; m.state = <span class="type">IdleState</span>()
+
+<span class="keyword">class</span> <span class="type">DispensingState</span>(<span class="type">State</span>):
+    <span class="keyword">def</span> <span class="fn">insert_money</span>(self, m, a): <span class="fn">print</span>(<span class="string">"Please wait, dispensing"</span>)
+    <span class="keyword">def</span> <span class="fn">select_product</span>(self, m, c): <span class="fn">print</span>(<span class="string">"Please wait, dispensing"</span>)
+    <span class="keyword">def</span> <span class="fn">dispense</span>(self, m):
+        p = m.products[m.selected]
+        m.stock[m.selected] -= <span class="number">1</span>
+        change = m.balance - p.price
+        <span class="fn">print</span>(<span class="string">f"Dispensed {p.name}, change {change}"</span>)
+        m.balance, m.selected = <span class="number">0</span>, <span class="keyword">None</span>
+        m.state = <span class="type">IdleState</span>()                  <span class="comment"># Dispensing -> Idle</span>
+    <span class="keyword">def</span> <span class="fn">refund</span>(self, m): <span class="fn">print</span>(<span class="string">"Cannot refund mid-dispense"</span>)
+
+<span class="keyword">class</span> <span class="type">OutOfStockState</span>(<span class="type">State</span>):
+    <span class="keyword">def</span> <span class="fn">insert_money</span>(self, m, a): <span class="fn">print</span>(<span class="string">"Item unavailable, refunding soon"</span>)
+    <span class="keyword">def</span> <span class="fn">select_product</span>(self, m, c): <span class="fn">print</span>(<span class="string">"Item unavailable"</span>)
+    <span class="keyword">def</span> <span class="fn">dispense</span>(self, m): <span class="fn">print</span>(<span class="string">"Nothing to dispense"</span>)
+    <span class="keyword">def</span> <span class="fn">refund</span>(self, m):
+        <span class="fn">print</span>(<span class="string">f"Refunding {m.balance}"</span>)
+        m.balance = <span class="number">0</span>; m.state = <span class="type">IdleState</span>()   <span class="comment"># OutOfStock -> Idle</span>
+
+<span class="comment"># --- demo ---</span>
+m = <span class="type">VendingMachine</span>()
+m.<span class="fn">add_slot</span>(<span class="string">"A1"</span>, <span class="type">Product</span>(<span class="string">"Cola"</span>, <span class="number">25</span>), <span class="number">2</span>)
+m.<span class="fn">insert_money</span>(<span class="number">30</span>)        <span class="comment"># Idle -> HasMoney, balance 30</span>
+m.<span class="fn">select_product</span>(<span class="string">"A1"</span>)   <span class="comment"># dispenses Cola, change 5, back to Idle</span>
+</pre>
+            </div>
+        </div>
+
+        <div class="note">
+            <strong>Why this design scores well:</strong> the machine never says <em>"if state == X do this else if state == Y..."</em>. Each state is a small class that knows only its own rules, and transitions happen by swapping <code>m.state</code>. Adding a <code>MaintenanceState</code> is a new class — zero edits to existing states (Open/Closed). The "same action, different behavior" requirement falls out naturally: <code>selectProduct</code> dispenses in <code>HasMoneyState</code> but is rejected in <code>IdleState</code>.
+        </div>
+
+        <h2>Step 6 — Follow-up Extensions</h2>
+        <p>Strong candidates anticipate where the interviewer pushes next:</p>
+        <ul>
+            <li><strong>Exact-change tracking:</strong> model the cash drawer with denomination counts and refuse if change can't be made.</li>
+            <li><strong>Concurrency:</strong> a real machine has one user, but if the controller is multi-threaded, guard <code>state</code> transitions with a lock.</li>
+            <li><strong>Singleton machine:</strong> there's one physical machine — make <code>VendingMachine</code> a Singleton.</li>
+            <li><strong>Multiple payment types:</strong> add card/UPI via a payment Strategy.</li>
+            <li><strong>Restock &amp; admin:</strong> a <code>MaintenanceState</code> that unlocks refill/empty operations.</li>
+        </ul>
+
+        <div class="warn">
+            <strong>Common mistakes:</strong> implementing the whole machine as one giant <code>if/else</code> on a state enum (the anti-pattern the State pattern fixes); letting illegal actions through (dispensing before paying); forgetting to reset <code>balance</code>/<code>selected</code> after a transaction; and not returning change. Model states as objects and the transitions become self-documenting.
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>Low-Level Design · <span>Vending Machine</span> · Java &amp; Python · Interactive Learning</p>
+    </div>
+
+    <script>
+        function showCode(btn, id) {
+            const container = btn.closest('.code-container');
+            container.querySelectorAll('.code-tab').forEach(t => t.classList.remove('active'));
+            container.querySelectorAll('.code-content').forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById(id).classList.add('active');
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory Management — LLD Problem</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8fafc; min-height: 100vh; color: #1e293b; -webkit-font-smoothing: antialiased; }
+        .container { max-width: 880px; margin: 0 auto; padding: 40px 24px 80px; }
+        .back-link { display: inline-flex; align-items: center; gap: 6px; color: #0d9488; text-decoration: none; font-size: 0.9em; font-weight: 500; margin-bottom: 28px; padding: 6px 12px; border-radius: 8px; transition: background 0.15s ease; }
+        .back-link:hover { background: #f0fdfa; }
+
+        .badges { display: flex; gap: 10px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+        .pattern-badge { display: inline-block; padding: 5px 14px; border-radius: 100px; font-size: 0.72em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; background: #e0e7ff; color: #4338ca; }
+        .diff-badge { display: inline-block; padding: 5px 14px; border-radius: 100px; font-size: 0.72em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+        .diff-easy   { background: #dcfce7; color: #16a34a; }
+        .diff-medium { background: #fef3c7; color: #d97706; }
+        .diff-hard   { background: #fee2e2; color: #dc2626; }
+
+        h1 { font-size: 2.4em; font-weight: 800; color: #0f172a; margin-bottom: 12px; letter-spacing: -0.03em; line-height: 1.2; }
+        .subtitle { font-size: 1.1em; color: #64748b; line-height: 1.7; margin-bottom: 8px; }
+        h2 { font-size: 1.35em; font-weight: 700; color: #0f172a; margin: 40px 0 16px; letter-spacing: -0.02em; }
+        h3 { font-size: 1.1em; font-weight: 600; color: #1e293b; margin: 24px 0 10px; }
+        p, li { line-height: 1.8; color: #475569; margin-bottom: 10px; font-size: 0.95em; }
+        ul, ol { padding-left: 20px; margin-bottom: 15px; }
+        strong { color: #1e293b; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 0.85em; color: #0d9488; }
+
+        .statement { background: linear-gradient(135deg, #eef2ff, #f0fdfa); border: 1px solid #e0e7ff; border-radius: 16px; padding: 24px 28px; margin: 24px 0; }
+        .statement .tag { font-size: 0.78em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #4338ca; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+        .statement p:last-child { margin-bottom: 0; }
+
+        .req-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0; }
+        .req-grid > div { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .req-grid h3 { margin-top: 0; }
+        .req-grid.func h3 { color: #0d9488; } .req-grid.nonfunc h3 { color: #4338ca; }
+        .req-grid ul { margin-bottom: 0; }
+
+        .diagram { background: #0f172a; border-radius: 16px; padding: 24px; margin: 24px 0; overflow-x: auto; }
+        .diagram pre { color: #e2e8f0; font-family: 'JetBrains Mono', monospace; font-size: 0.8em; line-height: 1.6; white-space: pre; }
+        .diagram .cls { color: #5eead4; font-weight: 600; } .diagram .rel { color: #fbbf24; } .diagram .note { color: #94a3b8; font-style: italic; }
+
+        .pattern-pills { display: flex; flex-wrap: wrap; gap: 10px; margin: 16px 0 24px; }
+        .pattern-pill { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; background: white; border: 1px solid #e2e8f0; border-radius: 100px; font-size: 0.82em; font-weight: 500; color: #475569; text-decoration: none; transition: all 0.15s ease; }
+        .pattern-pill:hover { border-color: #0d9488; color: #0d9488; background: #f0fdfa; }
+        .pattern-pill .dot { width: 8px; height: 8px; border-radius: 50%; background: #0d9488; }
+
+        .code-container { margin: 24px 0; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .code-tabs { display: flex; background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0 8px; }
+        .code-tab { padding: 10px 18px; cursor: pointer; border: none; background: transparent; color: #64748b; font-size: 0.85em; font-weight: 500; font-family: 'Inter', sans-serif; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.15s ease; }
+        .code-tab:hover { color: #0d9488; }
+        .code-tab.active { color: #0d9488; border-bottom-color: #0d9488; background: white; }
+        .code-content { display: none; background: white; padding: 24px; overflow-x: auto; }
+        .code-content.active { display: block; }
+        .code-content pre { color: #1e293b; font-family: 'JetBrains Mono', monospace; font-size: 0.82em; line-height: 1.75; white-space: pre; }
+        .keyword { color: #0d9488; } .type { color: #2563eb; } .string { color: #16a34a; }
+        .comment { color: #94a3b8; font-style: italic; } .number { color: #d97706; }
+        .preproc { color: #7c3aed; } .fn { color: #db2777; }
+
+        .note { background: #f0fdfa; border-left: 4px solid #0d9488; padding: 16px 20px; margin: 20px 0; border-radius: 0 12px 12px 0; }
+        .note ul, .note p { margin-bottom: 0; } .note li:last-child { margin-bottom: 0; }
+        .warn { background: #fef2f2; border-left: 4px solid #dc2626; padding: 16px 20px; margin: 20px 0; border-radius: 0 12px 12px 0; }
+        .warn ul, .warn p { margin-bottom: 0; } .warn li:last-child { margin-bottom: 0; }
+
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; }
+        th, td { padding: 12px 16px; border: 1px solid #e2e8f0; text-align: left; font-size: 0.9em; }
+        th { background: #f8fafc; color: #0f172a; font-weight: 600; }
+        tr:hover { background: #f8fafc; }
+
+        .footer { text-align: center; padding: 32px 20px; color: #94a3b8; font-size: 0.85em; border-top: 1px solid #e2e8f0; background: #f8fafc; }
+        .footer span { color: #0d9488; }
+
+        @media (max-width: 600px) { .req-grid { grid-template-columns: 1fr; } h1 { font-size: 1.8em; } .container { padding: 20px 16px 60px; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="../index.html" class="back-link">&larr; Back to LLD Topics</a>
+        <div class="badges">
+            <span class="pattern-badge">LLD Problem</span>
+            <span class="diff-badge diff-hard">Hard</span>
+        </div>
+        <h1>Design an Inventory Management System</h1>
+        <p class="subtitle">Track stock for thousands of products across many warehouses, reserve units for orders, and auto-replenish from suppliers — all while concurrent gates mutate the same quantities.</p>
+
+        <div class="statement">
+            <div class="tag">📋 Problem Statement</div>
+            <p>Design the inventory engine behind an e-commerce backend. The system manages <strong>products</strong> (identified by SKU) stored as <strong>stock</strong> across multiple <strong>warehouses</strong>. It must support adding and removing stock, <strong>reserving</strong> units for an order (so two customers never buy the last item), and automatically raising a <strong>purchase order</strong> to a supplier when a product drops below its reorder level. Interested parties — dashboards, alerting, suppliers — should be <strong>notified</strong> of low-stock events. Many warehouse gates and order workers mutate the same quantities at once, so updates must be <strong>thread-safe</strong>.</p>
+        </div>
+
+        <h2>Step 1 — Gather Requirements</h2>
+        <p>Always start by pinning down scope. State your assumptions out loud; interviewers want to see you separate the must-haves from the nice-to-haves.</p>
+        <div class="req-grid func">
+            <div>
+                <h3>✓ Functional</h3>
+                <ul>
+                    <li>Register products (SKU) and warehouses.</li>
+                    <li><code>addStock</code> / <code>removeStock</code> for a product at a warehouse.</li>
+                    <li><strong>Reserve</strong> units for an order, then commit or release them.</li>
+                    <li>Trigger <strong>replenishment</strong> when available stock falls below the reorder level.</li>
+                    <li>Notify observers (alerts, dashboards) on low-stock and reorder events.</li>
+                    <li>Query total available quantity for a SKU across all warehouses.</li>
+                </ul>
+            </div>
+            <div>
+                <h3>◆ Non-Functional</h3>
+                <ul>
+                    <li><strong>Concurrency:</strong> many gates/orders mutate the same SKU — no oversell, no lost updates.</li>
+                    <li><strong>Extensibility:</strong> pluggable reorder policy and notification channels.</li>
+                    <li><strong>Low contention:</strong> a hot SKU shouldn't block unrelated SKUs.</li>
+                    <li><strong>Consistency:</strong> reserved + available must always equal on-hand.</li>
+                </ul>
+            </div>
+        </div>
+
+        <h2>Step 2 — Identify the Core Entities</h2>
+        <p>Find the nouns in the problem. These become your classes:</p>
+        <ul>
+            <li><strong>Product</strong> — a catalog item identified by an immutable <code>SKU</code>, with a reorder level and reorder quantity.</li>
+            <li><strong>Warehouse</strong> — a physical location holding stock items.</li>
+            <li><strong>StockItem</strong> — the (product, warehouse) pair holding <code>available</code> and <code>reserved</code> counts. This is the unit that gets locked.</li>
+            <li><strong>InventoryManager</strong> — the façade orchestrating add/remove/reserve and replenishment.</li>
+            <li><strong>Supplier</strong> — a vendor that fulfils purchase orders for products.</li>
+            <li><strong>PurchaseOrder</strong> — a replenishment request raised against a supplier.</li>
+            <li><strong>ReplenishmentStrategy</strong> — pluggable rule deciding <em>when</em> and <em>how much</em> to reorder (Strategy).</li>
+            <li><strong>StockObserver</strong> — subscribers notified of low-stock / reorder events (Observer).</li>
+        </ul>
+
+        <h2>Step 3 — Class Diagram</h2>
+        <p>Sketch the relationships before coding. A "has-a" (composition) line means one class owns instances of another; an interface arrow means "implements".</p>
+        <div class="diagram">
+<pre><span class="cls">InventoryManager</span>
+   │ has-many                         uses
+   ├──────────────▶ <span class="cls">StockItem</span>      ├────────▶ <span class="cls">ReplenishmentStrategy</span> (interface)
+   │   (keyed by SKU+warehouse)       │                     ▲
+   │   • available : int              │        ┌────────────┴────────────┐
+   │   • reserved  : int              │  <span class="cls">ThresholdReorder</span>       <span class="cls">FixedTopUpReorder</span>
+   │   • Lock      ◀── per-item       │
+   │                                  │ notifies
+   ├──────────────▶ <span class="cls">Product</span>        └────────▶ <span class="cls">StockObserver</span> (interface)
+   │   • sku, reorderLevel, reorderQty                       ▲
+   │                                            ┌────────────┴────────────┐
+   ├──────────────▶ <span class="cls">Warehouse</span>                    <span class="cls">LowStockAlert</span>      <span class="cls">DashboardObserver</span>
+   │
+   └──raises──▶ <span class="cls">PurchaseOrder</span> ──to──▶ <span class="cls">Supplier</span>
+<span class="note">// Strategy decides WHEN to reorder · Observer fans out the WHEN-it-happened</span>
+<span class="note">// Each StockItem owns its own Lock → mutating SKU-A never blocks SKU-B</span></pre>
+        </div>
+
+        <h2>Step 4 — Patterns in Play</h2>
+        <p>Name the patterns as you design — it signals maturity. This problem naturally uses:</p>
+        <div class="pattern-pills">
+            <a class="pattern-pill" href="../behavioral/strategy.html"><span class="dot"></span> Strategy — pluggable reorder policy</a>
+            <a class="pattern-pill" href="../behavioral/observer.html"><span class="dot"></span> Observer — low-stock alerts</a>
+            <a class="pattern-pill" href="../concurrency/locks-synchronization.html"><span class="dot"></span> Locking — per-item stock mutation</a>
+            <a class="pattern-pill" href="../concurrency/atomics-lock-free.html"><span class="dot"></span> Atomics — lock-free counters</a>
+        </div>
+
+        <h2>Step 5 — Implementation</h2>
+        <p>A focused skeleton showing the key classes and the reserve / replenish flow. The crux is the <strong>per-<code>StockItem</code> lock</strong>: it makes each SKU's update atomic without serializing the whole warehouse.</p>
+
+        <div class="code-container">
+            <div class="code-tabs">
+                <button class="code-tab active" onclick="showCode(this, 'javaCode')">Java</button>
+                <button class="code-tab" onclick="showCode(this, 'pyCode')">Python</button>
+            </div>
+            <div id="javaCode" class="code-content active">
+<pre><span class="keyword">import</span> java.util.*;
+<span class="keyword">import</span> java.util.concurrent.*;
+<span class="keyword">import</span> java.util.concurrent.locks.ReentrantLock;
+
+<span class="keyword">class</span> <span class="type">Product</span> {
+    <span class="keyword">final</span> <span class="type">String</span> sku;
+    <span class="keyword">final</span> <span class="keyword">int</span> reorderLevel, reorderQty;   <span class="comment">// reorder when available &lt; reorderLevel</span>
+    <span class="type">Product</span>(<span class="type">String</span> sku, <span class="keyword">int</span> level, <span class="keyword">int</span> qty) { <span class="keyword">this</span>.sku = sku; reorderLevel = level; reorderQty = qty; }
+}
+
+<span class="comment">// One StockItem per (SKU, warehouse). It owns the lock that guards its counters.</span>
+<span class="keyword">class</span> <span class="type">StockItem</span> {
+    <span class="keyword">final</span> <span class="type">Product</span> product; <span class="keyword">final</span> <span class="type">String</span> warehouseId;
+    <span class="keyword">private</span> <span class="keyword">int</span> available = <span class="number">0</span>, reserved = <span class="number">0</span>;
+    <span class="keyword">final</span> <span class="type">ReentrantLock</span> lock = <span class="keyword">new</span> <span class="type">ReentrantLock</span>();
+    <span class="type">StockItem</span>(<span class="type">Product</span> p, <span class="type">String</span> w) { product = p; warehouseId = w; }
+    <span class="keyword">int</span> <span class="fn">available</span>() { <span class="keyword">return</span> available; }
+    <span class="keyword">void</span> <span class="fn">add</span>(<span class="keyword">int</span> n)     { available += n; }
+    <span class="keyword">void</span> <span class="fn">reserve</span>(<span class="keyword">int</span> n) { available -= n; reserved += n; }   <span class="comment">// on-hand unchanged</span>
+    <span class="keyword">void</span> <span class="fn">commit</span>(<span class="keyword">int</span> n)  { reserved  -= n; }                  <span class="comment">// units shipped out</span>
+    <span class="keyword">void</span> <span class="fn">release</span>(<span class="keyword">int</span> n) { reserved -= n; available += n; }   <span class="comment">// order cancelled</span>
+}
+
+<span class="comment">// Strategy: decide WHEN and HOW MUCH to reorder.</span>
+<span class="keyword">interface</span> <span class="type">ReplenishmentStrategy</span> {
+    <span class="comment">// returns qty to order, or 0 if no reorder needed</span>
+    <span class="keyword">int</span> <span class="fn">reorderQty</span>(<span class="type">Product</span> p, <span class="keyword">int</span> availableAcrossWarehouses);
+}
+<span class="keyword">class</span> <span class="type">ThresholdReorder</span> <span class="keyword">implements</span> <span class="type">ReplenishmentStrategy</span> {
+    <span class="keyword">public</span> <span class="keyword">int</span> <span class="fn">reorderQty</span>(<span class="type">Product</span> p, <span class="keyword">int</span> avail) {
+        <span class="keyword">return</span> avail &lt; p.reorderLevel ? p.reorderQty : <span class="number">0</span>;
+    }
+}
+
+<span class="comment">// Observer: fan out low-stock / reorder events.</span>
+<span class="keyword">interface</span> <span class="type">StockObserver</span> { <span class="keyword">void</span> <span class="fn">onLowStock</span>(<span class="type">Product</span> p, <span class="keyword">int</span> avail, <span class="keyword">int</span> ordered); }
+<span class="keyword">class</span> <span class="type">LowStockAlert</span> <span class="keyword">implements</span> <span class="type">StockObserver</span> {
+    <span class="keyword">public</span> <span class="keyword">void</span> <span class="fn">onLowStock</span>(<span class="type">Product</span> p, <span class="keyword">int</span> avail, <span class="keyword">int</span> ordered) {
+        <span class="type">System</span>.out.<span class="fn">println</span>(<span class="string">"ALERT "</span> + p.sku + <span class="string">": avail="</span> + avail + <span class="string">", reordered "</span> + ordered);
+    }
+}
+
+<span class="keyword">class</span> <span class="type">Supplier</span> { <span class="keyword">final</span> <span class="type">String</span> name; <span class="type">Supplier</span>(<span class="type">String</span> n) { name = n; } }
+<span class="keyword">class</span> <span class="type">PurchaseOrder</span> {
+    <span class="keyword">final</span> <span class="type">String</span> sku; <span class="keyword">final</span> <span class="keyword">int</span> qty; <span class="keyword">final</span> <span class="type">Supplier</span> supplier;
+    <span class="type">PurchaseOrder</span>(<span class="type">String</span> sku, <span class="keyword">int</span> qty, <span class="type">Supplier</span> s) { <span class="keyword">this</span>.sku = sku; <span class="keyword">this</span>.qty = qty; supplier = s; }
+}
+
+<span class="keyword">class</span> <span class="type">InventoryManager</span> {
+    <span class="comment">// SKU -&gt; (warehouseId -&gt; StockItem). ConcurrentHashMap = safe map structure.</span>
+    <span class="keyword">private</span> <span class="keyword">final</span> <span class="type">Map</span>&lt;<span class="type">String</span>, <span class="type">Map</span>&lt;<span class="type">String</span>, <span class="type">StockItem</span>&gt;&gt; stock = <span class="keyword">new</span> <span class="type">ConcurrentHashMap</span>&lt;&gt;();
+    <span class="keyword">private</span> <span class="keyword">final</span> <span class="type">Map</span>&lt;<span class="type">String</span>, <span class="type">Product</span>&gt; products = <span class="keyword">new</span> <span class="type">ConcurrentHashMap</span>&lt;&gt;();
+    <span class="keyword">private</span> <span class="keyword">final</span> <span class="type">List</span>&lt;<span class="type">StockObserver</span>&gt; observers = <span class="keyword">new</span> <span class="type">CopyOnWriteArrayList</span>&lt;&gt;();
+    <span class="keyword">private</span> <span class="keyword">final</span> <span class="type">ReplenishmentStrategy</span> strategy;
+    <span class="keyword">private</span> <span class="keyword">final</span> <span class="type">Supplier</span> defaultSupplier = <span class="keyword">new</span> <span class="type">Supplier</span>(<span class="string">"AcmeCorp"</span>);
+
+    <span class="type">InventoryManager</span>(<span class="type">ReplenishmentStrategy</span> s) { strategy = s; }
+    <span class="keyword">void</span> <span class="fn">register</span>(<span class="type">Product</span> p) { products.<span class="fn">put</span>(p.sku, p); }
+    <span class="keyword">void</span> <span class="fn">subscribe</span>(<span class="type">StockObserver</span> o) { observers.<span class="fn">add</span>(o); }
+
+    <span class="keyword">private</span> <span class="type">StockItem</span> <span class="fn">item</span>(<span class="type">String</span> sku, <span class="type">String</span> wh) {
+        <span class="keyword">return</span> stock.<span class="fn">computeIfAbsent</span>(sku, k -&gt; <span class="keyword">new</span> <span class="type">ConcurrentHashMap</span>&lt;&gt;())
+                    .<span class="fn">computeIfAbsent</span>(wh, k -&gt; <span class="keyword">new</span> <span class="type">StockItem</span>(products.<span class="fn">get</span>(sku), wh));
+    }
+
+    <span class="keyword">void</span> <span class="fn">addStock</span>(<span class="type">String</span> sku, <span class="type">String</span> wh, <span class="keyword">int</span> n) {
+        <span class="type">StockItem</span> it = <span class="fn">item</span>(sku, wh);
+        it.lock.<span class="fn">lock</span>();
+        <span class="keyword">try</span> { it.<span class="fn">add</span>(n); } <span class="keyword">finally</span> { it.lock.<span class="fn">unlock</span>(); }
+    }
+
+    <span class="comment">// Reserve n units for an order. Returns true only if the full quantity was held.</span>
+    <span class="keyword">boolean</span> <span class="fn">reserve</span>(<span class="type">String</span> sku, <span class="type">String</span> wh, <span class="keyword">int</span> n) {
+        <span class="type">StockItem</span> it = <span class="fn">item</span>(sku, wh);
+        it.lock.<span class="fn">lock</span>();                          <span class="comment">// guard check-then-act → no oversell</span>
+        <span class="keyword">try</span> {
+            <span class="keyword">if</span> (it.<span class="fn">available</span>() &lt; n) <span class="keyword">return</span> <span class="keyword">false</span>;
+            it.<span class="fn">reserve</span>(n);
+        } <span class="keyword">finally</span> { it.lock.<span class="fn">unlock</span>(); }
+        <span class="fn">maybeReplenish</span>(sku);                  <span class="comment">// check threshold after the mutation</span>
+        <span class="keyword">return</span> <span class="keyword">true</span>;
+    }
+
+    <span class="comment">// Sum availability across warehouses; reorder if the strategy says so.</span>
+    <span class="keyword">private</span> <span class="keyword">void</span> <span class="fn">maybeReplenish</span>(<span class="type">String</span> sku) {
+        <span class="type">Product</span> p = products.<span class="fn">get</span>(sku);
+        <span class="keyword">int</span> total = stock.<span class="fn">getOrDefault</span>(sku, <span class="type">Map</span>.<span class="fn">of</span>()).<span class="fn">values</span>().<span class="fn">stream</span>()
+                        .<span class="fn">mapToInt</span>(<span class="type">StockItem</span>::<span class="fn">available</span>).<span class="fn">sum</span>();
+        <span class="keyword">int</span> qty = strategy.<span class="fn">reorderQty</span>(p, total);
+        <span class="keyword">if</span> (qty &gt; <span class="number">0</span>) {
+            <span class="keyword">new</span> <span class="type">PurchaseOrder</span>(sku, qty, defaultSupplier);   <span class="comment">// raise PO to supplier</span>
+            <span class="keyword">for</span> (<span class="type">StockObserver</span> o : observers) o.<span class="fn">onLowStock</span>(p, total, qty);
+        }
+    }
+
+    <span class="keyword">public static</span> <span class="keyword">void</span> <span class="fn">main</span>(<span class="type">String</span>[] args) {
+        <span class="type">InventoryManager</span> inv = <span class="keyword">new</span> <span class="type">InventoryManager</span>(<span class="keyword">new</span> <span class="type">ThresholdReorder</span>());
+        inv.<span class="fn">subscribe</span>(<span class="keyword">new</span> <span class="type">LowStockAlert</span>());
+        inv.<span class="fn">register</span>(<span class="keyword">new</span> <span class="type">Product</span>(<span class="string">"SKU-1"</span>, <span class="number">5</span>, <span class="number">50</span>));   <span class="comment">// reorder when avail &lt; 5</span>
+        inv.<span class="fn">addStock</span>(<span class="string">"SKU-1"</span>, <span class="string">"WH-A"</span>, <span class="number">8</span>);
+        <span class="type">System</span>.out.<span class="fn">println</span>(inv.<span class="fn">reserve</span>(<span class="string">"SKU-1"</span>, <span class="string">"WH-A"</span>, <span class="number">4</span>));  <span class="comment">// true → avail drops to 4 → reorder fires</span>
+    }
+}
+</pre>
+            </div>
+            <div id="pyCode" class="code-content">
+<pre><span class="keyword">import</span> threading
+<span class="keyword">from</span> dataclasses <span class="keyword">import</span> dataclass, field
+
+<span class="keyword">@dataclass</span>
+<span class="keyword">class</span> <span class="type">Product</span>:
+    sku: <span class="type">str</span>
+    reorder_level: <span class="type">int</span>      <span class="comment"># reorder when available &lt; reorder_level</span>
+    reorder_qty: <span class="type">int</span>
+
+<span class="comment"># One StockItem per (SKU, warehouse). It owns the lock guarding its counters.</span>
+<span class="keyword">class</span> <span class="type">StockItem</span>:
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, product, warehouse_id):
+        self.product, self.warehouse_id = product, warehouse_id
+        self.available, self.reserved = <span class="number">0</span>, <span class="number">0</span>
+        self.lock = threading.<span class="type">Lock</span>()
+    <span class="keyword">def</span> <span class="fn">add</span>(self, n):     self.available += n
+    <span class="keyword">def</span> <span class="fn">reserve</span>(self, n): self.available -= n; self.reserved += n   <span class="comment"># on-hand unchanged</span>
+    <span class="keyword">def</span> <span class="fn">commit</span>(self, n):  self.reserved  -= n                     <span class="comment"># units shipped out</span>
+    <span class="keyword">def</span> <span class="fn">release</span>(self, n): self.reserved -= n; self.available += n   <span class="comment"># order cancelled</span>
+
+<span class="comment"># Strategy: decide WHEN and HOW MUCH to reorder.</span>
+<span class="keyword">class</span> <span class="type">ThresholdReorder</span>:
+    <span class="keyword">def</span> <span class="fn">reorder_qty</span>(self, product, available):
+        <span class="keyword">return</span> product.reorder_qty <span class="keyword">if</span> available &lt; product.reorder_level <span class="keyword">else</span> <span class="number">0</span>
+
+<span class="comment"># Observer: fan out low-stock / reorder events.</span>
+<span class="keyword">class</span> <span class="type">LowStockAlert</span>:
+    <span class="keyword">def</span> <span class="fn">on_low_stock</span>(self, product, available, ordered):
+        <span class="fn">print</span>(<span class="string">f"ALERT {product.sku}: avail={available}, reordered {ordered}"</span>)
+
+<span class="keyword">@dataclass</span>
+<span class="keyword">class</span> <span class="type">Supplier</span>:
+    name: <span class="type">str</span>
+
+<span class="keyword">@dataclass</span>
+<span class="keyword">class</span> <span class="type">PurchaseOrder</span>:
+    sku: <span class="type">str</span>
+    qty: <span class="type">int</span>
+    supplier: <span class="type">Supplier</span>
+
+<span class="keyword">class</span> <span class="type">InventoryManager</span>:
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, strategy):
+        self.stock = {}            <span class="comment"># sku -&gt; {warehouse_id: StockItem}</span>
+        self.products = {}
+        self.observers = []
+        self.strategy = strategy
+        self.supplier = <span class="type">Supplier</span>(<span class="string">"AcmeCorp"</span>)
+        self._map_lock = threading.<span class="type">Lock</span>()   <span class="comment"># guards lazy creation of items</span>
+
+    <span class="keyword">def</span> <span class="fn">register</span>(self, product): self.products[product.sku] = product
+    <span class="keyword">def</span> <span class="fn">subscribe</span>(self, obs):    self.observers.<span class="fn">append</span>(obs)
+
+    <span class="keyword">def</span> <span class="fn">_item</span>(self, sku, wh):
+        <span class="keyword">with</span> self._map_lock:                       <span class="comment"># create-once, safe map structure</span>
+            <span class="keyword">return</span> self.stock.<span class="fn">setdefault</span>(sku, {}).<span class="fn">setdefault</span>(
+                wh, <span class="type">StockItem</span>(self.products[sku], wh))
+
+    <span class="keyword">def</span> <span class="fn">add_stock</span>(self, sku, wh, n):
+        it = self.<span class="fn">_item</span>(sku, wh)
+        <span class="keyword">with</span> it.lock:
+            it.<span class="fn">add</span>(n)
+
+    <span class="comment"># Reserve n units for an order. True only if the full quantity was held.</span>
+    <span class="keyword">def</span> <span class="fn">reserve</span>(self, sku, wh, n):
+        it = self.<span class="fn">_item</span>(sku, wh)
+        <span class="keyword">with</span> it.lock:                              <span class="comment"># guard check-then-act → no oversell</span>
+            <span class="keyword">if</span> it.available &lt; n:
+                <span class="keyword">return</span> <span class="keyword">False</span>
+            it.<span class="fn">reserve</span>(n)
+        self.<span class="fn">_maybe_replenish</span>(sku)                <span class="comment"># check threshold after mutation</span>
+        <span class="keyword">return</span> <span class="keyword">True</span>
+
+    <span class="comment"># Sum availability across warehouses; reorder if the strategy says so.</span>
+    <span class="keyword">def</span> <span class="fn">_maybe_replenish</span>(self, sku):
+        product = self.products[sku]
+        total = <span class="fn">sum</span>(i.available <span class="keyword">for</span> i <span class="keyword">in</span> self.stock.<span class="fn">get</span>(sku, {}).<span class="fn">values</span>())
+        qty = self.strategy.<span class="fn">reorder_qty</span>(product, total)
+        <span class="keyword">if</span> qty &gt; <span class="number">0</span>:
+            <span class="type">PurchaseOrder</span>(sku, qty, self.supplier)    <span class="comment"># raise PO to supplier</span>
+            <span class="keyword">for</span> o <span class="keyword">in</span> self.observers:
+                o.<span class="fn">on_low_stock</span>(product, total, qty)
+
+<span class="keyword">if</span> __name__ == <span class="string">"__main__"</span>:
+    inv = <span class="type">InventoryManager</span>(<span class="type">ThresholdReorder</span>())
+    inv.<span class="fn">subscribe</span>(<span class="type">LowStockAlert</span>())
+    inv.<span class="fn">register</span>(<span class="type">Product</span>(<span class="string">"SKU-1"</span>, reorder_level=<span class="number">5</span>, reorder_qty=<span class="number">50</span>))
+    inv.<span class="fn">add_stock</span>(<span class="string">"SKU-1"</span>, <span class="string">"WH-A"</span>, <span class="number">8</span>)
+    <span class="fn">print</span>(inv.<span class="fn">reserve</span>(<span class="string">"SKU-1"</span>, <span class="string">"WH-A"</span>, <span class="number">4</span>))   <span class="comment"># True → avail 4 → reorder fires</span>
+</pre>
+            </div>
+        </div>
+
+        <div class="note">
+            <strong>Why this design scores well:</strong> the <strong>per-<code>StockItem</code> lock</strong> makes each reserve a single atomic check-then-act, so two order workers can never both grab the last unit (no oversell) — yet mutating <code>SKU-A</code> never blocks <code>SKU-B</code>, keeping contention low. Splitting <code>available</code> from <code>reserved</code> keeps the invariant <code>on-hand = available + reserved</code> true at all times. The <code>ReplenishmentStrategy</code> means a new policy (forecast-based, seasonal) is a new class — never an edit to <code>InventoryManager</code> (Open/Closed). And the <code>StockObserver</code> list lets you add alerting or a supplier feed without touching the reserve path.
+        </div>
+
+        <h2>Step 6 — Follow-up Extensions</h2>
+        <p>Strong candidates anticipate where the interviewer pushes next:</p>
+        <ul>
+            <li><strong>Lock-free counters:</strong> if you only ever add/subtract (no check-then-act), an <code>AtomicInteger</code> / CAS loop beats a lock — see <a href="../concurrency/atomics-lock-free.html">atomics</a>. Reserve still needs the lock because it reads <em>and</em> writes together.</li>
+            <li><strong>Multi-warehouse reserve:</strong> fulfil one order from several warehouses — acquire locks in a fixed SKU order to avoid deadlock.</li>
+            <li><strong>Reservation expiry:</strong> a cart hold times out and auto-releases via a background sweeper.</li>
+            <li><strong>Async replenishment:</strong> push reorder events onto a queue so the reserve call returns immediately.</li>
+            <li><strong>Persistence &amp; idempotency:</strong> back counters with a database using optimistic locking (version column); make PO creation idempotent.</li>
+            <li><strong>Distributed inventory:</strong> shard by SKU; use a distributed lock or per-shard owner to keep the in-memory model valid at scale.</li>
+        </ul>
+
+        <div class="warn">
+            <strong>Common mistakes:</strong> a global lock around the whole manager (kills throughput — lock per <code>StockItem</code> instead); doing the availability check and the decrement as two separate steps without a lock (classic oversell race); conflating <code>available</code> and <code>reserved</code> into one counter so you can't tell held stock from sellable stock; hardcoding the reorder rule with if/else instead of a Strategy; and notifying observers <em>inside</em> the lock, which lets a slow listener stall every other order.
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>Low-Level Design · <span>Inventory Management</span> · Java &amp; Python · Interactive Learning</p>
+    </div>
+
+    <script>
+        function showCode(btn, id) {
+            const container = btn.closest('.code-container');
+            container.querySelectorAll('.code-tab').forEach(t => t.classList.remove('active'));
+            container.querySelectorAll('.code-content').forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById(id).classList.add('active');
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat / Messaging App — LLD Problem</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8fafc; min-height: 100vh; color: #1e293b; -webkit-font-smoothing: antialiased; }
+        .container { max-width: 880px; margin: 0 auto; padding: 40px 24px 80px; }
+        .back-link { display: inline-flex; align-items: center; gap: 6px; color: #0d9488; text-decoration: none; font-size: 0.9em; font-weight: 500; margin-bottom: 28px; padding: 6px 12px; border-radius: 8px; transition: background 0.15s ease; }
+        .back-link:hover { background: #f0fdfa; }
+
+        .badges { display: flex; gap: 10px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+        .pattern-badge { display: inline-block; padding: 5px 14px; border-radius: 100px; font-size: 0.72em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; background: #e0e7ff; color: #4338ca; }
+        .diff-badge { display: inline-block; padding: 5px 14px; border-radius: 100px; font-size: 0.72em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+        .diff-easy   { background: #dcfce7; color: #16a34a; }
+        .diff-medium { background: #fef3c7; color: #d97706; }
+        .diff-hard   { background: #fee2e2; color: #dc2626; }
+
+        h1 { font-size: 2.4em; font-weight: 800; color: #0f172a; margin-bottom: 12px; letter-spacing: -0.03em; line-height: 1.2; }
+        .subtitle { font-size: 1.1em; color: #64748b; line-height: 1.7; margin-bottom: 8px; }
+        h2 { font-size: 1.35em; font-weight: 700; color: #0f172a; margin: 40px 0 16px; letter-spacing: -0.02em; }
+        h3 { font-size: 1.1em; font-weight: 600; color: #1e293b; margin: 24px 0 10px; }
+        p, li { line-height: 1.8; color: #475569; margin-bottom: 10px; font-size: 0.95em; }
+        ul, ol { padding-left: 20px; margin-bottom: 15px; }
+        strong { color: #1e293b; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 0.85em; color: #0d9488; }
+
+        .statement { background: linear-gradient(135deg, #eef2ff, #f0fdfa); border: 1px solid #e0e7ff; border-radius: 16px; padding: 24px 28px; margin: 24px 0; }
+        .statement .tag { font-size: 0.78em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #4338ca; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+        .statement p:last-child { margin-bottom: 0; }
+
+        .req-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0; }
+        .req-grid > div { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .req-grid h3 { margin-top: 0; }
+        .req-grid.func h3 { color: #0d9488; } .req-grid.nonfunc h3 { color: #4338ca; }
+        .req-grid ul { margin-bottom: 0; }
+
+        .diagram { background: #0f172a; border-radius: 16px; padding: 24px; margin: 24px 0; overflow-x: auto; }
+        .diagram pre { color: #e2e8f0; font-family: 'JetBrains Mono', monospace; font-size: 0.8em; line-height: 1.6; white-space: pre; }
+        .diagram .cls { color: #5eead4; font-weight: 600; } .diagram .rel { color: #fbbf24; } .diagram .note { color: #94a3b8; font-style: italic; }
+
+        .pattern-pills { display: flex; flex-wrap: wrap; gap: 10px; margin: 16px 0 24px; }
+        .pattern-pill { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; background: white; border: 1px solid #e2e8f0; border-radius: 100px; font-size: 0.82em; font-weight: 500; color: #475569; text-decoration: none; transition: all 0.15s ease; }
+        .pattern-pill:hover { border-color: #0d9488; color: #0d9488; background: #f0fdfa; }
+        .pattern-pill .dot { width: 8px; height: 8px; border-radius: 50%; background: #0d9488; }
+
+        .code-container { margin: 24px 0; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .code-tabs { display: flex; background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0 8px; }
+        .code-tab { padding: 10px 18px; cursor: pointer; border: none; background: transparent; color: #64748b; font-size: 0.85em; font-weight: 500; font-family: 'Inter', sans-serif; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.15s ease; }
+        .code-tab:hover { color: #0d9488; }
+        .code-tab.active { color: #0d9488; border-bottom-color: #0d9488; background: white; }
+        .code-content { display: none; background: white; padding: 24px; overflow-x: auto; }
+        .code-content.active { display: block; }
+        .code-content pre { color: #1e293b; font-family: 'JetBrains Mono', monospace; font-size: 0.82em; line-height: 1.75; white-space: pre; }
+        .keyword { color: #0d9488; } .type { color: #2563eb; } .string { color: #16a34a; }
+        .comment { color: #94a3b8; font-style: italic; } .number { color: #d97706; }
+        .preproc { color: #7c3aed; } .fn { color: #db2777; }
+
+        .note { background: #f0fdfa; border-left: 4px solid #0d9488; padding: 16px 20px; margin: 20px 0; border-radius: 0 12px 12px 0; }
+        .note ul, .note p { margin-bottom: 0; } .note li:last-child { margin-bottom: 0; }
+        .warn { background: #fef2f2; border-left: 4px solid #dc2626; padding: 16px 20px; margin: 20px 0; border-radius: 0 12px 12px 0; }
+        .warn ul, .warn p { margin-bottom: 0; } .warn li:last-child { margin-bottom: 0; }
+
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; }
+        th, td { padding: 12px 16px; border: 1px solid #e2e8f0; text-align: left; font-size: 0.9em; }
+        th { background: #f8fafc; color: #0f172a; font-weight: 600; }
+        tr:hover { background: #f8fafc; }
+
+        .footer { text-align: center; padding: 32px 20px; color: #94a3b8; font-size: 0.85em; border-top: 1px solid #e2e8f0; background: #f8fafc; }
+        .footer span { color: #0d9488; }
+
+        @media (max-width: 600px) { .req-grid { grid-template-columns: 1fr; } h1 { font-size: 1.8em; } .container { padding: 20px 16px 60px; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="../index.html" class="back-link">&larr; Back to LLD Topics</a>
+        <div class="badges">
+            <span class="pattern-badge">LLD Problem</span>
+            <span class="diff-badge diff-hard">Hard</span>
+        </div>
+        <h1>Design a Chat / Messaging App</h1>
+        <p class="subtitle">A WhatsApp-style messaging core. Users send messages into one-to-one and group conversations, a central server routes them to the right recipients, and delivery/read receipts plus online presence flow back to senders.</p>
+
+        <div class="statement">
+            <div class="tag">📋 Problem Statement</div>
+            <p>Design a chat system. A <strong>User</strong> sends a <strong>Message</strong> into a <strong>Conversation</strong> — either one-to-one or a <strong>Group</strong>. All messages pass through a central <strong>ChatServer</strong> that decides who receives them (fan-out to every group member except the sender). The server tracks <strong>presence</strong> (online/offline) and each message carries a <strong>MessageStatus</strong> moving <code>SENT → DELIVERED → READ</code>. Receipts and incoming messages are delivered to recipients via notifications.</p>
+        </div>
+
+        <h2>Step 1 — Gather Requirements</h2>
+        <p>Scope the problem out loud before coding. Separate the essentials from the extras.</p>
+        <div class="req-grid func">
+            <div>
+                <h3>✓ Functional</h3>
+                <ul>
+                    <li>One-to-one and group conversations.</li>
+                    <li>Send a message; route it to the right recipients.</li>
+                    <li>Fan-out a group message to all members but the sender.</li>
+                    <li>Delivery and read receipts per message.</li>
+                    <li>Online / offline presence per user.</li>
+                </ul>
+            </div>
+            <div>
+                <h3>◆ Non-Functional</h3>
+                <ul>
+                    <li><strong>Decoupling:</strong> users never reference each other directly — only the server.</li>
+                    <li><strong>Extensibility:</strong> add conversation types or notification channels easily.</li>
+                    <li><strong>Offline handling:</strong> queue messages for offline users.</li>
+                    <li><strong>Ordering:</strong> messages within a conversation stay in order.</li>
+                </ul>
+            </div>
+        </div>
+
+        <h2>Step 2 — Identify the Core Entities</h2>
+        <p>The nouns of the problem map to classes:</p>
+        <ul>
+            <li><strong>User</strong> — sends and receives messages; has a presence flag.</li>
+            <li><strong>Message</strong> — text + sender + timestamp + a mutable <strong>MessageStatus</strong>.</li>
+            <li><strong>MessageStatus</strong> — enum <code>SENT / DELIVERED / READ</code>.</li>
+            <li><strong>Conversation</strong> (abstract) → <strong>DirectConversation</strong> and <strong>GroupConversation</strong> — hold members and history.</li>
+            <li><strong>ChatServer</strong> — the <strong>Mediator</strong>: the single hub all messages route through; knows membership and presence.</li>
+            <li><strong>NotificationObserver</strong> — the <strong>Observer</strong>: listeners notified when a user gets a message or a receipt.</li>
+        </ul>
+
+        <h2>Step 3 — Class Diagram</h2>
+        <p>The <code>ChatServer</code> is a Mediator — users talk <em>to it</em>, not to each other. It owns routing, presence, and fan-out. Observers carry events back to clients.</p>
+        <div class="diagram">
+<pre><span class="cls">User</span> ──send(convId, text)──▶ <span class="cls">ChatServer</span> (Mediator) ◀──registers── <span class="cls">User</span>
+                                  │ knows
+        ┌─────────────────────────┼──────────────────────────┐
+        ▼                         ▼                          ▼
+ <span class="cls">Conversation</span> (abstract)     presence: <span class="rel">Map&lt;User,bool&gt;</span>     <span class="cls">NotificationObserver</span>
+        ▲                                                     ▲
+   ┌────┴─────────────┐                          ┌────────────┴──────────┐
+<span class="cls">DirectConversation</span>  <span class="cls">GroupConversation</span>          <span class="cls">PushNotifier</span>        <span class="cls">BadgeNotifier</span>
+   <span class="note">// server picks recipients = conversation.members() - sender, then fans out</span>
+
+<span class="cls">Message</span> ──has──▶ <span class="rel">MessageStatus</span> {SENT, DELIVERED, READ}
+<span class="cls">Conversation</span> ──has-many──▶ <span class="cls">Message</span> (ordered history)
+   <span class="note">// Mediator centralizes routing; Observer pushes delivery/read receipts back</span></pre>
+        </div>
+
+        <h2>Step 4 — Patterns in Play</h2>
+        <p>Name the patterns as you design — it shows you recognize the shape of the problem:</p>
+        <div class="pattern-pills">
+            <a class="pattern-pill" href="../behavioral/mediator.html"><span class="dot"></span> Mediator — ChatServer routes all messages</a>
+            <a class="pattern-pill" href="../behavioral/observer.html"><span class="dot"></span> Observer — push receipts &amp; messages to clients</a>
+            <a class="pattern-pill" href="../creational/factory-method.html"><span class="dot"></span> Factory — create conversation types</a>
+            <a class="pattern-pill" href="../concurrency/producer-consumer.html"><span class="dot"></span> Producer-Consumer — offline message queue</a>
+        </div>
+
+        <h2>Step 5 — Implementation</h2>
+        <p>A runnable core. Users only ever call <code>server.send(...)</code>; the Mediator looks up the conversation, fans out to members, flips statuses, and notifies via observers.</p>
+
+        <div class="code-container">
+            <div class="code-tabs">
+                <button class="code-tab active" onclick="showCode(this, 'javaCode')">Java</button>
+                <button class="code-tab" onclick="showCode(this, 'pyCode')">Python</button>
+            </div>
+            <div id="javaCode" class="code-content active">
+<pre><span class="keyword">import</span> java.util.*;
+
+<span class="keyword">enum</span> <span class="type">MessageStatus</span> { SENT, DELIVERED, READ }
+
+<span class="keyword">class</span> <span class="type">Message</span> {
+    <span class="keyword">final</span> <span class="type">String</span> id, text; <span class="keyword">final</span> <span class="type">User</span> sender; <span class="keyword">final</span> <span class="keyword">long</span> ts;
+    <span class="type">MessageStatus</span> status = <span class="type">MessageStatus</span>.SENT;
+    <span class="type">Message</span>(<span class="type">String</span> id, <span class="type">User</span> sender, <span class="type">String</span> text) {
+        <span class="keyword">this</span>.id = id; <span class="keyword">this</span>.sender = sender; <span class="keyword">this</span>.text = text;
+        <span class="keyword">this</span>.ts = <span class="type">System</span>.<span class="fn">currentTimeMillis</span>();
+    }
+}
+
+<span class="comment">// ---- Observer: how a client is notified ----</span>
+<span class="keyword">interface</span> <span class="type">NotificationObserver</span> {
+    <span class="keyword">void</span> <span class="fn">onMessage</span>(<span class="type">User</span> to, <span class="type">Message</span> m);
+    <span class="keyword">void</span> <span class="fn">onReceipt</span>(<span class="type">Message</span> m);
+}
+<span class="keyword">class</span> <span class="type">PushNotifier</span> <span class="keyword">implements</span> <span class="type">NotificationObserver</span> {
+    <span class="keyword">public void</span> <span class="fn">onMessage</span>(<span class="type">User</span> to, <span class="type">Message</span> m) {
+        <span class="type">System</span>.out.<span class="fn">println</span>(<span class="string">"[push -&gt; "</span> + to.name + <span class="string">"] "</span> + m.sender.name + <span class="string">": "</span> + m.text);
+    }
+    <span class="keyword">public void</span> <span class="fn">onReceipt</span>(<span class="type">Message</span> m) {
+        <span class="type">System</span>.out.<span class="fn">println</span>(<span class="string">"  receipt: "</span> + m.id + <span class="string">" -&gt; "</span> + m.status);
+    }
+}
+
+<span class="comment">// ---- Conversations ----</span>
+<span class="keyword">abstract class</span> <span class="type">Conversation</span> {
+    <span class="keyword">final</span> <span class="type">String</span> id;
+    <span class="keyword">final</span> <span class="type">List</span>&lt;<span class="type">User</span>&gt; members = <span class="keyword">new</span> <span class="type">ArrayList</span>&lt;&gt;();
+    <span class="keyword">final</span> <span class="type">List</span>&lt;<span class="type">Message</span>&gt; history = <span class="keyword">new</span> <span class="type">ArrayList</span>&lt;&gt;();
+    <span class="type">Conversation</span>(<span class="type">String</span> id) { <span class="keyword">this</span>.id = id; }
+    <span class="type">List</span>&lt;<span class="type">User</span>&gt; <span class="fn">recipients</span>(<span class="type">User</span> sender) {
+        <span class="type">List</span>&lt;<span class="type">User</span>&gt; r = <span class="keyword">new</span> <span class="type">ArrayList</span>&lt;&gt;(members);
+        r.<span class="fn">remove</span>(sender);                <span class="comment">// everyone but the sender</span>
+        <span class="keyword">return</span> r;
+    }
+}
+<span class="keyword">class</span> <span class="type">DirectConversation</span> <span class="keyword">extends</span> <span class="type">Conversation</span> {
+    <span class="type">DirectConversation</span>(<span class="type">String</span> id, <span class="type">User</span> a, <span class="type">User</span> b) { <span class="keyword">super</span>(id); members.<span class="fn">add</span>(a); members.<span class="fn">add</span>(b); }
+}
+<span class="keyword">class</span> <span class="type">GroupConversation</span> <span class="keyword">extends</span> <span class="type">Conversation</span> {
+    <span class="type">GroupConversation</span>(<span class="type">String</span> id, <span class="type">List</span>&lt;<span class="type">User</span>&gt; m) { <span class="keyword">super</span>(id); members.<span class="fn">addAll</span>(m); }
+}
+
+<span class="comment">// ---- Mediator: the single hub all messages route through ----</span>
+<span class="keyword">class</span> <span class="type">ChatServer</span> {
+    <span class="keyword">private final</span> <span class="type">Map</span>&lt;<span class="type">String</span>, <span class="type">Conversation</span>&gt; convs = <span class="keyword">new</span> <span class="type">HashMap</span>&lt;&gt;();
+    <span class="keyword">private final</span> <span class="type">Map</span>&lt;<span class="type">User</span>, <span class="type">Boolean</span>&gt; online = <span class="keyword">new</span> <span class="type">HashMap</span>&lt;&gt;();
+    <span class="keyword">private final</span> <span class="type">Map</span>&lt;<span class="type">User</span>, <span class="type">Queue</span>&lt;<span class="type">Message</span>&gt;&gt; pending = <span class="keyword">new</span> <span class="type">HashMap</span>&lt;&gt;();
+    <span class="keyword">private final</span> <span class="type">NotificationObserver</span> notifier;
+    <span class="type">ChatServer</span>(<span class="type">NotificationObserver</span> n) { notifier = n; }
+
+    <span class="keyword">void</span> <span class="fn">register</span>(<span class="type">User</span> u) { online.<span class="fn">put</span>(u, <span class="keyword">true</span>); pending.<span class="fn">put</span>(u, <span class="keyword">new</span> <span class="type">LinkedList</span>&lt;&gt;()); u.server = <span class="keyword">this</span>; }
+    <span class="keyword">void</span> <span class="fn">addConversation</span>(<span class="type">Conversation</span> c) { convs.<span class="fn">put</span>(c.id, c); }
+
+    <span class="keyword">void</span> <span class="fn">setOnline</span>(<span class="type">User</span> u, <span class="keyword">boolean</span> up) {
+        online.<span class="fn">put</span>(u, up);
+        <span class="keyword">if</span> (up) <span class="fn">flush</span>(u);          <span class="comment">// deliver queued messages on reconnect</span>
+    }
+
+    <span class="comment">// the core routing method — users call only this</span>
+    <span class="keyword">synchronized void</span> <span class="fn">send</span>(<span class="type">User</span> from, <span class="type">String</span> convId, <span class="type">String</span> text) {
+        <span class="type">Conversation</span> c = convs.<span class="fn">get</span>(convId);
+        <span class="type">Message</span> m = <span class="keyword">new</span> <span class="type">Message</span>(<span class="type">UUID</span>.<span class="fn">randomUUID</span>().<span class="fn">toString</span>().<span class="fn">substring</span>(<span class="number">0</span>, <span class="number">4</span>), from, text);
+        c.history.<span class="fn">add</span>(m);
+        <span class="keyword">for</span> (<span class="type">User</span> to : c.<span class="fn">recipients</span>(from)) {       <span class="comment">// fan-out</span>
+            <span class="keyword">if</span> (<span class="type">Boolean</span>.TRUE.<span class="fn">equals</span>(online.<span class="fn">get</span>(to))) <span class="fn">deliver</span>(to, m);
+            <span class="keyword">else</span> pending.<span class="fn">get</span>(to).<span class="fn">add</span>(m);          <span class="comment">// queue for offline user</span>
+        }
+    }
+
+    <span class="keyword">private void</span> <span class="fn">deliver</span>(<span class="type">User</span> to, <span class="type">Message</span> m) {
+        notifier.<span class="fn">onMessage</span>(to, m);
+        m.status = <span class="type">MessageStatus</span>.DELIVERED;
+        notifier.<span class="fn">onReceipt</span>(m);
+    }
+    <span class="keyword">private void</span> <span class="fn">flush</span>(<span class="type">User</span> u) {
+        <span class="type">Queue</span>&lt;<span class="type">Message</span>&gt; q = pending.<span class="fn">get</span>(u);
+        <span class="keyword">while</span> (!q.<span class="fn">isEmpty</span>()) <span class="fn">deliver</span>(u, q.<span class="fn">poll</span>());
+    }
+    <span class="keyword">void</span> <span class="fn">markRead</span>(<span class="type">Message</span> m) { m.status = <span class="type">MessageStatus</span>.READ; notifier.<span class="fn">onReceipt</span>(m); }
+}
+
+<span class="keyword">class</span> <span class="type">User</span> {
+    <span class="keyword">final</span> <span class="type">String</span> name; <span class="type">ChatServer</span> server;
+    <span class="type">User</span>(<span class="type">String</span> name) { <span class="keyword">this</span>.name = name; }
+    <span class="keyword">void</span> <span class="fn">send</span>(<span class="type">String</span> convId, <span class="type">String</span> text) { server.<span class="fn">send</span>(<span class="keyword">this</span>, convId, text); }
+}
+
+<span class="keyword">public class</span> <span class="type">Demo</span> {
+    <span class="keyword">public static void</span> <span class="fn">main</span>(<span class="type">String</span>[] a) {
+        <span class="type">ChatServer</span> server = <span class="keyword">new</span> <span class="type">ChatServer</span>(<span class="keyword">new</span> <span class="type">PushNotifier</span>());
+        <span class="type">User</span> alice = <span class="keyword">new</span> <span class="type">User</span>(<span class="string">"Alice"</span>), bob = <span class="keyword">new</span> <span class="type">User</span>(<span class="string">"Bob"</span>), eve = <span class="keyword">new</span> <span class="type">User</span>(<span class="string">"Eve"</span>);
+        server.<span class="fn">register</span>(alice); server.<span class="fn">register</span>(bob); server.<span class="fn">register</span>(eve);
+        server.<span class="fn">addConversation</span>(<span class="keyword">new</span> <span class="type">GroupConversation</span>(<span class="string">"g1"</span>, <span class="type">List</span>.<span class="fn">of</span>(alice, bob, eve)));
+
+        alice.<span class="fn">send</span>(<span class="string">"g1"</span>, <span class="string">"Hi team!"</span>);     <span class="comment">// fans out to Bob &amp; Eve</span>
+        server.<span class="fn">setOnline</span>(eve, <span class="keyword">false</span>);
+        bob.<span class="fn">send</span>(<span class="string">"g1"</span>, <span class="string">"On my way"</span>);      <span class="comment">// queued for offline Eve</span>
+        server.<span class="fn">setOnline</span>(eve, <span class="keyword">true</span>);       <span class="comment">// Eve reconnects -&gt; queued msg flushed</span>
+    }
+}
+</pre>
+            </div>
+            <div id="pyCode" class="code-content">
+<pre><span class="keyword">from</span> abc <span class="keyword">import</span> ABC, abstractmethod
+<span class="keyword">from</span> collections <span class="keyword">import</span> deque
+<span class="keyword">from</span> enum <span class="keyword">import</span> Enum
+<span class="keyword">import</span> time, uuid, threading
+
+<span class="keyword">class</span> <span class="type">MessageStatus</span>(Enum):
+    SENT = <span class="number">1</span>; DELIVERED = <span class="number">2</span>; READ = <span class="number">3</span>
+
+<span class="keyword">class</span> <span class="type">Message</span>:
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, id, sender, text):
+        self.id, self.sender, self.text = id, sender, text
+        self.ts = time.<span class="fn">time</span>()
+        self.status = <span class="type">MessageStatus</span>.SENT
+
+<span class="comment"># ---- Observer: how a client is notified ----</span>
+<span class="keyword">class</span> <span class="type">NotificationObserver</span>(ABC):
+    <span class="preproc">@abstractmethod</span>
+    <span class="keyword">def</span> <span class="fn">on_message</span>(self, to, m): ...
+    <span class="preproc">@abstractmethod</span>
+    <span class="keyword">def</span> <span class="fn">on_receipt</span>(self, m): ...
+
+<span class="keyword">class</span> <span class="type">PushNotifier</span>(<span class="type">NotificationObserver</span>):
+    <span class="keyword">def</span> <span class="fn">on_message</span>(self, to, m):
+        <span class="fn">print</span>(<span class="string">f"[push -&gt; {to.name}] {m.sender.name}: {m.text}"</span>)
+    <span class="keyword">def</span> <span class="fn">on_receipt</span>(self, m):
+        <span class="fn">print</span>(<span class="string">f"  receipt: {m.id} -&gt; {m.status.name}"</span>)
+
+<span class="comment"># ---- Conversations ----</span>
+<span class="keyword">class</span> <span class="type">Conversation</span>:
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, id, members):
+        self.id, self.members, self.history = id, <span class="fn">list</span>(members), []
+    <span class="keyword">def</span> <span class="fn">recipients</span>(self, sender):
+        <span class="keyword">return</span> [u <span class="keyword">for</span> u <span class="keyword">in</span> self.members <span class="keyword">if</span> u <span class="keyword">is</span> <span class="keyword">not</span> sender]
+
+<span class="keyword">class</span> <span class="type">DirectConversation</span>(<span class="type">Conversation</span>):
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, id, a, b): <span class="fn">super</span>().<span class="fn">__init__</span>(id, [a, b])
+<span class="keyword">class</span> <span class="type">GroupConversation</span>(<span class="type">Conversation</span>):
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, id, members): <span class="fn">super</span>().<span class="fn">__init__</span>(id, members)
+
+<span class="comment"># ---- Mediator: the single hub all messages route through ----</span>
+<span class="keyword">class</span> <span class="type">ChatServer</span>:
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, notifier):
+        self.notifier = notifier
+        self.convs, self.online, self.pending = {}, {}, {}
+        self._lock = threading.<span class="type">Lock</span>()
+
+    <span class="keyword">def</span> <span class="fn">register</span>(self, u):
+        self.online[u], self.pending[u] = <span class="keyword">True</span>, deque()
+        u.server = self
+    <span class="keyword">def</span> <span class="fn">add_conversation</span>(self, c): self.convs[c.id] = c
+
+    <span class="keyword">def</span> <span class="fn">set_online</span>(self, u, up):
+        self.online[u] = up
+        <span class="keyword">if</span> up: self.<span class="fn">_flush</span>(u)        <span class="comment"># deliver queued messages on reconnect</span>
+
+    <span class="comment"># the core routing method — users call only this</span>
+    <span class="keyword">def</span> <span class="fn">send</span>(self, frm, conv_id, text):
+        <span class="keyword">with</span> self._lock:
+            c = self.convs[conv_id]
+            m = <span class="type">Message</span>(<span class="fn">str</span>(uuid.<span class="fn">uuid4</span>())[:<span class="number">4</span>], frm, text)
+            c.history.<span class="fn">append</span>(m)
+            <span class="keyword">for</span> to <span class="keyword">in</span> c.<span class="fn">recipients</span>(frm):    <span class="comment"># fan-out</span>
+                <span class="keyword">if</span> self.online.<span class="fn">get</span>(to):
+                    self.<span class="fn">_deliver</span>(to, m)
+                <span class="keyword">else</span>:
+                    self.pending[to].<span class="fn">append</span>(m)   <span class="comment"># queue for offline user</span>
+
+    <span class="keyword">def</span> <span class="fn">_deliver</span>(self, to, m):
+        self.notifier.<span class="fn">on_message</span>(to, m)
+        m.status = <span class="type">MessageStatus</span>.DELIVERED
+        self.notifier.<span class="fn">on_receipt</span>(m)
+    <span class="keyword">def</span> <span class="fn">_flush</span>(self, u):
+        q = self.pending[u]
+        <span class="keyword">while</span> q: self.<span class="fn">_deliver</span>(u, q.<span class="fn">popleft</span>())
+    <span class="keyword">def</span> <span class="fn">mark_read</span>(self, m):
+        m.status = <span class="type">MessageStatus</span>.READ
+        self.notifier.<span class="fn">on_receipt</span>(m)
+
+<span class="keyword">class</span> <span class="type">User</span>:
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, name):
+        self.name, self.server = name, <span class="keyword">None</span>
+    <span class="keyword">def</span> <span class="fn">send</span>(self, conv_id, text): self.server.<span class="fn">send</span>(self, conv_id, text)
+
+<span class="keyword">if</span> __name__ == <span class="string">"__main__"</span>:
+    server = <span class="type">ChatServer</span>(<span class="type">PushNotifier</span>())
+    alice, bob, eve = <span class="type">User</span>(<span class="string">"Alice"</span>), <span class="type">User</span>(<span class="string">"Bob"</span>), <span class="type">User</span>(<span class="string">"Eve"</span>)
+    <span class="keyword">for</span> u <span class="keyword">in</span> (alice, bob, eve): server.<span class="fn">register</span>(u)
+    server.<span class="fn">add_conversation</span>(<span class="type">GroupConversation</span>(<span class="string">"g1"</span>, [alice, bob, eve]))
+
+    alice.<span class="fn">send</span>(<span class="string">"g1"</span>, <span class="string">"Hi team!"</span>)      <span class="comment"># fans out to Bob &amp; Eve</span>
+    server.<span class="fn">set_online</span>(eve, <span class="keyword">False</span>)
+    bob.<span class="fn">send</span>(<span class="string">"g1"</span>, <span class="string">"On my way"</span>)      <span class="comment"># queued for offline Eve</span>
+    server.<span class="fn">set_online</span>(eve, <span class="keyword">True</span>)        <span class="comment"># Eve reconnects -&gt; queued msg flushed</span>
+</pre>
+            </div>
+        </div>
+
+        <div class="note">
+            <strong>Why this design scores well:</strong> the <code>ChatServer</code> Mediator means a <code>User</code> never holds references to other users — it just calls <code>server.send(...)</code>. Adding a user, a group, or a moderation hook touches only the server, not every client (this is exactly the N-to-N coupling Mediator dissolves). The Observer (<code>NotificationObserver</code>) decouples <em>how</em> a client is reached — push, websocket, badge — from the routing logic. Queuing for offline users is a natural producer-consumer touchpoint the interviewer will appreciate.
+        </div>
+
+        <h2>Step 6 — Follow-up Extensions</h2>
+        <p>Anticipate where the interviewer pushes next:</p>
+        <ul>
+            <li><strong>Read receipts at scale:</strong> in a group, track a per-member status map instead of one status on the message.</li>
+            <li><strong>Ordering &amp; dedupe:</strong> attach a monotonic sequence number per conversation; clients ack by sequence.</li>
+            <li><strong>Real delivery:</strong> swap the in-process observer for websockets / a message broker (Kafka) behind the same interface.</li>
+            <li><strong>Persistence:</strong> store history in a DB partitioned by conversation; the in-memory list becomes a recent-cache.</li>
+            <li><strong>Typing &amp; presence:</strong> presence becomes its own pub/sub topic through the same Mediator.</li>
+        </ul>
+
+        <div class="warn">
+            <strong>Common mistakes:</strong> letting users hold direct references to each other (N×N coupling) instead of routing through the Mediator; baking the notification channel into the server instead of an Observer interface; forgetting offline users so messages are silently dropped; storing a single status on a group message instead of per-recipient. Avoid these and you're in the top tier.
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>Low-Level Design · <span>Chat / Messaging App</span> · Java &amp; Python · Interactive Learning</p>
+    </div>
+
+    <script>
+        function showCode(btn, id) {
+            const container = btn.closest('.code-container');
+            container.querySelectorAll('.code-tab').forEach(t => t.classList.remove('active'));
+            container.querySelectorAll('.code-content').forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById(id).classList.add('active');
+        }
+    </script>
+</body>
+</html>

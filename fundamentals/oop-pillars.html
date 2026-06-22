@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Four Pillars of OOP — LLD Guide</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8fafc; min-height: 100vh; color: #1e293b; -webkit-font-smoothing: antialiased; }
+        .container { max-width: 880px; margin: 0 auto; padding: 40px 24px 80px; }
+        .back-link { display: inline-flex; align-items: center; gap: 6px; color: #0d9488; text-decoration: none; font-size: 0.9em; font-weight: 500; margin-bottom: 28px; padding: 6px 12px; border-radius: 8px; transition: background 0.15s ease; }
+        .back-link:hover { background: #f0fdfa; }
+
+        .pattern-badge { display: inline-block; padding: 5px 14px; border-radius: 100px; font-size: 0.72em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; background: #ccfbf1; color: #0d9488; margin-bottom: 16px; }
+        h1 { font-size: 2.4em; font-weight: 800; color: #0f172a; margin-bottom: 12px; letter-spacing: -0.03em; line-height: 1.2; }
+        .subtitle { font-size: 1.1em; color: #64748b; line-height: 1.7; margin-bottom: 8px; }
+        h2 { font-size: 1.35em; font-weight: 700; color: #0f172a; margin: 40px 0 16px; letter-spacing: -0.02em; }
+        h3 { font-size: 1.1em; font-weight: 600; color: #1e293b; margin: 24px 0 10px; }
+        p, li { line-height: 1.8; color: #475569; margin-bottom: 10px; font-size: 0.95em; }
+        ul, ol { padding-left: 20px; margin-bottom: 15px; }
+        strong { color: #1e293b; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 0.85em; color: #0d9488; }
+
+        .analogy { background: linear-gradient(135deg, #f0fdfa, #fffbeb); border: 1px solid #ccfbf1; border-radius: 16px; padding: 24px 28px; margin: 24px 0; }
+        .analogy .tag { font-size: 0.78em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #0d9488; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+        .analogy p:last-child { margin-bottom: 0; }
+
+        .code-container { margin: 24px 0; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .code-tabs { display: flex; background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0 8px; }
+        .code-tab { padding: 10px 18px; cursor: pointer; border: none; background: transparent; color: #64748b; font-size: 0.85em; font-weight: 500; font-family: 'Inter', sans-serif; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.15s ease; }
+        .code-tab:hover { color: #0d9488; }
+        .code-tab.active { color: #0d9488; border-bottom-color: #0d9488; background: white; }
+        .code-content { display: none; background: white; padding: 24px; overflow-x: auto; }
+        .code-content.active { display: block; }
+        .code-content pre { color: #1e293b; font-family: 'JetBrains Mono', monospace; font-size: 0.82em; line-height: 1.75; white-space: pre; }
+        .keyword { color: #0d9488; } .type { color: #2563eb; } .string { color: #16a34a; }
+        .comment { color: #94a3b8; font-style: italic; } .number { color: #d97706; }
+        .preproc { color: #7c3aed; } .fn { color: #db2777; }
+
+        .note { background: #f0fdfa; border-left: 4px solid #0d9488; padding: 16px 20px; margin: 20px 0; border-radius: 0 12px 12px 0; }
+        .note ul, .note p { margin-bottom: 0; } .note li:last-child { margin-bottom: 0; }
+        .warn { background: #fef2f2; border-left: 4px solid #dc2626; padding: 16px 20px; margin: 20px 0; border-radius: 0 12px 12px 0; }
+        .warn ul, .warn p { margin-bottom: 0; } .warn li:last-child { margin-bottom: 0; }
+
+        .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0; }
+        .compare > div { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .pros h3 { color: #16a34a; margin-top: 0; } .cons h3 { color: #dc2626; margin-top: 0; }
+        .compare ul { margin-bottom: 0; }
+
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; }
+        th, td { padding: 12px 16px; border: 1px solid #e2e8f0; text-align: left; font-size: 0.9em; }
+        th { background: #f8fafc; color: #0f172a; font-weight: 600; }
+        tr:hover { background: #f8fafc; }
+
+        /* Interactive playground */
+        .playground { background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 24px; margin: 24px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .pg-title { font-weight: 700; color: #0f172a; font-size: 0.95em; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+        .pg-sub { color: #64748b; font-size: 0.82em; margin-bottom: 18px; }
+        .pg-stage { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: center; min-height: 120px; padding: 16px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0; }
+        .obj-box { width: 110px; padding: 14px 10px; border-radius: 12px; text-align: center; border: 2px solid #cbd5e1; background: white; transition: all 0.3s ease; }
+        .obj-box .lbl { font-size: 0.72em; color: #64748b; font-weight: 600; }
+        .obj-box .id { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 0.92em; color: #0f172a; margin-top: 4px; word-break: break-all; }
+        .obj-box.same { border-color: #0d9488; background: #f0fdfa; box-shadow: 0 0 0 3px rgba(13,148,136,0.12); }
+        .obj-box.fresh { border-color: #d97706; background: #fffbeb; box-shadow: 0 0 0 3px rgba(217,119,6,0.12); }
+        .pg-status { margin-top: 14px; padding: 12px 14px; background: #f8fafc; border-radius: 8px; font-size: 0.85em; color: #475569; min-height: 44px; display: flex; align-items: center; border: 1px solid #e2e8f0; line-height: 1.5; }
+        .pg-controls { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; align-items: center; }
+        .btn { padding: 8px 16px; border: none; border-radius: 8px; font-size: 0.85em; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.15s ease; }
+        .btn-primary { background: #0d9488; color: white; }
+        .btn-primary:hover { background: #0f766e; transform: translateY(-1px); }
+        .btn-ghost { background: #f1f5f9; color: #475569; }
+        .btn-ghost:hover { background: #e2e8f0; }
+
+        .footer { text-align: center; padding: 32px 20px; color: #94a3b8; font-size: 0.85em; border-top: 1px solid #e2e8f0; background: #f8fafc; }
+        .footer span { color: #0d9488; }
+
+        @media (max-width: 600px) { .compare { grid-template-columns: 1fr; } h1 { font-size: 1.8em; } .container { padding: 20px 16px 60px; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="../index.html" class="back-link">&larr; Back to LLD Topics</a>
+        <div class="pattern-badge">Fundamentals</div>
+        <h1>The Four Pillars of OOP</h1>
+        <p class="subtitle">The four ideas that <strong>every</strong> object-oriented design rests on: <strong>encapsulation</strong>, <strong>abstraction</strong>, <strong>inheritance</strong>, and <strong>polymorphism</strong>.</p>
+
+        <div class="analogy">
+            <div class="tag">🌍 Why "pillars"?</div>
+            <p>A building stands on its pillars. Pull one out and the whole thing wobbles. Object-oriented programming is the same: these four ideas hold up everything else — design patterns, SOLID principles, clean architecture. Master them and the rest of LLD suddenly makes sense.</p>
+            <p>The good news: each pillar is something you already understand from everyday life. We'll meet each one with a real-world picture first, then the code.</p>
+        </div>
+
+        <h2>1. Encapsulation</h2>
+        <p><strong>Encapsulation</strong> means bundling data (fields) and the methods that operate on that data into one unit — a class — and <strong>hiding the internals</strong> behind a controlled interface. Outside code talks to the object through public methods (getters/setters), never by reaching in and grabbing raw fields.</p>
+
+        <div class="analogy">
+            <div class="tag">💊 Analogy: the medicine capsule &amp; the car pedals</div>
+            <p>A <strong>medicine capsule</strong> wraps the powder inside a shell — you swallow the capsule, you never handle the powder directly. The shell protects the contents and protects <em>you</em>.</p>
+            <p>Or think of a <strong>car</strong>: you press the accelerator and it goes faster. You don't reach into the engine to adjust fuel injection — the pedal <em>hides</em> that complexity and only lets you do safe, sensible things.</p>
+        </div>
+
+        <p><strong>Why it matters:</strong> by hiding fields behind accessors you can validate input (reject a negative balance), change the internal representation later without breaking callers, and keep your object always in a valid state. The object owns its own rules.</p>
+
+        <div class="code-container">
+            <div class="code-tabs">
+                <button class="code-tab active" onclick="showCode(this, 'encJava')">Java</button>
+                <button class="code-tab" onclick="showCode(this, 'encPy')">Python</button>
+            </div>
+            <div id="encJava" class="code-content active">
+<pre><span class="keyword">public class</span> <span class="type">BankAccount</span> {
+    <span class="comment">// private -> the field is hidden from the outside world</span>
+    <span class="keyword">private double</span> balance;
+
+    <span class="keyword">public</span> <span class="fn">BankAccount</span>(<span class="keyword">double</span> opening) {
+        <span class="keyword">if</span> (opening &lt; <span class="number">0</span>) <span class="keyword">throw new</span> <span class="type">IllegalArgumentException</span>(<span class="string">"no negatives"</span>);
+        <span class="keyword">this</span>.balance = opening;
+    }
+
+    <span class="comment">// controlled access: the only way to add money</span>
+    <span class="keyword">public void</span> <span class="fn">deposit</span>(<span class="keyword">double</span> amount) {
+        <span class="keyword">if</span> (amount &lt;= <span class="number">0</span>) <span class="keyword">throw new</span> <span class="type">IllegalArgumentException</span>(<span class="string">"must be &gt; 0"</span>);
+        balance += amount;                <span class="comment">// invariant stays safe</span>
+    }
+
+    <span class="keyword">public double</span> <span class="fn">getBalance</span>() { <span class="keyword">return</span> balance; }   <span class="comment">// getter, no setter</span>
+}
+
+<span class="comment">// Caller cannot do:  account.balance = -999;  // won't compile</span>
+<span class="type">BankAccount</span> acct = <span class="keyword">new</span> <span class="type">BankAccount</span>(<span class="number">100</span>);
+acct.<span class="fn">deposit</span>(<span class="number">50</span>);
+<span class="type">System</span>.out.<span class="fn">println</span>(acct.<span class="fn">getBalance</span>());   <span class="comment">// 150.0</span>
+</pre>
+            </div>
+            <div id="encPy" class="code-content">
+<pre><span class="keyword">class</span> <span class="type">BankAccount</span>:
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, opening):
+        <span class="keyword">if</span> opening &lt; <span class="number">0</span>:
+            <span class="keyword">raise</span> <span class="type">ValueError</span>(<span class="string">"no negatives"</span>)
+        self.__balance = opening      <span class="comment"># __ triggers name-mangling</span>
+
+    <span class="keyword">def</span> <span class="fn">deposit</span>(self, amount):
+        <span class="keyword">if</span> amount &lt;= <span class="number">0</span>:
+            <span class="keyword">raise</span> <span class="type">ValueError</span>(<span class="string">"must be &gt; 0"</span>)
+        self.__balance += amount
+
+    <span class="comment"># @property exposes a read-only "balance" attribute</span>
+    @property
+    <span class="keyword">def</span> <span class="fn">balance</span>(self):
+        <span class="keyword">return</span> self.__balance
+
+<span class="comment"># Python convention: _single = "internal, please don't touch"</span>
+<span class="comment">#                    __double = name-mangled to _BankAccount__balance</span>
+acct = <span class="type">BankAccount</span>(<span class="number">100</span>)
+acct.<span class="fn">deposit</span>(<span class="number">50</span>)
+<span class="fn">print</span>(acct.balance)          <span class="comment"># 150  (read via property)</span>
+<span class="comment"># acct.__balance = -999     # does NOT touch the real field</span>
+</pre>
+            </div>
+        </div>
+
+        <div class="note">
+            <strong>Python note:</strong> Python has no <code>private</code> keyword. By convention a leading underscore <code>_value</code> says "internal — leave it alone", and a double underscore <code>__value</code> triggers <em>name-mangling</em> (it becomes <code>_ClassName__value</code>), which discourages accidental access. It's "we're all adults here" enforced by etiquette, not the compiler.
+        </div>
+
+        <h2>2. Abstraction</h2>
+        <p><strong>Abstraction</strong> means exposing only the <strong>essential features</strong> of something while hiding the messy implementation details. You define <em>what</em> an object can do without committing to <em>how</em> it does it. In code this shows up as <strong>abstract classes</strong> and <strong>interfaces</strong>.</p>
+
+        <div class="analogy">
+            <div class="tag">🚗 Analogy: driving without being a mechanic</div>
+            <p>You can drive a car perfectly well without knowing how combustion, transmission, or electronic fuel injection work. The steering wheel, pedals, and gear stick are the <em>abstraction</em> — a simple interface to a very complex machine. Swap a petrol engine for an electric motor and you still just press the pedal.</p>
+        </div>
+
+        <p><strong>Encapsulation vs abstraction:</strong> they're cousins. Encapsulation is about <em>hiding the data</em> inside a class; abstraction is about <em>hiding the complexity</em> behind a simple, stable interface so callers depend on a concept, not a concrete implementation.</p>
+
+        <div class="code-container">
+            <div class="code-tabs">
+                <button class="code-tab active" onclick="showCode(this, 'absJava')">Java</button>
+                <button class="code-tab" onclick="showCode(this, 'absPy')">Python</button>
+            </div>
+            <div id="absJava" class="code-content active">
+<pre><span class="comment">// interface = a pure contract: WHAT, never HOW</span>
+<span class="keyword">public interface</span> <span class="type">PaymentMethod</span> {
+    <span class="keyword">void</span> <span class="fn">pay</span>(<span class="keyword">double</span> amount);     <span class="comment">// no body, just the promise</span>
+}
+
+<span class="comment">// abstract class = a partial implementation + required gaps</span>
+<span class="keyword">public abstract class</span> <span class="type">Notification</span> {
+    <span class="keyword">public void</span> <span class="fn">send</span>(<span class="type">String</span> msg) {        <span class="comment">// shared behavior</span>
+        <span class="fn">deliver</span>(<span class="string">"[App] "</span> + msg);
+    }
+    <span class="comment">// subclasses MUST fill this in</span>
+    <span class="keyword">protected abstract void</span> <span class="fn">deliver</span>(<span class="type">String</span> formatted);
+}
+
+<span class="keyword">public class</span> <span class="type">EmailNotification</span> <span class="keyword">extends</span> <span class="type">Notification</span> {
+    @Override
+    <span class="keyword">protected void</span> <span class="fn">deliver</span>(<span class="type">String</span> formatted) {
+        <span class="type">System</span>.out.<span class="fn">println</span>(<span class="string">"Emailing: "</span> + formatted);
+    }
+}
+
+<span class="comment">// Callers depend on the abstraction, not the concrete class:</span>
+<span class="type">Notification</span> n = <span class="keyword">new</span> <span class="type">EmailNotification</span>();
+n.<span class="fn">send</span>(<span class="string">"Welcome!"</span>);
+</pre>
+            </div>
+            <div id="absPy" class="code-content">
+<pre><span class="keyword">from</span> abc <span class="keyword">import</span> <span class="type">ABC</span>, abstractmethod
+
+<span class="comment"># abc.ABC = Python's abstract base class</span>
+<span class="keyword">class</span> <span class="type">Notification</span>(<span class="type">ABC</span>):
+    <span class="keyword">def</span> <span class="fn">send</span>(self, msg):              <span class="comment"># shared, concrete behavior</span>
+        self.<span class="fn">deliver</span>(<span class="string">f"[App] {msg}"</span>)
+
+    @abstractmethod
+    <span class="keyword">def</span> <span class="fn">deliver</span>(self, formatted):     <span class="comment"># subclasses MUST implement</span>
+        ...
+
+<span class="keyword">class</span> <span class="type">EmailNotification</span>(<span class="type">Notification</span>):
+    <span class="keyword">def</span> <span class="fn">deliver</span>(self, formatted):
+        <span class="fn">print</span>(<span class="string">f"Emailing: {formatted}"</span>)
+
+<span class="comment"># Notification()          # TypeError: can't instantiate abstract class</span>
+n = <span class="type">EmailNotification</span>()
+n.<span class="fn">send</span>(<span class="string">"Welcome!"</span>)         <span class="comment"># Emailing: [App] Welcome!</span>
+</pre>
+            </div>
+        </div>
+
+        <h2>3. Inheritance</h2>
+        <p><strong>Inheritance</strong> lets one class (the <em>child</em> / subclass) reuse and extend the fields and methods of another (the <em>parent</em> / base class). It models an <strong>"is-a"</strong> relationship: a <code>Dog</code> <em>is an</em> <code>Animal</code>, so it inherits everything an animal can do and adds its own twist.</p>
+
+        <div class="analogy">
+            <div class="tag">👨‍👩‍👧 Analogy: a child inheriting traits</div>
+            <p>A child inherits eye color and surname from their parents — they get those "for free" — and then develop their own personality on top. A subclass works the same way: it starts with everything the base class offers, then overrides or adds what makes it special.</p>
+        </div>
+
+        <div class="code-container">
+            <div class="code-tabs">
+                <button class="code-tab active" onclick="showCode(this, 'inhJava')">Java</button>
+                <button class="code-tab" onclick="showCode(this, 'inhPy')">Python</button>
+            </div>
+            <div id="inhJava" class="code-content active">
+<pre><span class="keyword">public class</span> <span class="type">Animal</span> {
+    <span class="keyword">protected</span> <span class="type">String</span> name;
+    <span class="keyword">public</span> <span class="fn">Animal</span>(<span class="type">String</span> name) { <span class="keyword">this</span>.name = name; }
+    <span class="keyword">public</span> <span class="type">String</span> <span class="fn">speak</span>() { <span class="keyword">return</span> name + <span class="string">" makes a sound"</span>; }
+}
+
+<span class="comment">// Dog IS-A Animal -> reuse + extend</span>
+<span class="keyword">public class</span> <span class="type">Dog</span> <span class="keyword">extends</span> <span class="type">Animal</span> {
+    <span class="keyword">public</span> <span class="fn">Dog</span>(<span class="type">String</span> name) {
+        <span class="keyword">super</span>(name);                 <span class="comment">// call the parent constructor</span>
+    }
+    @Override
+    <span class="keyword">public</span> <span class="type">String</span> <span class="fn">speak</span>() {        <span class="comment">// override the inherited behavior</span>
+        <span class="keyword">return</span> name + <span class="string">" says Woof!"</span>;
+    }
+}
+
+<span class="type">Animal</span> a = <span class="keyword">new</span> <span class="type">Dog</span>(<span class="string">"Rex"</span>);
+<span class="type">System</span>.out.<span class="fn">println</span>(a.<span class="fn">speak</span>());     <span class="comment">// Rex says Woof!</span>
+</pre>
+            </div>
+            <div id="inhPy" class="code-content">
+<pre><span class="keyword">class</span> <span class="type">Animal</span>:
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, name):
+        self.name = name
+    <span class="keyword">def</span> <span class="fn">speak</span>(self):
+        <span class="keyword">return</span> <span class="string">f"{self.name} makes a sound"</span>
+
+<span class="comment"># Dog IS-A Animal</span>
+<span class="keyword">class</span> <span class="type">Dog</span>(<span class="type">Animal</span>):
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, name):
+        <span class="fn">super</span>().<span class="fn">__init__</span>(name)      <span class="comment"># call the parent constructor</span>
+    <span class="keyword">def</span> <span class="fn">speak</span>(self):                <span class="comment"># override</span>
+        <span class="keyword">return</span> <span class="string">f"{self.name} says Woof!"</span>
+
+a = <span class="type">Dog</span>(<span class="string">"Rex"</span>)
+<span class="fn">print</span>(a.<span class="fn">speak</span>())               <span class="comment"># Rex says Woof!</span>
+</pre>
+            </div>
+        </div>
+
+        <div class="warn">
+            <strong>Don't over-use inheritance.</strong> Deep inheritance trees are rigid and brittle — a change in the base ripples through every subclass, and a subclass is locked to a single parent. The seasoned rule is <strong>"favor composition over inheritance"</strong>: build behavior by <em>holding</em> objects (has-a) rather than <em>extending</em> them (is-a). Only reach for inheritance when the "is-a" relationship is genuine and stable. See <a href="../fundamentals/coupling-cohesion.html" style="color:#0d9488">Coupling &amp; Cohesion</a> for why looser relationships age better.
+        </div>
+
+        <h2>4. Polymorphism</h2>
+        <p><strong>Polymorphism</strong> (Greek for "many forms") lets a <em>single</em> interface stand for <em>many</em> underlying types. You call one method name and the right behavior runs depending on the actual object. There are two flavors:</p>
+        <ul>
+            <li><strong>Runtime polymorphism (overriding):</strong> a subclass replaces a parent method; which version runs is decided at runtime by the object's real type. This is the heart of OOP.</li>
+            <li><strong>Compile-time polymorphism (overloading):</strong> several methods share a name but differ in parameters; the compiler picks the match. Java supports this directly; Python uses default/variadic args instead.</li>
+        </ul>
+
+        <div class="analogy">
+            <div class="tag">🎨 Analogy: "draw me" behaves per shape</div>
+            <p>Tell a circle, a square, and a triangle to <code>draw()</code>. Each obeys the <em>same command</em> but produces a different picture. You, the caller, don't care which shape it is — you just say "draw" and the object knows what to do. That is polymorphism: one message, many forms of response.</p>
+        </div>
+
+        <div class="code-container">
+            <div class="code-tabs">
+                <button class="code-tab active" onclick="showCode(this, 'polyJava')">Java</button>
+                <button class="code-tab" onclick="showCode(this, 'polyPy')">Python</button>
+            </div>
+            <div id="polyJava" class="code-content active">
+<pre><span class="keyword">abstract class</span> <span class="type">Shape</span> {
+    <span class="keyword">abstract double</span> <span class="fn">area</span>();          <span class="comment">// each shape computes its own</span>
+
+    <span class="comment">// --- overloading: same name, different params (compile-time) ---</span>
+    <span class="keyword">String</span> <span class="fn">describe</span>() { <span class="keyword">return</span> <span class="string">"area = "</span> + <span class="fn">area</span>(); }
+    <span class="keyword">String</span> <span class="fn">describe</span>(<span class="type">String</span> unit) { <span class="keyword">return</span> <span class="fn">area</span>() + <span class="string">" "</span> + unit; }
+}
+
+<span class="keyword">class</span> <span class="type">Circle</span> <span class="keyword">extends</span> <span class="type">Shape</span> {
+    <span class="keyword">double</span> r;  <span class="type">Circle</span>(<span class="keyword">double</span> r) { <span class="keyword">this</span>.r = r; }
+    @Override <span class="keyword">double</span> <span class="fn">area</span>() { <span class="keyword">return</span> <span class="type">Math</span>.PI * r * r; }
+}
+<span class="keyword">class</span> <span class="type">Rectangle</span> <span class="keyword">extends</span> <span class="type">Shape</span> {
+    <span class="keyword">double</span> w, h;  <span class="type">Rectangle</span>(<span class="keyword">double</span> w, <span class="keyword">double</span> h) { <span class="keyword">this</span>.w=w; <span class="keyword">this</span>.h=h; }
+    @Override <span class="keyword">double</span> <span class="fn">area</span>() { <span class="keyword">return</span> w * h; }
+}
+
+<span class="comment">// runtime polymorphism: one loop, the right area() each time</span>
+<span class="type">Shape</span>[] shapes = { <span class="keyword">new</span> <span class="type">Circle</span>(<span class="number">2</span>), <span class="keyword">new</span> <span class="type">Rectangle</span>(<span class="number">3</span>, <span class="number">4</span>) };
+<span class="keyword">for</span> (<span class="type">Shape</span> s : shapes)
+    <span class="type">System</span>.out.<span class="fn">println</span>(s.<span class="fn">area</span>());   <span class="comment">// 12.566..., then 12.0</span>
+</pre>
+            </div>
+            <div id="polyPy" class="code-content">
+<pre><span class="keyword">from</span> abc <span class="keyword">import</span> <span class="type">ABC</span>, abstractmethod
+<span class="keyword">import</span> math
+
+<span class="keyword">class</span> <span class="type">Shape</span>(<span class="type">ABC</span>):
+    @abstractmethod
+    <span class="keyword">def</span> <span class="fn">area</span>(self): ...
+
+    <span class="comment"># Python "overloading" = default / optional args</span>
+    <span class="keyword">def</span> <span class="fn">describe</span>(self, unit=<span class="string">""</span>):
+        <span class="keyword">return</span> <span class="string">f"{self.area()} {unit}"</span>.strip()
+
+<span class="keyword">class</span> <span class="type">Circle</span>(<span class="type">Shape</span>):
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, r): self.r = r
+    <span class="keyword">def</span> <span class="fn">area</span>(self): <span class="keyword">return</span> math.pi * self.r ** <span class="number">2</span>
+
+<span class="keyword">class</span> <span class="type">Rectangle</span>(<span class="type">Shape</span>):
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, w, h): self.w, self.h = w, h
+    <span class="keyword">def</span> <span class="fn">area</span>(self): <span class="keyword">return</span> self.w * self.h
+
+<span class="comment"># runtime polymorphism: the right area() runs for each object</span>
+<span class="keyword">for</span> s <span class="keyword">in</span> [<span class="type">Circle</span>(<span class="number">2</span>), <span class="type">Rectangle</span>(<span class="number">3</span>, <span class="number">4</span>)]:
+    <span class="fn">print</span>(s.<span class="fn">area</span>())        <span class="comment"># 12.566..., then 12</span>
+</pre>
+            </div>
+        </div>
+
+        <h2>The Four Pillars at a Glance</h2>
+        <table>
+            <thead>
+                <tr><th>Pillar</th><th>What it does</th><th>Keyword / mechanism</th></tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Encapsulation</strong></td>
+                    <td>Bundle data + methods; hide internals behind accessors</td>
+                    <td><code>private</code> fields, getters/setters; Python <code>_</code> / <code>__</code></td>
+                </tr>
+                <tr>
+                    <td><strong>Abstraction</strong></td>
+                    <td>Expose essentials, hide complexity; depend on contracts</td>
+                    <td><code>interface</code>, <code>abstract</code> class; Python <code>abc.ABC</code></td>
+                </tr>
+                <tr>
+                    <td><strong>Inheritance</strong></td>
+                    <td>Reuse + extend a base class via an "is-a" relationship</td>
+                    <td><code>extends</code>, <code>super</code>; Python <code>class Child(Parent)</code></td>
+                </tr>
+                <tr>
+                    <td><strong>Polymorphism</strong></td>
+                    <td>One interface, many forms; pick behavior by real type</td>
+                    <td>Overriding (<code>@Override</code>) &amp; overloading</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="note">
+            <strong>Interview tip:</strong> Interviewers love "explain the four pillars with an example." Don't just recite definitions — give a one-line real-world analogy for each (capsule, driving a car, child traits, "draw me"), then show a tiny code snippet. Bonus points: explain the <em>difference</em> between encapsulation (hiding data) and abstraction (hiding complexity), since candidates routinely blur them. Be ready to say overriding is runtime and overloading is compile-time.
+        </div>
+
+        <h2>Related Topics</h2>
+        <p>Build on the pillars with the <a href="solid-principles.html" style="color:#0d9488">SOLID Principles</a>, learn how to keep classes loosely connected in <a href="coupling-cohesion.html" style="color:#0d9488">Coupling &amp; Cohesion</a>, and see the broader rules of thumb in <a href="design-principles.html" style="color:#0d9488">Design Principles</a>.</p>
+    </div>
+
+    <div class="footer">
+        <p>Low-Level Design · <span>The Four Pillars of OOP</span> · Java &amp; Python · Interactive Learning</p>
+    </div>
+
+    <script>
+        function showCode(btn, id) {
+            const container = btn.closest('.code-container');
+            container.querySelectorAll('.code-tab').forEach(t => t.classList.remove('active'));
+            container.querySelectorAll('.code-content').forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById(id).classList.add('active');
+        }
+    </script>
+</body>
+</html>

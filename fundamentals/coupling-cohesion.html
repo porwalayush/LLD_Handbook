@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coupling, Cohesion &amp; Composition — LLD Guide</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8fafc; min-height: 100vh; color: #1e293b; -webkit-font-smoothing: antialiased; }
+        .container { max-width: 880px; margin: 0 auto; padding: 40px 24px 80px; }
+        .back-link { display: inline-flex; align-items: center; gap: 6px; color: #0d9488; text-decoration: none; font-size: 0.9em; font-weight: 500; margin-bottom: 28px; padding: 6px 12px; border-radius: 8px; transition: background 0.15s ease; }
+        .back-link:hover { background: #f0fdfa; }
+
+        .pattern-badge { display: inline-block; padding: 5px 14px; border-radius: 100px; font-size: 0.72em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; background: #ccfbf1; color: #0d9488; margin-bottom: 16px; }
+        h1 { font-size: 2.4em; font-weight: 800; color: #0f172a; margin-bottom: 12px; letter-spacing: -0.03em; line-height: 1.2; }
+        .subtitle { font-size: 1.1em; color: #64748b; line-height: 1.7; margin-bottom: 8px; }
+        h2 { font-size: 1.35em; font-weight: 700; color: #0f172a; margin: 40px 0 16px; letter-spacing: -0.02em; }
+        h3 { font-size: 1.1em; font-weight: 600; color: #1e293b; margin: 24px 0 10px; }
+        p, li { line-height: 1.8; color: #475569; margin-bottom: 10px; font-size: 0.95em; }
+        ul, ol { padding-left: 20px; margin-bottom: 15px; }
+        strong { color: #1e293b; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 0.85em; color: #0d9488; }
+
+        .analogy { background: linear-gradient(135deg, #f0fdfa, #fffbeb); border: 1px solid #ccfbf1; border-radius: 16px; padding: 24px 28px; margin: 24px 0; }
+        .analogy .tag { font-size: 0.78em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #0d9488; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+        .analogy p:last-child { margin-bottom: 0; }
+
+        .code-container { margin: 24px 0; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .code-tabs { display: flex; background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0 8px; }
+        .code-tab { padding: 10px 18px; cursor: pointer; border: none; background: transparent; color: #64748b; font-size: 0.85em; font-weight: 500; font-family: 'Inter', sans-serif; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.15s ease; }
+        .code-tab:hover { color: #0d9488; }
+        .code-tab.active { color: #0d9488; border-bottom-color: #0d9488; background: white; }
+        .code-content { display: none; background: white; padding: 24px; overflow-x: auto; }
+        .code-content.active { display: block; }
+        .code-content pre { color: #1e293b; font-family: 'JetBrains Mono', monospace; font-size: 0.82em; line-height: 1.75; white-space: pre; }
+        .keyword { color: #0d9488; } .type { color: #2563eb; } .string { color: #16a34a; }
+        .comment { color: #94a3b8; font-style: italic; } .number { color: #d97706; }
+        .preproc { color: #7c3aed; } .fn { color: #db2777; }
+
+        .note { background: #f0fdfa; border-left: 4px solid #0d9488; padding: 16px 20px; margin: 20px 0; border-radius: 0 12px 12px 0; }
+        .note ul, .note p { margin-bottom: 0; } .note li:last-child { margin-bottom: 0; }
+        .warn { background: #fef2f2; border-left: 4px solid #dc2626; padding: 16px 20px; margin: 20px 0; border-radius: 0 12px 12px 0; }
+        .warn ul, .warn p { margin-bottom: 0; } .warn li:last-child { margin-bottom: 0; }
+
+        .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0; }
+        .compare > div { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .pros h3 { color: #16a34a; margin-top: 0; } .cons h3 { color: #dc2626; margin-top: 0; }
+        .compare ul { margin-bottom: 0; }
+
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; }
+        th, td { padding: 12px 16px; border: 1px solid #e2e8f0; text-align: left; font-size: 0.9em; }
+        th { background: #f8fafc; color: #0f172a; font-weight: 600; }
+        tr:hover { background: #f8fafc; }
+
+        /* Interactive playground */
+        .playground { background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 24px; margin: 24px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .pg-title { font-weight: 700; color: #0f172a; font-size: 0.95em; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+        .pg-sub { color: #64748b; font-size: 0.82em; margin-bottom: 18px; }
+        .pg-stage { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: center; min-height: 120px; padding: 16px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0; }
+        .obj-box { width: 110px; padding: 14px 10px; border-radius: 12px; text-align: center; border: 2px solid #cbd5e1; background: white; transition: all 0.3s ease; }
+        .obj-box .lbl { font-size: 0.72em; color: #64748b; font-weight: 600; }
+        .obj-box .id { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 0.92em; color: #0f172a; margin-top: 4px; word-break: break-all; }
+        .obj-box.same { border-color: #0d9488; background: #f0fdfa; box-shadow: 0 0 0 3px rgba(13,148,136,0.12); }
+        .obj-box.fresh { border-color: #d97706; background: #fffbeb; box-shadow: 0 0 0 3px rgba(217,119,6,0.12); }
+        .pg-status { margin-top: 14px; padding: 12px 14px; background: #f8fafc; border-radius: 8px; font-size: 0.85em; color: #475569; min-height: 44px; display: flex; align-items: center; border: 1px solid #e2e8f0; line-height: 1.5; }
+        .pg-controls { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; align-items: center; }
+        .btn { padding: 8px 16px; border: none; border-radius: 8px; font-size: 0.85em; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.15s ease; }
+        .btn-primary { background: #0d9488; color: white; }
+        .btn-primary:hover { background: #0f766e; transform: translateY(-1px); }
+        .btn-ghost { background: #f1f5f9; color: #475569; }
+        .btn-ghost:hover { background: #e2e8f0; }
+
+        .footer { text-align: center; padding: 32px 20px; color: #94a3b8; font-size: 0.85em; border-top: 1px solid #e2e8f0; background: #f8fafc; }
+        .footer span { color: #0d9488; }
+
+        @media (max-width: 600px) { .compare { grid-template-columns: 1fr; } h1 { font-size: 1.8em; } .container { padding: 20px 16px 60px; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="../index.html" class="back-link">&larr; Back to LLD Topics</a>
+        <div class="pattern-badge">Fundamentals</div>
+        <h1>Coupling, Cohesion &amp; Composition</h1>
+        <p class="subtitle">The forces that decide how maintainable your design is.</p>
+
+        <div class="analogy">
+            <div class="tag">🧰 Real-World Analogy</div>
+            <p>Picture two workshops. In the first, every tool lives in a clearly labelled drawer — screwdrivers together, wrenches together. That's <strong>high cohesion</strong>: things that belong together are kept together. In the second workshop, someone has hot-glued the hammer to the drill to the saw. Pick up one and the whole tangled mess comes with it. That's <strong>tight coupling</strong>: you can't touch one part without disturbing the rest.</p>
+            <p>Good design aims for the first workshop: <strong>each class does one focused job (high cohesion)</strong> and <strong>connects to others through clean, snap-together joints rather than glue (loose coupling)</strong>.</p>
+        </div>
+
+        <h2>1. Cohesion — How Focused a Class Is</h2>
+        <p><strong>Cohesion</strong> measures how strongly the responsibilities <em>inside</em> a single class belong together. A class with <strong>high cohesion</strong> does one well-defined thing; every field and method serves that single purpose. A class with <strong>low cohesion</strong> is a junk drawer — it parses files, sends emails, and computes taxes all at once.</p>
+        <div class="analogy">
+            <div class="tag">🧰 Think of it as</div>
+            <p>A well-organized toolbox: the "screwdriver tray" holds screwdrivers and nothing else. When you need a screwdriver, you know exactly where to look, and adding a new one doesn't disturb the wrenches.</p>
+        </div>
+        <ul>
+            <li><strong>High cohesion (good):</strong> an <code>InvoiceCalculator</code> that only calculates invoice totals. Easy to name, test, and reuse.</li>
+            <li><strong>Low cohesion (bad):</strong> a <code>Utils</code> god-class that does string formatting, database access, and PDF generation. Hard to name precisely, hard to change safely.</li>
+        </ul>
+        <p>A quick test: if you struggle to name a class without using "and" or "Manager"/"Utils", its cohesion is probably low.</p>
+
+        <h2>2. Coupling — How Dependent Classes Are on Each Other</h2>
+        <p><strong>Coupling</strong> measures how much one class <em>knows about and relies on</em> another. <strong>Loose coupling (good)</strong> means classes interact through small, stable interfaces, so you can change one without breaking the other. <strong>Tight coupling (bad)</strong> means a change in one class forces changes in many others.</p>
+        <div class="analogy">
+            <div class="tag">🧱 Think of it as</div>
+            <p>LEGO bricks vs. glued parts. LEGO bricks connect through a standard stud interface — you can swap any brick for another without touching its neighbours. Glued parts are fused: replace one and you must rebuild the whole assembly.</p>
+        </div>
+        <ul>
+            <li><strong>Tight:</strong> <code>OrderService</code> directly creates and calls a concrete <code>MySqlOrderRepository</code>. Switching to Postgres means editing <code>OrderService</code>.</li>
+            <li><strong>Loose:</strong> <code>OrderService</code> depends on an <code>OrderRepository</code> <em>interface</em>. Any implementation — MySQL, Postgres, in-memory for tests — plugs in without touching the service.</li>
+        </ul>
+        <div class="note">
+            <strong>The goal in one line:</strong> aim for <strong>high cohesion</strong> (each class focused) and <strong>loose coupling</strong> (classes weakly tied together). These two together are the single best predictor of how painful a codebase is to change.
+        </div>
+
+        <h2>3. Composition over Inheritance</h2>
+        <p>This is the big one. Inheritance models an <strong>"is-a"</strong> relationship and is tempting because it reuses code for free. But deep inheritance trees create <em>tight coupling</em> to a parent: a subclass inherits everything, even things it shouldn't, and a change to the base class ripples into every descendant.</p>
+        <p>Consider modelling a car. A naive design says "a car needs an engine, so let <code>Car extends Engine</code>." But a car <em>is not</em> an engine — it <em>has</em> one. Inheritance here leaks the engine's whole API onto the car and makes it impossible to swap a petrol engine for an electric one at runtime.</p>
+        <p><strong>Composition</strong> models a <strong>"has-a"</strong> relationship: the car <em>holds a reference</em> to an Engine object and delegates to it. Now you can swap engines freely, and the car only depends on the small <code>Engine</code> interface.</p>
+
+        <div class="code-container">
+            <div class="code-tabs">
+                <button class="code-tab active" onclick="showCode(this, 'compJava')">Java</button>
+                <button class="code-tab" onclick="showCode(this, 'compPy')">Python</button>
+            </div>
+            <div id="compJava" class="code-content active">
+<pre><span class="comment">// BAD: inheritance abuse — a Car is NOT an Engine</span>
+<span class="comment">// class Car extends Engine { ... }   // tightly coupled, can't swap engines</span>
+
+<span class="comment">// GOOD: composition — a Car HAS-A Engine</span>
+<span class="keyword">interface</span> <span class="type">Engine</span> {
+    <span class="keyword">void</span> <span class="fn">start</span>();
+}
+
+<span class="keyword">class</span> <span class="type">PetrolEngine</span> <span class="keyword">implements</span> <span class="type">Engine</span> {
+    <span class="keyword">public void</span> <span class="fn">start</span>() { <span class="type">System</span>.out.<span class="fn">println</span>(<span class="string">"Vroom (petrol)"</span>); }
+}
+
+<span class="keyword">class</span> <span class="type">ElectricEngine</span> <span class="keyword">implements</span> <span class="type">Engine</span> {
+    <span class="keyword">public void</span> <span class="fn">start</span>() { <span class="type">System</span>.out.<span class="fn">println</span>(<span class="string">"Hum (electric)"</span>); }
+}
+
+<span class="keyword">class</span> <span class="type">Car</span> {
+    <span class="keyword">private final</span> <span class="type">Engine</span> engine;   <span class="comment">// HAS-A, not IS-A</span>
+
+    <span class="comment">// engine injected -> loose coupling, easy to swap or mock</span>
+    <span class="type">Car</span>(<span class="type">Engine</span> engine) { <span class="keyword">this</span>.engine = engine; }
+
+    <span class="keyword">public void</span> <span class="fn">drive</span>() {
+        engine.<span class="fn">start</span>();           <span class="comment">// delegate to the engine</span>
+        <span class="type">System</span>.out.<span class="fn">println</span>(<span class="string">"Driving..."</span>);
+    }
+}
+
+<span class="comment">// Usage: same Car, different engines — no Car code changes</span>
+<span class="type">Car</span> petrol   = <span class="keyword">new</span> <span class="type">Car</span>(<span class="keyword">new</span> <span class="type">PetrolEngine</span>());
+<span class="type">Car</span> electric = <span class="keyword">new</span> <span class="type">Car</span>(<span class="keyword">new</span> <span class="type">ElectricEngine</span>());
+</pre>
+            </div>
+            <div id="compPy" class="code-content">
+<pre><span class="keyword">from</span> abc <span class="keyword">import</span> ABC, abstractmethod
+
+<span class="comment"># GOOD: composition — a Car HAS-A Engine</span>
+<span class="keyword">class</span> <span class="type">Engine</span>(ABC):
+    <span class="decorator">@abstractmethod</span>
+    <span class="keyword">def</span> <span class="fn">start</span>(self): ...
+
+<span class="keyword">class</span> <span class="type">PetrolEngine</span>(<span class="type">Engine</span>):
+    <span class="keyword">def</span> <span class="fn">start</span>(self): <span class="fn">print</span>(<span class="string">"Vroom (petrol)"</span>)
+
+<span class="keyword">class</span> <span class="type">ElectricEngine</span>(<span class="type">Engine</span>):
+    <span class="keyword">def</span> <span class="fn">start</span>(self): <span class="fn">print</span>(<span class="string">"Hum (electric)"</span>)
+
+<span class="keyword">class</span> <span class="type">Car</span>:
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, engine: <span class="type">Engine</span>):
+        self._engine = engine        <span class="comment"># HAS-A, not IS-A</span>
+
+    <span class="keyword">def</span> <span class="fn">drive</span>(self):
+        self._engine.<span class="fn">start</span>()         <span class="comment"># delegate to the engine</span>
+        <span class="fn">print</span>(<span class="string">"Driving..."</span>)
+
+<span class="comment"># Usage: same Car, different engines — no Car code changes</span>
+petrol   = <span class="type">Car</span>(<span class="type">PetrolEngine</span>())
+electric = <span class="type">Car</span>(<span class="type">ElectricEngine</span>())
+</pre>
+            </div>
+        </div>
+
+        <div class="compare">
+            <div class="pros">
+                <h3>✓ Composition</h3>
+                <ul>
+                    <li>Swap behaviour at runtime (inject any Engine).</li>
+                    <li>Loose coupling — Car only knows the small interface.</li>
+                    <li>Easy to test (pass a mock engine).</li>
+                    <li>No fragile base class ripples.</li>
+                </ul>
+            </div>
+            <div class="cons">
+                <h3>✗ Deep Inheritance</h3>
+                <ul>
+                    <li>Tight coupling to the parent's internals.</li>
+                    <li>Subclass inherits things it shouldn't.</li>
+                    <li>Behaviour fixed at compile time.</li>
+                    <li>One base-class change breaks many subclasses.</li>
+                </ul>
+            </div>
+        </div>
+        <p>Rule of thumb: use inheritance only for a genuine, stable "is-a" relationship; reach for composition for almost everything else.</p>
+
+        <h2>4. Association vs Aggregation vs Composition</h2>
+        <p>These three UML relationships describe how objects connect, and they differ mainly in <strong>lifetime ownership</strong> — does the "whole" control whether the "part" lives or dies?</p>
+        <table>
+            <tr><th>Relationship</th><th>Meaning</th><th>Lifetime / Ownership</th><th>Example</th></tr>
+            <tr><td><strong>Association</strong></td><td>One object uses or knows another ("uses-a")</td><td>Independent — neither owns the other</td><td>A <code>Teacher</code> teaches <code>Student</code>s; both exist on their own</td></tr>
+            <tr><td><strong>Aggregation</strong></td><td>A whole-part "has-a" where parts can exist alone</td><td>Weak ownership — parts outlive the whole</td><td>A <code>Team</code> has <code>Player</code>s; delete the team, players still exist</td></tr>
+            <tr><td><strong>Composition</strong></td><td>A strong whole-part "owns-a"</td><td>Strong ownership — parts die with the whole</td><td>A <code>House</code> has <code>Room</code>s; destroy the house, the rooms go with it</td></tr>
+        </table>
+        <p>In short: association is "I have your phone number," aggregation is "you're on my team for now," and composition is "you're a part of me and can't exist without me."</p>
+
+        <h2>5. Law of Demeter — "Don't Talk to Strangers"</h2>
+        <p>The <strong>Law of Demeter (LoD)</strong>, or principle of least knowledge, says a method should only talk to its <em>immediate friends</em> — not to the friends of its friends. Concretely, avoid long reach-through chains like <code>a.getB().getC().doX()</code>.</p>
+        <p>Each <code>.get()</code> in that chain ties your code to the internal structure of another object. If <code>B</code> stops holding a <code>C</code>, your call breaks even though you never touched <code>B</code> or <code>C</code> directly. That's tight coupling sneaking in through dot-chains.</p>
+        <ul>
+            <li><strong>Bad:</strong> <code>order.getCustomer().getAddress().getZip()</code> — Order now depends on Customer's <em>and</em> Address's internals.</li>
+            <li><strong>Better:</strong> ask the object to do the work for you — <code>order.getShippingZip()</code> — and let Order figure out where the zip lives.</li>
+        </ul>
+        <p>The fix is "tell, don't ask": tell an object what you want done rather than pulling out its guts and doing it yourself. This keeps coupling loose and cohesion high — the same two goals as everything above.</p>
+
+        <div class="note">
+            <strong>Interview tip:</strong> When asked to critique a design, reach for this vocabulary: "This class has <em>low cohesion</em> — it mixes persistence with business logic," or "These two classes are <em>tightly coupled</em> because the service news-up a concrete class; I'd depend on an interface instead." Naming <strong>high cohesion + loose coupling</strong> and citing <strong>composition over inheritance</strong> signals senior-level design instincts and almost always scores points.
+        </div>
+
+        <h2>Related Topics</h2>
+        <p>These ideas underpin the rest of OOP design: see the <a href="oop-pillars.html" style="color:#0d9488">OOP Pillars</a> for the foundations, the <a href="solid-principles.html" style="color:#0d9488">SOLID Principles</a> for the rules that enforce low coupling and high cohesion, and <a href="uml-class-diagrams.html" style="color:#0d9488">UML &amp; Class Diagrams</a> for drawing these relationships.</p>
+    </div>
+
+    <div class="footer">
+        <p>Low-Level Design · <span>Coupling, Cohesion &amp; Composition</span> · Java &amp; Python · Interactive Learning</p>
+    </div>
+
+    <script>
+        function showCode(btn, id) {
+            const container = btn.closest('.code-container');
+            container.querySelectorAll('.code-tab').forEach(t => t.classList.remove('active'));
+            container.querySelectorAll('.code-content').forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById(id).classList.add('active');
+        }
+    </script>
+</body>
+</html>

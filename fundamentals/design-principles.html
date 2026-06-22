@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Core Design Principles — LLD Guide</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8fafc; min-height: 100vh; color: #1e293b; -webkit-font-smoothing: antialiased; }
+        .container { max-width: 880px; margin: 0 auto; padding: 40px 24px 80px; }
+        .back-link { display: inline-flex; align-items: center; gap: 6px; color: #0d9488; text-decoration: none; font-size: 0.9em; font-weight: 500; margin-bottom: 28px; padding: 6px 12px; border-radius: 8px; transition: background 0.15s ease; }
+        .back-link:hover { background: #f0fdfa; }
+
+        .pattern-badge { display: inline-block; padding: 5px 14px; border-radius: 100px; font-size: 0.72em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; background: #ccfbf1; color: #0d9488; margin-bottom: 16px; }
+        h1 { font-size: 2.4em; font-weight: 800; color: #0f172a; margin-bottom: 12px; letter-spacing: -0.03em; line-height: 1.2; }
+        .subtitle { font-size: 1.1em; color: #64748b; line-height: 1.7; margin-bottom: 8px; }
+        h2 { font-size: 1.35em; font-weight: 700; color: #0f172a; margin: 40px 0 16px; letter-spacing: -0.02em; }
+        h3 { font-size: 1.1em; font-weight: 600; color: #1e293b; margin: 24px 0 10px; }
+        p, li { line-height: 1.8; color: #475569; margin-bottom: 10px; font-size: 0.95em; }
+        ul, ol { padding-left: 20px; margin-bottom: 15px; }
+        strong { color: #1e293b; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 0.85em; color: #0d9488; }
+
+        .analogy { background: linear-gradient(135deg, #f0fdfa, #fffbeb); border: 1px solid #ccfbf1; border-radius: 16px; padding: 24px 28px; margin: 24px 0; }
+        .analogy .tag { font-size: 0.78em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #0d9488; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+        .analogy p:last-child { margin-bottom: 0; }
+
+        .code-container { margin: 24px 0; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .code-tabs { display: flex; background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0 8px; }
+        .code-tab { padding: 10px 18px; cursor: pointer; border: none; background: transparent; color: #64748b; font-size: 0.85em; font-weight: 500; font-family: 'Inter', sans-serif; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.15s ease; }
+        .code-tab:hover { color: #0d9488; }
+        .code-tab.active { color: #0d9488; border-bottom-color: #0d9488; background: white; }
+        .code-content { display: none; background: white; padding: 24px; overflow-x: auto; }
+        .code-content.active { display: block; }
+        .code-content pre { color: #1e293b; font-family: 'JetBrains Mono', monospace; font-size: 0.82em; line-height: 1.75; white-space: pre; }
+        .keyword { color: #0d9488; } .type { color: #2563eb; } .string { color: #16a34a; }
+        .comment { color: #94a3b8; font-style: italic; } .number { color: #d97706; }
+        .preproc { color: #7c3aed; } .fn { color: #db2777; }
+
+        .note { background: #f0fdfa; border-left: 4px solid #0d9488; padding: 16px 20px; margin: 20px 0; border-radius: 0 12px 12px 0; }
+        .note ul, .note p { margin-bottom: 0; } .note li:last-child { margin-bottom: 0; }
+        .warn { background: #fef2f2; border-left: 4px solid #dc2626; padding: 16px 20px; margin: 20px 0; border-radius: 0 12px 12px 0; }
+        .warn ul, .warn p { margin-bottom: 0; } .warn li:last-child { margin-bottom: 0; }
+
+        .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0; }
+        .compare > div { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .pros h3 { color: #16a34a; margin-top: 0; } .cons h3 { color: #dc2626; margin-top: 0; }
+        .compare ul { margin-bottom: 0; }
+
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; }
+        th, td { padding: 12px 16px; border: 1px solid #e2e8f0; text-align: left; font-size: 0.9em; }
+        th { background: #f8fafc; color: #0f172a; font-weight: 600; }
+        tr:hover { background: #f8fafc; }
+
+        /* Interactive playground */
+        .playground { background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 24px; margin: 24px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .pg-title { font-weight: 700; color: #0f172a; font-size: 0.95em; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+        .pg-sub { color: #64748b; font-size: 0.82em; margin-bottom: 18px; }
+        .pg-stage { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: center; min-height: 120px; padding: 16px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0; }
+        .obj-box { width: 110px; padding: 14px 10px; border-radius: 12px; text-align: center; border: 2px solid #cbd5e1; background: white; transition: all 0.3s ease; }
+        .obj-box .lbl { font-size: 0.72em; color: #64748b; font-weight: 600; }
+        .obj-box .id { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 0.92em; color: #0f172a; margin-top: 4px; word-break: break-all; }
+        .obj-box.same { border-color: #0d9488; background: #f0fdfa; box-shadow: 0 0 0 3px rgba(13,148,136,0.12); }
+        .obj-box.fresh { border-color: #d97706; background: #fffbeb; box-shadow: 0 0 0 3px rgba(217,119,6,0.12); }
+        .pg-status { margin-top: 14px; padding: 12px 14px; background: #f8fafc; border-radius: 8px; font-size: 0.85em; color: #475569; min-height: 44px; display: flex; align-items: center; border: 1px solid #e2e8f0; line-height: 1.5; }
+        .pg-controls { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; align-items: center; }
+        .btn { padding: 8px 16px; border: none; border-radius: 8px; font-size: 0.85em; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.15s ease; }
+        .btn-primary { background: #0d9488; color: white; }
+        .btn-primary:hover { background: #0f766e; transform: translateY(-1px); }
+        .btn-ghost { background: #f1f5f9; color: #475569; }
+        .btn-ghost:hover { background: #e2e8f0; }
+
+        .footer { text-align: center; padding: 32px 20px; color: #94a3b8; font-size: 0.85em; border-top: 1px solid #e2e8f0; background: #f8fafc; }
+        .footer span { color: #0d9488; }
+
+        @media (max-width: 600px) { .compare { grid-template-columns: 1fr; } h1 { font-size: 1.8em; } .container { padding: 20px 16px 60px; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="../index.html" class="back-link">&larr; Back to LLD Topics</a>
+        <div class="pattern-badge">Fundamentals</div>
+        <h1>Core Design Principles</h1>
+        <p class="subtitle">The rules of thumb that keep code clean beyond SOLID — DRY, KISS, YAGNI &amp; GRASP.</p>
+
+        <div class="analogy">
+            <div class="tag">🍳 Real-World Analogy</div>
+            <p>A great chef doesn't memorize a thousand recipes — they internalize a handful of <strong>cooking principles</strong>: taste as you go, don't crowd the pan, season in layers. Those rules of thumb let them handle any dish.</p>
+            <p>These design principles are the same idea for code. They aren't rigid laws like a compiler error; they're seasoned guidelines that, applied with judgment, keep your design simple, change-friendly, and free of needless repetition.</p>
+        </div>
+
+        <h2>DRY — Don't Repeat Yourself</h2>
+        <p>Every piece of knowledge should have a <strong>single, authoritative home</strong> in the code. When the same logic is copy-pasted into five places, a bug fix has to be made five times — and you'll inevitably miss one. Extract the duplication into one named method or class.</p>
+        <div class="code-container">
+            <div class="code-tabs">
+                <button class="code-tab active" onclick="showCode(this, 'dryJava')">Java</button>
+                <button class="code-tab" onclick="showCode(this, 'dryPy')">Python</button>
+            </div>
+            <div id="dryJava" class="code-content active">
+<pre><span class="comment">// BEFORE: the same tax math duplicated everywhere</span>
+<span class="keyword">double</span> invoiceTotal = price + price * <span class="number">0.18</span>;     <span class="comment">// 18% GST</span>
+<span class="keyword">double</span> receiptTotal = amount + amount * <span class="number">0.18</span>;   <span class="comment">// repeated!</span>
+
+<span class="comment">// AFTER: one source of truth</span>
+<span class="keyword">double</span> <span class="fn">withTax</span>(<span class="keyword">double</span> base) {
+    <span class="keyword">return</span> base + base * <span class="type">TAX_RATE</span>;   <span class="comment">// change the rate in ONE place</span>
+}
+<span class="keyword">double</span> invoiceTotal = <span class="fn">withTax</span>(price);
+<span class="keyword">double</span> receiptTotal = <span class="fn">withTax</span>(amount);
+</pre>
+            </div>
+            <div id="dryPy" class="code-content">
+<pre><span class="comment"># BEFORE: the same tax math duplicated everywhere</span>
+invoice_total = price + price * <span class="number">0.18</span>      <span class="comment"># 18% GST</span>
+receipt_total = amount + amount * <span class="number">0.18</span>    <span class="comment"># repeated!</span>
+
+<span class="comment"># AFTER: one source of truth</span>
+<span class="keyword">def</span> <span class="fn">with_tax</span>(base: float) -&gt; float:
+    <span class="keyword">return</span> base + base * TAX_RATE   <span class="comment"># change the rate in ONE place</span>
+
+invoice_total = <span class="fn">with_tax</span>(price)
+receipt_total = <span class="fn">with_tax</span>(amount)
+</pre>
+            </div>
+        </div>
+        <p>Beware over-applying it: don't merge two pieces of code that <em>look</em> alike but represent <em>different</em> concepts that may change for different reasons. DRY is about removing duplicated <em>knowledge</em>, not duplicated <em>characters</em>.</p>
+
+        <h2>KISS — Keep It Simple</h2>
+        <p>Prefer the <strong>simplest design that works</strong>. Clever one-liners, premature abstractions, and "look how smart I am" code are liabilities — the next person (often future-you) has to understand them. If a plain <code>if/else</code> reads clearly, don't replace it with a reflection-driven rule engine.</p>
+        <ul>
+            <li>Write code for the reader, not the compiler.</li>
+            <li>A boring, obvious solution that ships beats a brilliant one nobody can maintain.</li>
+            <li>Complexity should be <em>earned</em> by a real requirement, never added speculatively.</li>
+        </ul>
+
+        <h2>YAGNI — You Aren't Gonna Need It</h2>
+        <p>Don't build features, configuration knobs, or extension points <strong>for hypothetical future requirements</strong>. Speculative generality adds code, tests, and bugs today to serve a need that may never arrive. Build what's required now; add flexibility when a concrete second use case actually appears.</p>
+        <p>YAGNI is the natural partner of KISS: KISS says keep what you build simple, YAGNI says don't build it at all until you need it.</p>
+
+        <h2>Program to an Interface, Not an Implementation</h2>
+        <p>Depend on the most <strong>abstract type that does the job</strong>. Declaring a variable as <code>List</code> rather than <code>ArrayList</code> means you can swap the concrete class later — or substitute a test double — without rippling changes through your code. This is the practical engine behind loose coupling.</p>
+        <div class="code-container">
+            <div class="code-tabs">
+                <button class="code-tab active" onclick="showCode(this, 'ifaceJava')">Java</button>
+                <button class="code-tab" onclick="showCode(this, 'ifacePy')">Python</button>
+            </div>
+            <div id="ifaceJava" class="code-content active">
+<pre><span class="comment">// BAD: tied to a concrete implementation</span>
+<span class="type">ArrayList</span>&lt;<span class="type">String</span>&gt; names = <span class="keyword">new</span> <span class="type">ArrayList</span>&lt;&gt;();
+<span class="keyword">void</span> <span class="fn">printAll</span>(<span class="type">ArrayList</span>&lt;<span class="type">String</span>&gt; items) { ... }  <span class="comment">// only ArrayList allowed</span>
+
+<span class="comment">// GOOD: depend on the List interface</span>
+<span class="type">List</span>&lt;<span class="type">String</span>&gt; names = <span class="keyword">new</span> <span class="type">ArrayList</span>&lt;&gt;();   <span class="comment">// swap to LinkedList freely</span>
+<span class="keyword">void</span> <span class="fn">printAll</span>(<span class="type">List</span>&lt;<span class="type">String</span>&gt; items) {        <span class="comment">// accepts ANY List</span>
+    <span class="keyword">for</span> (<span class="type">String</span> s : items) <span class="type">System</span>.out.<span class="fn">println</span>(s);
+}
+</pre>
+            </div>
+            <div id="ifacePy" class="code-content">
+<pre><span class="keyword">from</span> collections.abc <span class="keyword">import</span> Iterable, Sequence
+
+<span class="comment"># BAD: demands a concrete list</span>
+<span class="keyword">def</span> <span class="fn">print_all</span>(items: list): ...    <span class="comment"># tuples, generators rejected</span>
+
+<span class="comment"># GOOD: depend on the abstract protocol</span>
+<span class="keyword">def</span> <span class="fn">print_all</span>(items: Iterable):       <span class="comment"># list, tuple, generator — all fine</span>
+    <span class="keyword">for</span> s <span class="keyword">in</span> items:
+        <span class="fn">print</span>(s)
+
+names: Sequence[str] = [<span class="string">"ann"</span>, <span class="string">"bob"</span>]   <span class="comment"># swap the backing type freely</span>
+</pre>
+            </div>
+        </div>
+
+        <h2>Favor Composition over Inheritance</h2>
+        <p>Reuse behaviour by <strong>holding objects ("has-a")</strong> rather than extending classes ("is-a"). Composition keeps coupling loose and lets you change behaviour at runtime, where deep inheritance trees become rigid and fragile. This principle is important enough to have its own deep dive — see <a href="coupling-cohesion.html" style="color:#0d9488">Coupling, Cohesion &amp; Composition</a> for the full Car-has-a-Engine treatment.</p>
+
+        <h2>Separation of Concerns</h2>
+        <p>Split a system so each part addresses <strong>one distinct concern</strong> — UI, business rules, persistence — and changes to one don't disturb the others. A class that parses HTTP, applies business logic, <em>and</em> writes SQL has tangled three concerns; splitting them into a controller, a service, and a repository makes each independently testable and replaceable. This is cohesion applied at the architectural scale.</p>
+
+        <h2>GRASP — Assigning Responsibilities</h2>
+        <p><strong>GRASP</strong> (General Responsibility Assignment Software Patterns) is a vocabulary for answering the recurring design question: <em>which class should be responsible for this?</em> Here are the core ones for interviews:</p>
+        <table>
+            <tr><th>Principle</th><th>Assign the responsibility to…</th></tr>
+            <tr><td><strong>Information Expert</strong></td><td>the class that already <em>holds the data</em> needed to do the job (e.g. <code>Order</code> computes its own total, since it owns the line items).</td></tr>
+            <tr><td><strong>Creator</strong></td><td>the class that <em>aggregates, contains, or closely uses</em> the created object (e.g. <code>Order</code> creates its <code>OrderItem</code>s).</td></tr>
+            <tr><td><strong>Controller</strong></td><td>a dedicated coordinator class that receives a system request and delegates the work (keeps UI out of business logic).</td></tr>
+            <tr><td><strong>Low Coupling</strong></td><td>whichever assignment <em>minimizes dependencies</em> between classes.</td></tr>
+            <tr><td><strong>High Cohesion</strong></td><td>whichever assignment keeps each class <em>focused</em> on a single responsibility.</td></tr>
+        </table>
+        <p>Low Coupling and High Cohesion show up again here precisely because they're the yardsticks every other design decision is measured against.</p>
+
+        <div class="note">
+            <strong>Interview tip:</strong> These principles are most powerful as <em>justification language</em>. Don't just write code — narrate it: "I'll extract this into one method to stay DRY," or "by Information Expert, the <code>Order</code> should own its total calculation since it has the line items." Citing the principle behind a choice shows the interviewer you're designing deliberately, not by reflex.
+        </div>
+
+        <h2>Related Topics</h2>
+        <p>These rules of thumb complement the formal <a href="solid-principles.html" style="color:#0d9488">SOLID Principles</a>, build on the <a href="oop-pillars.html" style="color:#0d9488">OOP Pillars</a>, and put the goals from <a href="coupling-cohesion.html" style="color:#0d9488">Coupling, Cohesion &amp; Composition</a> into daily practice.</p>
+    </div>
+
+    <div class="footer">
+        <p>Low-Level Design · <span>Core Design Principles</span> · Java &amp; Python · Interactive Learning</p>
+    </div>
+
+    <script>
+        function showCode(btn, id) {
+            const container = btn.closest('.code-container');
+            container.querySelectorAll('.code-tab').forEach(t => t.classList.remove('active'));
+            container.querySelectorAll('.code-content').forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById(id).classList.add('active');
+        }
+    </script>
+</body>
+</html>

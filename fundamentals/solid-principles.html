@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SOLID Principles — LLD Guide</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8fafc; min-height: 100vh; color: #1e293b; -webkit-font-smoothing: antialiased; }
+        .container { max-width: 880px; margin: 0 auto; padding: 40px 24px 80px; }
+        .back-link { display: inline-flex; align-items: center; gap: 6px; color: #0d9488; text-decoration: none; font-size: 0.9em; font-weight: 500; margin-bottom: 28px; padding: 6px 12px; border-radius: 8px; transition: background 0.15s ease; }
+        .back-link:hover { background: #f0fdfa; }
+
+        .pattern-badge { display: inline-block; padding: 5px 14px; border-radius: 100px; font-size: 0.72em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; background: #ccfbf1; color: #0d9488; margin-bottom: 16px; }
+        h1 { font-size: 2.4em; font-weight: 800; color: #0f172a; margin-bottom: 12px; letter-spacing: -0.03em; line-height: 1.2; }
+        .subtitle { font-size: 1.1em; color: #64748b; line-height: 1.7; margin-bottom: 8px; }
+        h2 { font-size: 1.35em; font-weight: 700; color: #0f172a; margin: 40px 0 16px; letter-spacing: -0.02em; }
+        h3 { font-size: 1.1em; font-weight: 600; color: #1e293b; margin: 24px 0 10px; }
+        p, li { line-height: 1.8; color: #475569; margin-bottom: 10px; font-size: 0.95em; }
+        ul, ol { padding-left: 20px; margin-bottom: 15px; }
+        strong { color: #1e293b; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 0.85em; color: #0d9488; }
+
+        .analogy { background: linear-gradient(135deg, #f0fdfa, #fffbeb); border: 1px solid #ccfbf1; border-radius: 16px; padding: 24px 28px; margin: 24px 0; }
+        .analogy .tag { font-size: 0.78em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #0d9488; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+        .analogy p:last-child { margin-bottom: 0; }
+
+        .code-container { margin: 24px 0; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .code-tabs { display: flex; background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0 8px; }
+        .code-tab { padding: 10px 18px; cursor: pointer; border: none; background: transparent; color: #64748b; font-size: 0.85em; font-weight: 500; font-family: 'Inter', sans-serif; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.15s ease; }
+        .code-tab:hover { color: #0d9488; }
+        .code-tab.active { color: #0d9488; border-bottom-color: #0d9488; background: white; }
+        .code-content { display: none; background: white; padding: 24px; overflow-x: auto; }
+        .code-content.active { display: block; }
+        .code-content pre { color: #1e293b; font-family: 'JetBrains Mono', monospace; font-size: 0.82em; line-height: 1.75; white-space: pre; }
+        .keyword { color: #0d9488; } .type { color: #2563eb; } .string { color: #16a34a; }
+        .comment { color: #94a3b8; font-style: italic; } .number { color: #d97706; }
+        .preproc { color: #7c3aed; } .fn { color: #db2777; }
+
+        .note { background: #f0fdfa; border-left: 4px solid #0d9488; padding: 16px 20px; margin: 20px 0; border-radius: 0 12px 12px 0; }
+        .note ul, .note p { margin-bottom: 0; } .note li:last-child { margin-bottom: 0; }
+        .warn { background: #fef2f2; border-left: 4px solid #dc2626; padding: 16px 20px; margin: 20px 0; border-radius: 0 12px 12px 0; }
+        .warn ul, .warn p { margin-bottom: 0; } .warn li:last-child { margin-bottom: 0; }
+
+        .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0; }
+        .compare > div { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .pros h3 { color: #16a34a; margin-top: 0; } .cons h3 { color: #dc2626; margin-top: 0; }
+        .compare ul { margin-bottom: 0; }
+
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; }
+        th, td { padding: 12px 16px; border: 1px solid #e2e8f0; text-align: left; font-size: 0.9em; }
+        th { background: #f8fafc; color: #0f172a; font-weight: 600; }
+        tr:hover { background: #f8fafc; }
+
+        /* Interactive playground */
+        .playground { background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 24px; margin: 24px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .pg-title { font-weight: 700; color: #0f172a; font-size: 0.95em; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+        .pg-sub { color: #64748b; font-size: 0.82em; margin-bottom: 18px; }
+        .pg-stage { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: center; min-height: 120px; padding: 16px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0; }
+        .obj-box { width: 110px; padding: 14px 10px; border-radius: 12px; text-align: center; border: 2px solid #cbd5e1; background: white; transition: all 0.3s ease; }
+        .obj-box .lbl { font-size: 0.72em; color: #64748b; font-weight: 600; }
+        .obj-box .id { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 0.92em; color: #0f172a; margin-top: 4px; word-break: break-all; }
+        .obj-box.same { border-color: #0d9488; background: #f0fdfa; box-shadow: 0 0 0 3px rgba(13,148,136,0.12); }
+        .obj-box.fresh { border-color: #d97706; background: #fffbeb; box-shadow: 0 0 0 3px rgba(217,119,6,0.12); }
+        .pg-status { margin-top: 14px; padding: 12px 14px; background: #f8fafc; border-radius: 8px; font-size: 0.85em; color: #475569; min-height: 44px; display: flex; align-items: center; border: 1px solid #e2e8f0; line-height: 1.5; }
+        .pg-controls { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; align-items: center; }
+        .btn { padding: 8px 16px; border: none; border-radius: 8px; font-size: 0.85em; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.15s ease; }
+        .btn-primary { background: #0d9488; color: white; }
+        .btn-primary:hover { background: #0f766e; transform: translateY(-1px); }
+        .btn-ghost { background: #f1f5f9; color: #475569; }
+        .btn-ghost:hover { background: #e2e8f0; }
+
+        .footer { text-align: center; padding: 32px 20px; color: #94a3b8; font-size: 0.85em; border-top: 1px solid #e2e8f0; background: #f8fafc; }
+        .footer span { color: #0d9488; }
+
+        @media (max-width: 600px) { .compare { grid-template-columns: 1fr; } h1 { font-size: 1.8em; } .container { padding: 20px 16px 60px; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="../index.html" class="back-link">&larr; Back to LLD Topics</a>
+        <div class="pattern-badge">Fundamentals</div>
+        <h1>SOLID Principles</h1>
+        <p class="subtitle">The five rules for <strong>maintainable</strong> object-oriented design — the difference between code you can change happily and code you're afraid to touch.</p>
+
+        <div class="analogy">
+            <div class="tag">🧱 What is SOLID?</div>
+            <p><strong>SOLID</strong> is an acronym for five design principles, popularized by Robert C. Martin ("Uncle Bob"). Each addresses a common way that object-oriented code rots over time. Follow them and your classes stay small, focused, and easy to extend without breaking what already works.</p>
+            <p><strong>S</strong>ingle Responsibility · <strong>O</strong>pen/Closed · <strong>L</strong>iskov Substitution · <strong>I</strong>nterface Segregation · <strong>D</strong>ependency Inversion. We'll take them one at a time, each with a "violation → fix".</p>
+        </div>
+
+        <h2>S — Single Responsibility Principle</h2>
+        <p><strong>A class should have one, and only one, reason to change.</strong> Each class should do one job. If a class handles business logic <em>and</em> formatting <em>and</em> database access, then a change to any one of those forces you to touch — and risk breaking — the others.</p>
+
+        <div class="analogy">
+            <div class="tag">🔧 Analogy: Swiss-army knife vs dedicated tools</div>
+            <p>A Swiss-army knife does ten jobs poorly and is awkward at all of them; if the scissors break you might have to replace the whole tool. A workshop of <em>dedicated tools</em> — one screwdriver, one good pair of scissors — each does one job well and can be swapped independently. SRP says build dedicated tools, not Swiss-army classes.</p>
+        </div>
+
+        <div class="code-container">
+            <div class="code-tabs">
+                <button class="code-tab active" onclick="showCode(this, 'srpJava')">Java</button>
+                <button class="code-tab" onclick="showCode(this, 'srpPy')">Python</button>
+            </div>
+            <div id="srpJava" class="code-content active">
+<pre><span class="comment">// VIOLATION: a "God class" with three reasons to change</span>
+<span class="keyword">class</span> <span class="type">Invoice</span> {
+    <span class="keyword">void</span> <span class="fn">calculateTotal</span>() { <span class="comment">/* business logic */</span> }
+    <span class="keyword">void</span> <span class="fn">printToPdf</span>()    { <span class="comment">/* formatting */</span> }
+    <span class="keyword">void</span> <span class="fn">saveToDb</span>()      { <span class="comment">/* persistence */</span> }
+}
+
+<span class="comment">// FIX: split by responsibility — one reason to change each</span>
+<span class="keyword">class</span> <span class="type">Invoice</span> {
+    <span class="keyword">double</span> <span class="fn">calculateTotal</span>() { <span class="comment">/* only business logic */</span> <span class="keyword">return</span> <span class="number">0</span>; }
+}
+<span class="keyword">class</span> <span class="type">InvoicePrinter</span> {
+    <span class="keyword">void</span> <span class="fn">printToPdf</span>(<span class="type">Invoice</span> inv) { <span class="comment">/* only formatting */</span> }
+}
+<span class="keyword">class</span> <span class="type">InvoiceRepository</span> {
+    <span class="keyword">void</span> <span class="fn">save</span>(<span class="type">Invoice</span> inv) { <span class="comment">/* only persistence */</span> }
+}
+</pre>
+            </div>
+            <div id="srpPy" class="code-content">
+<pre><span class="comment"># VIOLATION: one class doing three unrelated jobs</span>
+<span class="keyword">class</span> <span class="type">Invoice</span>:
+    <span class="keyword">def</span> <span class="fn">calculate_total</span>(self): ...   <span class="comment"># business logic</span>
+    <span class="keyword">def</span> <span class="fn">print_to_pdf</span>(self):    ...   <span class="comment"># formatting</span>
+    <span class="keyword">def</span> <span class="fn">save_to_db</span>(self):      ...   <span class="comment"># persistence</span>
+
+<span class="comment"># FIX: one responsibility per class</span>
+<span class="keyword">class</span> <span class="type">Invoice</span>:
+    <span class="keyword">def</span> <span class="fn">calculate_total</span>(self): ...   <span class="comment"># only business logic</span>
+
+<span class="keyword">class</span> <span class="type">InvoicePrinter</span>:
+    <span class="keyword">def</span> <span class="fn">print_to_pdf</span>(self, invoice): ...
+
+<span class="keyword">class</span> <span class="type">InvoiceRepository</span>:
+    <span class="keyword">def</span> <span class="fn">save</span>(self, invoice): ...
+</pre>
+            </div>
+        </div>
+
+        <h2>O — Open/Closed Principle</h2>
+        <p><strong>Software entities should be open for extension, but closed for modification.</strong> You should be able to add new behavior by writing <em>new</em> code, not by editing <em>existing, tested</em> code. The classic smell is a growing <code>if/else</code> or <code>switch</code> on a type field — every new type forces you back into the same method.</p>
+
+        <div class="analogy">
+            <div class="tag">🔌 Analogy: a power strip</div>
+            <p>A power strip is "open for extension" — plug in a new device any time — but "closed for modification": you never rewire the strip to add a device. New behavior plugs in; the existing wiring stays untouched. Polymorphism is your power strip.</p>
+        </div>
+
+        <div class="code-container">
+            <div class="code-tabs">
+                <button class="code-tab active" onclick="showCode(this, 'ocpJava')">Java</button>
+                <button class="code-tab" onclick="showCode(this, 'ocpPy')">Python</button>
+            </div>
+            <div id="ocpJava" class="code-content active">
+<pre><span class="comment">// VIOLATION: every new shape edits this method</span>
+<span class="keyword">double</span> <span class="fn">area</span>(<span class="type">Object</span> shape) {
+    <span class="keyword">if</span> (shape <span class="keyword">instanceof</span> <span class="type">Circle</span> c)    <span class="keyword">return</span> <span class="type">Math</span>.PI * c.r * c.r;
+    <span class="keyword">else if</span> (shape <span class="keyword">instanceof</span> <span class="type">Square</span> s) <span class="keyword">return</span> s.side * s.side;
+    <span class="comment">// ...add Triangle here? edit again. Risky.</span>
+    <span class="keyword">throw new</span> <span class="type">IllegalArgumentException</span>();
+}
+
+<span class="comment">// FIX: extend via new classes; the caller never changes</span>
+<span class="keyword">interface</span> <span class="type">Shape</span> { <span class="keyword">double</span> <span class="fn">area</span>(); }
+<span class="keyword">class</span> <span class="type">Circle</span>   <span class="keyword">implements</span> <span class="type">Shape</span> { <span class="keyword">double</span> r;    <span class="keyword">public double</span> <span class="fn">area</span>(){<span class="keyword">return</span> <span class="type">Math</span>.PI*r*r;} }
+<span class="keyword">class</span> <span class="type">Square</span>   <span class="keyword">implements</span> <span class="type">Shape</span> { <span class="keyword">double</span> side; <span class="keyword">public double</span> <span class="fn">area</span>(){<span class="keyword">return</span> side*side;} }
+<span class="keyword">class</span> <span class="type">Triangle</span> <span class="keyword">implements</span> <span class="type">Shape</span> { <span class="comment">/* new type, zero edits elsewhere */</span> }
+
+<span class="keyword">double</span> <span class="fn">area</span>(<span class="type">Shape</span> shape) { <span class="keyword">return</span> shape.<span class="fn">area</span>(); }   <span class="comment">// closed for modification</span>
+</pre>
+            </div>
+            <div id="ocpPy" class="code-content">
+<pre><span class="keyword">from</span> abc <span class="keyword">import</span> <span class="type">ABC</span>, abstractmethod
+<span class="keyword">import</span> math
+
+<span class="comment"># VIOLATION: a type-switch you must edit for every new shape</span>
+<span class="keyword">def</span> <span class="fn">area</span>(shape):
+    <span class="keyword">if</span> shape.kind == <span class="string">"circle"</span>: <span class="keyword">return</span> math.pi * shape.r ** <span class="number">2</span>
+    <span class="keyword">elif</span> shape.kind == <span class="string">"square"</span>: <span class="keyword">return</span> shape.side ** <span class="number">2</span>
+    <span class="comment"># add elif for every new shape... fragile</span>
+
+<span class="comment"># FIX: each shape owns its area(); add new ones freely</span>
+<span class="keyword">class</span> <span class="type">Shape</span>(<span class="type">ABC</span>):
+    @abstractmethod
+    <span class="keyword">def</span> <span class="fn">area</span>(self): ...
+
+<span class="keyword">class</span> <span class="type">Circle</span>(<span class="type">Shape</span>):
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, r): self.r = r
+    <span class="keyword">def</span> <span class="fn">area</span>(self): <span class="keyword">return</span> math.pi * self.r ** <span class="number">2</span>
+
+<span class="keyword">class</span> <span class="type">Square</span>(<span class="type">Shape</span>):
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, side): self.side = side
+    <span class="keyword">def</span> <span class="fn">area</span>(self): <span class="keyword">return</span> self.side ** <span class="number">2</span>
+
+<span class="keyword">def</span> <span class="fn">area</span>(shape): <span class="keyword">return</span> shape.<span class="fn">area</span>()   <span class="comment"># never changes again</span>
+</pre>
+            </div>
+        </div>
+
+        <h2>L — Liskov Substitution Principle</h2>
+        <p><strong>Subtypes must be substitutable for their base type</strong> without breaking the program. If code works with a <code>Bird</code>, handing it any subclass of <code>Bird</code> must not produce surprises. A subclass that <em>can't</em> honor the parent's contract is not really an "is-a".</p>
+
+        <div class="analogy">
+            <div class="tag">🐧 Analogy: the penguin that can't fly</div>
+            <p>If <code>Bird</code> promises a <code>fly()</code> method, then <code>Penguin extends Bird</code> is a trap — a penguin can't fly, so any code expecting "all birds fly" breaks the moment it meets a penguin. The fix: don't model the wrong "is-a". Split capabilities so only <em>flying</em> birds promise <code>fly()</code>.</p>
+        </div>
+
+        <div class="code-container">
+            <div class="code-tabs">
+                <button class="code-tab active" onclick="showCode(this, 'lspJava')">Java</button>
+                <button class="code-tab" onclick="showCode(this, 'lspPy')">Python</button>
+            </div>
+            <div id="lspJava" class="code-content active">
+<pre><span class="comment">// VIOLATION: Penguin breaks the "every Bird can fly" assumption</span>
+<span class="keyword">class</span> <span class="type">Bird</span> { <span class="keyword">void</span> <span class="fn">fly</span>() { <span class="comment">/* ... */</span> } }
+<span class="keyword">class</span> <span class="type">Penguin</span> <span class="keyword">extends</span> <span class="type">Bird</span> {
+    @Override <span class="keyword">void</span> <span class="fn">fly</span>() {
+        <span class="keyword">throw new</span> <span class="type">UnsupportedOperationException</span>(); <span class="comment">// surprise!</span>
+    }
+}
+
+<span class="comment">// FIX: separate the ability that not all birds have</span>
+<span class="keyword">interface</span> <span class="type">Bird</span> { <span class="keyword">void</span> <span class="fn">eat</span>(); }
+<span class="keyword">interface</span> <span class="type">FlyingBird</span> <span class="keyword">extends</span> <span class="type">Bird</span> { <span class="keyword">void</span> <span class="fn">fly</span>(); }
+
+<span class="keyword">class</span> <span class="type">Sparrow</span> <span class="keyword">implements</span> <span class="type">FlyingBird</span> {
+    <span class="keyword">public void</span> <span class="fn">eat</span>() {} <span class="keyword">public void</span> <span class="fn">fly</span>() {}
+}
+<span class="keyword">class</span> <span class="type">Penguin</span> <span class="keyword">implements</span> <span class="type">Bird</span> {   <span class="comment">// no fly() to violate</span>
+    <span class="keyword">public void</span> <span class="fn">eat</span>() {}
+}
+</pre>
+            </div>
+            <div id="lspPy" class="code-content">
+<pre><span class="comment"># VIOLATION: substituting a Penguin breaks fly-expecting code</span>
+<span class="keyword">class</span> <span class="type">Bird</span>:
+    <span class="keyword">def</span> <span class="fn">fly</span>(self): ...
+
+<span class="keyword">class</span> <span class="type">Penguin</span>(<span class="type">Bird</span>):
+    <span class="keyword">def</span> <span class="fn">fly</span>(self):
+        <span class="keyword">raise</span> <span class="type">NotImplementedError</span>(<span class="string">"penguins can't fly"</span>)  <span class="comment"># surprise!</span>
+
+<span class="comment"># FIX: model only the abilities each bird truly has</span>
+<span class="keyword">class</span> <span class="type">Bird</span>:
+    <span class="keyword">def</span> <span class="fn">eat</span>(self): ...
+
+<span class="keyword">class</span> <span class="type">FlyingBird</span>(<span class="type">Bird</span>):
+    <span class="keyword">def</span> <span class="fn">fly</span>(self): ...
+
+<span class="keyword">class</span> <span class="type">Sparrow</span>(<span class="type">FlyingBird</span>):   <span class="comment"># can be used wherever fly() is expected</span>
+    <span class="keyword">def</span> <span class="fn">fly</span>(self): <span class="fn">print</span>(<span class="string">"flap flap"</span>)
+
+<span class="keyword">class</span> <span class="type">Penguin</span>(<span class="type">Bird</span>):       <span class="comment"># never promises fly()</span>
+    <span class="keyword">def</span> <span class="fn">eat</span>(self): <span class="fn">print</span>(<span class="string">"munch"</span>)
+</pre>
+            </div>
+        </div>
+
+        <h2>I — Interface Segregation Principle</h2>
+        <p><strong>Clients should not be forced to depend on methods they do not use.</strong> Many small, focused interfaces beat one big "fat" interface. A class implementing a fat interface is dragged into implementing methods that make no sense for it.</p>
+
+        <div class="analogy">
+            <div class="tag">🤖 Analogy: a robot forced to eat()</div>
+            <p>Suppose one fat <code>Worker</code> interface declares <code>work()</code> <em>and</em> <code>eat()</code>. A human worker implements both happily. But a <code>RobotWorker</code> must also implement <code>eat()</code> — which is nonsense. Split the interface so robots implement only <code>Workable</code> and skip <code>Feedable</code>.</p>
+        </div>
+
+        <div class="code-container">
+            <div class="code-tabs">
+                <button class="code-tab active" onclick="showCode(this, 'ispJava')">Java</button>
+                <button class="code-tab" onclick="showCode(this, 'ispPy')">Python</button>
+            </div>
+            <div id="ispJava" class="code-content active">
+<pre><span class="comment">// VIOLATION: a fat interface forces robots to eat()</span>
+<span class="keyword">interface</span> <span class="type">Worker</span> {
+    <span class="keyword">void</span> <span class="fn">work</span>();
+    <span class="keyword">void</span> <span class="fn">eat</span>();            <span class="comment">// robots don't eat!</span>
+}
+<span class="keyword">class</span> <span class="type">Robot</span> <span class="keyword">implements</span> <span class="type">Worker</span> {
+    <span class="keyword">public void</span> <span class="fn">work</span>() {}
+    <span class="keyword">public void</span> <span class="fn">eat</span>() { <span class="comment">/* awkward no-op / throws */</span> }
+}
+
+<span class="comment">// FIX: small, client-specific interfaces</span>
+<span class="keyword">interface</span> <span class="type">Workable</span> { <span class="keyword">void</span> <span class="fn">work</span>(); }
+<span class="keyword">interface</span> <span class="type">Feedable</span> { <span class="keyword">void</span> <span class="fn">eat</span>(); }
+
+<span class="keyword">class</span> <span class="type">Human</span> <span class="keyword">implements</span> <span class="type">Workable</span>, <span class="type">Feedable</span> {
+    <span class="keyword">public void</span> <span class="fn">work</span>() {} <span class="keyword">public void</span> <span class="fn">eat</span>() {}
+}
+<span class="keyword">class</span> <span class="type">Robot</span> <span class="keyword">implements</span> <span class="type">Workable</span> {   <span class="comment">// only what it needs</span>
+    <span class="keyword">public void</span> <span class="fn">work</span>() {}
+}
+</pre>
+            </div>
+            <div id="ispPy" class="code-content">
+<pre><span class="keyword">from</span> abc <span class="keyword">import</span> <span class="type">ABC</span>, abstractmethod
+
+<span class="comment"># VIOLATION: one fat interface for everyone</span>
+<span class="keyword">class</span> <span class="type">Worker</span>(<span class="type">ABC</span>):
+    @abstractmethod
+    <span class="keyword">def</span> <span class="fn">work</span>(self): ...
+    @abstractmethod
+    <span class="keyword">def</span> <span class="fn">eat</span>(self): ...        <span class="comment"># robots forced to implement this</span>
+
+<span class="comment"># FIX: split into focused, role-based interfaces</span>
+<span class="keyword">class</span> <span class="type">Workable</span>(<span class="type">ABC</span>):
+    @abstractmethod
+    <span class="keyword">def</span> <span class="fn">work</span>(self): ...
+
+<span class="keyword">class</span> <span class="type">Feedable</span>(<span class="type">ABC</span>):
+    @abstractmethod
+    <span class="keyword">def</span> <span class="fn">eat</span>(self): ...
+
+<span class="keyword">class</span> <span class="type">Human</span>(<span class="type">Workable</span>, <span class="type">Feedable</span>):
+    <span class="keyword">def</span> <span class="fn">work</span>(self): ...
+    <span class="keyword">def</span> <span class="fn">eat</span>(self): ...
+
+<span class="keyword">class</span> <span class="type">Robot</span>(<span class="type">Workable</span>):       <span class="comment"># implements only Workable</span>
+    <span class="keyword">def</span> <span class="fn">work</span>(self): ...
+</pre>
+            </div>
+        </div>
+
+        <h2>D — Dependency Inversion Principle</h2>
+        <p><strong>Depend on abstractions, not on concretions.</strong> High-level modules (your business logic) should not depend on low-level modules (a specific database, a specific email service) — both should depend on an interface. The trick in practice is <strong>constructor injection</strong>: pass the dependency in, typed as an interface, instead of hard-coding <code>new</code> inside.</p>
+
+        <div class="analogy">
+            <div class="tag">🔌 Analogy: a wall socket, not soldered wires</div>
+            <p>Your lamp doesn't have its wires soldered directly into the building's electrical system. It ends in a <em>plug</em> that fits a standard <em>socket</em> — the abstraction. You can move the lamp to any socket, and the building doesn't care what you plug in. Code should depend on the "socket" (interface), not be soldered to one concrete device.</p>
+        </div>
+
+        <div class="code-container">
+            <div class="code-tabs">
+                <button class="code-tab active" onclick="showCode(this, 'dipJava')">Java</button>
+                <button class="code-tab" onclick="showCode(this, 'dipPy')">Python</button>
+            </div>
+            <div id="dipJava" class="code-content active">
+<pre><span class="comment">// VIOLATION: high-level class soldered to a concrete dependency</span>
+<span class="keyword">class</span> <span class="type">OrderService</span> {
+    <span class="keyword">private</span> <span class="type">MySqlDatabase</span> db = <span class="keyword">new</span> <span class="type">MySqlDatabase</span>(); <span class="comment">// hard-coded!</span>
+    <span class="keyword">void</span> <span class="fn">place</span>(<span class="type">Order</span> o) { db.<span class="fn">save</span>(o); }       <span class="comment">// can't swap or test</span>
+}
+
+<span class="comment">// FIX: depend on an abstraction, inject via the constructor</span>
+<span class="keyword">interface</span> <span class="type">OrderRepository</span> { <span class="keyword">void</span> <span class="fn">save</span>(<span class="type">Order</span> o); }
+
+<span class="keyword">class</span> <span class="type">MySqlRepository</span>  <span class="keyword">implements</span> <span class="type">OrderRepository</span> { <span class="keyword">public void</span> <span class="fn">save</span>(<span class="type">Order</span> o){} }
+<span class="keyword">class</span> <span class="type">InMemoryRepository</span> <span class="keyword">implements</span> <span class="type">OrderRepository</span> { <span class="keyword">public void</span> <span class="fn">save</span>(<span class="type">Order</span> o){} }
+
+<span class="keyword">class</span> <span class="type">OrderService</span> {
+    <span class="keyword">private final</span> <span class="type">OrderRepository</span> repo;
+    <span class="keyword">public</span> <span class="fn">OrderService</span>(<span class="type">OrderRepository</span> repo) {  <span class="comment">// injected</span>
+        <span class="keyword">this</span>.repo = repo;
+    }
+    <span class="keyword">void</span> <span class="fn">place</span>(<span class="type">Order</span> o) { repo.<span class="fn">save</span>(o); }
+}
+
+<span class="comment">// Production wires MySql; tests wire InMemory — same OrderService.</span>
+<span class="keyword">new</span> <span class="type">OrderService</span>(<span class="keyword">new</span> <span class="type">MySqlRepository</span>());
+</pre>
+            </div>
+            <div id="dipPy" class="code-content">
+<pre><span class="keyword">from</span> abc <span class="keyword">import</span> <span class="type">ABC</span>, abstractmethod
+
+<span class="comment"># VIOLATION: business logic hard-wired to one concrete class</span>
+<span class="keyword">class</span> <span class="type">OrderService</span>:
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self):
+        self.db = <span class="type">MySqlDatabase</span>()        <span class="comment"># hard-coded; can't swap</span>
+    <span class="keyword">def</span> <span class="fn">place</span>(self, order):
+        self.db.<span class="fn">save</span>(order)
+
+<span class="comment"># FIX: depend on an abstraction; inject it in the constructor</span>
+<span class="keyword">class</span> <span class="type">OrderRepository</span>(<span class="type">ABC</span>):
+    @abstractmethod
+    <span class="keyword">def</span> <span class="fn">save</span>(self, order): ...
+
+<span class="keyword">class</span> <span class="type">MySqlRepository</span>(<span class="type">OrderRepository</span>):
+    <span class="keyword">def</span> <span class="fn">save</span>(self, order): ...
+
+<span class="keyword">class</span> <span class="type">InMemoryRepository</span>(<span class="type">OrderRepository</span>):
+    <span class="keyword">def</span> <span class="fn">save</span>(self, order): ...
+
+<span class="keyword">class</span> <span class="type">OrderService</span>:
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, repo: <span class="type">OrderRepository</span>):  <span class="comment"># injected</span>
+        self.repo = repo
+    <span class="keyword">def</span> <span class="fn">place</span>(self, order):
+        self.repo.<span class="fn">save</span>(order)
+
+<span class="comment"># Production: OrderService(MySqlRepository())</span>
+<span class="comment"># Tests:      OrderService(InMemoryRepository())</span>
+</pre>
+            </div>
+        </div>
+
+        <h2>SOLID at a Glance</h2>
+        <table>
+            <thead>
+                <tr><th>Letter</th><th>Principle</th><th>One-line takeaway</th></tr>
+            </thead>
+            <tbody>
+                <tr><td><strong>S</strong></td><td>Single Responsibility</td><td>One class, one reason to change.</td></tr>
+                <tr><td><strong>O</strong></td><td>Open/Closed</td><td>Extend with new code, don't edit old code.</td></tr>
+                <tr><td><strong>L</strong></td><td>Liskov Substitution</td><td>Subtypes must work wherever the base works.</td></tr>
+                <tr><td><strong>I</strong></td><td>Interface Segregation</td><td>Many small interfaces beat one fat one.</td></tr>
+                <tr><td><strong>D</strong></td><td>Dependency Inversion</td><td>Depend on abstractions, inject concretions.</td></tr>
+            </tbody>
+        </table>
+
+        <div class="note">
+            <strong>Interview tip:</strong> SOLID is <em>the</em> most-asked fundamentals topic in LLD interviews. Don't just expand the acronym — be ready to <strong>name a violation and fix it live</strong>. Keep one crisp example per letter in your back pocket (God-class split, replace a type-switch with polymorphism, the penguin, the fat <code>Worker</code> interface, constructor injection). Mentioning that the Open/Closed fix is really just the <a href="../creational/factory-method.html" style="color:#0d9488">Factory</a>/Strategy pattern in disguise shows you see how principles connect to patterns.
+        </div>
+
+        <h2>Related Topics</h2>
+        <p>SOLID builds directly on the <a href="oop-pillars.html" style="color:#0d9488">Four Pillars of OOP</a> (especially abstraction and polymorphism). For the wider set of heuristics, see <a href="design-principles.html" style="color:#0d9488">Design Principles</a>, and watch the Open/Closed principle come to life in the <a href="../creational/factory-method.html" style="color:#0d9488">Factory Method</a> pattern.</p>
+    </div>
+
+    <div class="footer">
+        <p>Low-Level Design · <span>SOLID Principles</span> · Java &amp; Python · Interactive Learning</p>
+    </div>
+
+    <script>
+        function showCode(btn, id) {
+            const container = btn.closest('.code-container');
+            container.querySelectorAll('.code-tab').forEach(t => t.classList.remove('active'));
+            container.querySelectorAll('.code-content').forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById(id).classList.add('active');
+        }
+    </script>
+</body>
+</html>

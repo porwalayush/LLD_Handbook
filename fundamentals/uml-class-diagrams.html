@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UML &amp; Class Diagrams — LLD Guide</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8fafc; min-height: 100vh; color: #1e293b; -webkit-font-smoothing: antialiased; }
+        .container { max-width: 880px; margin: 0 auto; padding: 40px 24px 80px; }
+        .back-link { display: inline-flex; align-items: center; gap: 6px; color: #0d9488; text-decoration: none; font-size: 0.9em; font-weight: 500; margin-bottom: 28px; padding: 6px 12px; border-radius: 8px; transition: background 0.15s ease; }
+        .back-link:hover { background: #f0fdfa; }
+
+        .pattern-badge { display: inline-block; padding: 5px 14px; border-radius: 100px; font-size: 0.72em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; background: #ccfbf1; color: #0d9488; margin-bottom: 16px; }
+        h1 { font-size: 2.4em; font-weight: 800; color: #0f172a; margin-bottom: 12px; letter-spacing: -0.03em; line-height: 1.2; }
+        .subtitle { font-size: 1.1em; color: #64748b; line-height: 1.7; margin-bottom: 8px; }
+        h2 { font-size: 1.35em; font-weight: 700; color: #0f172a; margin: 40px 0 16px; letter-spacing: -0.02em; }
+        h3 { font-size: 1.1em; font-weight: 600; color: #1e293b; margin: 24px 0 10px; }
+        p, li { line-height: 1.8; color: #475569; margin-bottom: 10px; font-size: 0.95em; }
+        ul, ol { padding-left: 20px; margin-bottom: 15px; }
+        strong { color: #1e293b; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 0.85em; color: #0d9488; }
+
+        .analogy { background: linear-gradient(135deg, #f0fdfa, #fffbeb); border: 1px solid #ccfbf1; border-radius: 16px; padding: 24px 28px; margin: 24px 0; }
+        .analogy .tag { font-size: 0.78em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #0d9488; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+        .analogy p:last-child { margin-bottom: 0; }
+
+        .code-container { margin: 24px 0; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .code-tabs { display: flex; background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 0 8px; }
+        .code-tab { padding: 10px 18px; cursor: pointer; border: none; background: transparent; color: #64748b; font-size: 0.85em; font-weight: 500; font-family: 'Inter', sans-serif; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.15s ease; }
+        .code-tab:hover { color: #0d9488; }
+        .code-tab.active { color: #0d9488; border-bottom-color: #0d9488; background: white; }
+        .code-content { display: none; background: white; padding: 24px; overflow-x: auto; }
+        .code-content.active { display: block; }
+        .code-content pre { color: #1e293b; font-family: 'JetBrains Mono', monospace; font-size: 0.82em; line-height: 1.75; white-space: pre; }
+        .keyword { color: #0d9488; } .type { color: #2563eb; } .string { color: #16a34a; }
+        .comment { color: #94a3b8; font-style: italic; } .number { color: #d97706; }
+        .preproc { color: #7c3aed; } .fn { color: #db2777; }
+
+        .note { background: #f0fdfa; border-left: 4px solid #0d9488; padding: 16px 20px; margin: 20px 0; border-radius: 0 12px 12px 0; }
+        .note ul, .note p { margin-bottom: 0; } .note li:last-child { margin-bottom: 0; }
+        .warn { background: #fef2f2; border-left: 4px solid #dc2626; padding: 16px 20px; margin: 20px 0; border-radius: 0 12px 12px 0; }
+        .warn ul, .warn p { margin-bottom: 0; } .warn li:last-child { margin-bottom: 0; }
+
+        .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0; }
+        .compare > div { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .pros h3 { color: #16a34a; margin-top: 0; } .cons h3 { color: #dc2626; margin-top: 0; }
+        .compare ul { margin-bottom: 0; }
+
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; }
+        th, td { padding: 12px 16px; border: 1px solid #e2e8f0; text-align: left; font-size: 0.9em; }
+        th { background: #f8fafc; color: #0f172a; font-weight: 600; }
+        tr:hover { background: #f8fafc; }
+
+        /* Interactive playground */
+        .playground { background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 24px; margin: 24px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .pg-title { font-weight: 700; color: #0f172a; font-size: 0.95em; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+        .pg-sub { color: #64748b; font-size: 0.82em; margin-bottom: 18px; }
+        .pg-stage { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: center; min-height: 120px; padding: 16px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0; }
+        .obj-box { width: 110px; padding: 14px 10px; border-radius: 12px; text-align: center; border: 2px solid #cbd5e1; background: white; transition: all 0.3s ease; }
+        .obj-box .lbl { font-size: 0.72em; color: #64748b; font-weight: 600; }
+        .obj-box .id { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 0.92em; color: #0f172a; margin-top: 4px; word-break: break-all; }
+        .obj-box.same { border-color: #0d9488; background: #f0fdfa; box-shadow: 0 0 0 3px rgba(13,148,136,0.12); }
+        .obj-box.fresh { border-color: #d97706; background: #fffbeb; box-shadow: 0 0 0 3px rgba(217,119,6,0.12); }
+        .pg-status { margin-top: 14px; padding: 12px 14px; background: #f8fafc; border-radius: 8px; font-size: 0.85em; color: #475569; min-height: 44px; display: flex; align-items: center; border: 1px solid #e2e8f0; line-height: 1.5; }
+        .pg-controls { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; align-items: center; }
+        .btn { padding: 8px 16px; border: none; border-radius: 8px; font-size: 0.85em; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.15s ease; }
+        .btn-primary { background: #0d9488; color: white; }
+        .btn-primary:hover { background: #0f766e; transform: translateY(-1px); }
+        .btn-ghost { background: #f1f5f9; color: #475569; }
+        .btn-ghost:hover { background: #e2e8f0; }
+
+        .footer { text-align: center; padding: 32px 20px; color: #94a3b8; font-size: 0.85em; border-top: 1px solid #e2e8f0; background: #f8fafc; }
+        .footer span { color: #0d9488; }
+
+        @media (max-width: 600px) { .compare { grid-template-columns: 1fr; } h1 { font-size: 1.8em; } .container { padding: 20px 16px 60px; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="../index.html" class="back-link">&larr; Back to LLD Topics</a>
+        <div class="pattern-badge">Fundamentals</div>
+        <h1>UML &amp; Class Diagrams</h1>
+        <p class="subtitle">Sketching designs you can draw on a whiteboard in interviews.</p>
+
+        <div class="analogy">
+            <div class="tag">🗺️ Real-World Analogy</div>
+            <p>A UML class diagram is the <strong>blueprint of a building</strong> before construction starts. An architect doesn't pour concrete and <em>then</em> figure out where the walls go — they sketch a plan everyone can read: how many rooms, how they connect, which is load-bearing.</p>
+            <p>UML is that shared visual language for software. It lets you (and your interviewer) agree on <em>what classes exist and how they relate</em> before a single line of code is written.</p>
+        </div>
+
+        <h2>1. Class Diagram Basics</h2>
+        <p>A class is drawn as a box split into <strong>three compartments</strong>: the class <strong>name</strong> on top, its <strong>attributes</strong> (fields) in the middle, and its <strong>methods</strong> (behaviour) at the bottom. Each member gets a <strong>visibility marker</strong>:</p>
+        <ul>
+            <li><code>+</code> public — visible everywhere</li>
+            <li><code>-</code> private — visible only inside the class</li>
+            <li><code>#</code> protected — visible to the class and its subclasses</li>
+            <li><code>~</code> package / default — visible within the same package</li>
+        </ul>
+        <p>Here is a single class drawn in ASCII, the way you'd sketch it on a whiteboard:</p>
+        <div class="code-container">
+            <div class="code-tabs">
+                <button class="code-tab active" onclick="showCode(this, 'boxAscii')">Class Box</button>
+            </div>
+            <div id="boxAscii" class="code-content active">
+<pre>+---------------------------------+
+|         BankAccount             |   &lt;- name
++---------------------------------+
+| - id: String                    |
+| - balance: double               |   &lt;- attributes
+| # ownerName: String             |
++---------------------------------+
+| + deposit(amount: double): void |
+| + withdraw(amount: double): void|   &lt;- methods
+| + getBalance(): double          |
+| - validate(amount: double): void|
++---------------------------------+
+</pre>
+            </div>
+        </div>
+        <p>Attributes and methods are written as <code>name: Type</code> (and <code>name(param: Type): ReturnType</code> for methods), matching most UML conventions regardless of language.</p>
+
+        <h2>2. Relationships</h2>
+        <p>The real power of UML is showing how classes <em>connect</em>. Each relationship has a distinct line/arrowhead so the diagram reads at a glance.</p>
+        <table>
+            <tr><th>Relationship</th><th>Notation</th><th>Meaning</th><th>Example</th></tr>
+            <tr><td><strong>Association</strong></td><td>Plain solid line <code>———</code></td><td>One class knows about / uses another</td><td>Teacher — Student</td></tr>
+            <tr><td><strong>Aggregation</strong></td><td>Solid line + <strong>hollow diamond</strong> <code>◇———</code> at the whole</td><td>Whole-part where parts can live independently</td><td>Team ◇— Player</td></tr>
+            <tr><td><strong>Composition</strong></td><td>Solid line + <strong>filled diamond</strong> <code>◆———</code> at the whole</td><td>Strong whole-part; parts die with the whole</td><td>House ◆— Room</td></tr>
+            <tr><td><strong>Inheritance</strong> (generalization)</td><td>Solid line + <strong>hollow triangle</strong> <code>———▷</code> at the parent</td><td>"is-a"; subclass extends superclass</td><td>Dog ——▷ Animal</td></tr>
+            <tr><td><strong>Realization</strong> (implements)</td><td><strong>Dashed</strong> line + hollow triangle <code>- - ▷</code></td><td>Class implements an interface</td><td>ArrayList - -▷ List</td></tr>
+            <tr><td><strong>Dependency</strong></td><td><strong>Dashed</strong> arrow <code>- - &gt;</code></td><td>Uses transiently (e.g. a method parameter)</td><td>OrderService - -&gt; EmailClient</td></tr>
+        </table>
+        <p>A handy memory hook: <strong>diamonds = ownership</strong> (hollow = weak, filled = strong), <strong>triangles = type hierarchy</strong> (solid = extends, dashed = implements), and <strong>dashed lines = "just uses, doesn't hold."</strong></p>
+
+        <h2>3. Multiplicity</h2>
+        <p>Numbers at the ends of a relationship line state <em>how many</em> objects participate. Read them as "each X is related to <em>this many</em> Y".</p>
+        <table>
+            <tr><th>Multiplicity</th><th>Means</th><th>Example</th></tr>
+            <tr><td><code>1</code></td><td>Exactly one</td><td>An Order has exactly 1 Customer</td></tr>
+            <tr><td><code>0..1</code></td><td>Zero or one (optional)</td><td>A Person has 0..1 Spouse</td></tr>
+            <tr><td><code>*</code></td><td>Zero or many</td><td>A Shelf holds * Books</td></tr>
+            <tr><td><code>1..*</code></td><td>One or many (at least one)</td><td>An Order has 1..* LineItems</td></tr>
+        </table>
+        <p>You write multiplicity at both ends. For example, <code>Customer "1" ——— "*" Order</code> reads "one customer places many orders, and each order belongs to exactly one customer."</p>
+
+        <h2>4. Worked Example — Order / Customer / Product</h2>
+        <p>Let's model a tiny ordering system. A <strong>Customer</strong> places <strong>Orders</strong>; each <strong>Order</strong> contains many <strong>OrderItems</strong>; each <strong>OrderItem</strong> refers to a <strong>Product</strong>. The order <em>owns</em> its items (composition — kill the order and its items vanish), but only <em>references</em> products (association — products exist in a catalog independently).</p>
+        <div class="code-container">
+            <div class="code-tabs">
+                <button class="code-tab active" onclick="showCode(this, 'orderAscii')">UML (ASCII)</button>
+            </div>
+            <div id="orderAscii" class="code-content active">
+<pre>   +------------+   1      *   +-----------+
+   |  Customer  |------------&gt;|   Order   |
+   +------------+ places      +-----------+
+   | - name     |             | - id      |
+   +------------+             | - date    |
+                              +-----------+
+                                   | 1
+                                   | owns  (composition)
+                                   ◆
+                                   | *
+                              +-------------+      *   1  +-----------+
+                              |  OrderItem  |-----------&gt;|  Product  |
+                              +-------------+ refers to   +-----------+
+                              | - quantity  |             | - name    |
+                              +-------------+             | - price   |
+                              +-------------+             +-----------+
+</pre>
+            </div>
+        </div>
+        <p>And the corresponding class skeletons:</p>
+        <div class="code-container">
+            <div class="code-tabs">
+                <button class="code-tab active" onclick="showCode(this, 'orderJava')">Java</button>
+                <button class="code-tab" onclick="showCode(this, 'orderPy')">Python</button>
+            </div>
+            <div id="orderJava" class="code-content active">
+<pre><span class="keyword">class</span> <span class="type">Customer</span> {
+    <span class="keyword">private</span> <span class="type">String</span> name;
+    <span class="keyword">private</span> <span class="type">List</span>&lt;<span class="type">Order</span>&gt; orders = <span class="keyword">new</span> <span class="type">ArrayList</span>&lt;&gt;();  <span class="comment">// 1 -&gt; *</span>
+    <span class="keyword">public void</span> <span class="fn">placeOrder</span>(<span class="type">Order</span> o) { orders.<span class="fn">add</span>(o); }
+}
+
+<span class="keyword">class</span> <span class="type">Order</span> {
+    <span class="keyword">private</span> <span class="type">String</span> id;
+    <span class="keyword">private</span> <span class="type">LocalDate</span> date;
+    <span class="comment">// composition: the order owns its items</span>
+    <span class="keyword">private</span> <span class="type">List</span>&lt;<span class="type">OrderItem</span>&gt; items = <span class="keyword">new</span> <span class="type">ArrayList</span>&lt;&gt;();
+}
+
+<span class="keyword">class</span> <span class="type">OrderItem</span> {
+    <span class="keyword">private</span> <span class="keyword">int</span> quantity;
+    <span class="keyword">private</span> <span class="type">Product</span> product;   <span class="comment">// association: just a reference</span>
+}
+
+<span class="keyword">class</span> <span class="type">Product</span> {
+    <span class="keyword">private</span> <span class="type">String</span> name;
+    <span class="keyword">private</span> <span class="keyword">double</span> price;
+}
+</pre>
+            </div>
+            <div id="orderPy" class="code-content">
+<pre><span class="keyword">from</span> datetime <span class="keyword">import</span> date
+
+<span class="keyword">class</span> <span class="type">Customer</span>:
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, name: str):
+        self.name = name
+        self.orders: list[<span class="string">"Order"</span>] = []      <span class="comment"># 1 -&gt; *</span>
+
+    <span class="keyword">def</span> <span class="fn">place_order</span>(self, order: <span class="string">"Order"</span>):
+        self.orders.<span class="fn">append</span>(order)
+
+<span class="keyword">class</span> <span class="type">Order</span>:
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, id: str, on: date):
+        self.id = id
+        self.date = on
+        <span class="comment"># composition: the order owns its items</span>
+        self.items: list[<span class="string">"OrderItem"</span>] = []
+
+<span class="keyword">class</span> <span class="type">OrderItem</span>:
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, quantity: int, product: <span class="string">"Product"</span>):
+        self.quantity = quantity
+        self.product = product       <span class="comment"># association: just a reference</span>
+
+<span class="keyword">class</span> <span class="type">Product</span>:
+    <span class="keyword">def</span> <span class="fn">__init__</span>(self, name: str, price: float):
+        self.name = name
+        self.price = price
+</pre>
+            </div>
+        </div>
+
+        <h2>5. A Note on Sequence Diagrams</h2>
+        <p>Where a class diagram shows the <em>static structure</em> ("what exists"), a <strong>sequence diagram</strong> shows <em>dynamic interaction</em> over time ("what happens when"). Each participating object gets a vertical <strong>lifeline</strong> running top to bottom, and horizontal arrows between them represent <strong>messages</strong> (method calls), drawn in time order from top to bottom.</p>
+        <p>For example, "Customer → Order: addItem()" then "Order → Product: getPrice()". In an LLD interview you usually only need a sequence diagram to clarify a tricky flow (like a checkout or a payment retry); the class diagram does most of the heavy lifting.</p>
+
+        <div class="note">
+            <strong>Interview tip:</strong> Draw the class diagram <em>before</em> you start coding. Identifying the entities, their attributes, and the relationship arrows on the whiteboard demonstrates structured thinking, gives the interviewer a chance to course-correct you early, and earns explicit design points. Even a rough box-and-line sketch beats jumping straight into code.
+        </div>
+
+        <h2>Related Topics</h2>
+        <p>Use UML alongside <a href="coupling-cohesion.html" style="color:#0d9488">Coupling, Cohesion &amp; Composition</a> (the diamonds and triangles map directly to those relationships), follow the full <a href="lld-interview-approach.html" style="color:#0d9488">LLD Interview Approach</a> to know when to draw, and revisit the <a href="oop-pillars.html" style="color:#0d9488">OOP Pillars</a> for the concepts the diagrams represent.</p>
+    </div>
+
+    <div class="footer">
+        <p>Low-Level Design · <span>UML &amp; Class Diagrams</span> · Java &amp; Python · Interactive Learning</p>
+    </div>
+
+    <script>
+        function showCode(btn, id) {
+            const container = btn.closest('.code-container');
+            container.querySelectorAll('.code-tab').forEach(t => t.classList.remove('active'));
+            container.querySelectorAll('.code-content').forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById(id).classList.add('active');
+        }
+    </script>
+</body>
+</html>
